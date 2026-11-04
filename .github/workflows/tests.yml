@@ -23,3 +23,16 @@ jobs:
           KEYLAND_JWT_SECRET: test-only-secret-key-never-use-in-production-123456
           PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
+
+      - name: Validate dashboard JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("web/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          if not scripts:
+              raise SystemExit("No inline dashboard script found")
+          Path("/tmp/keyland-dashboard.js").write_text("\n".join(scripts), encoding="utf-8")
+          PY
+          node --check /tmp/keyland-dashboard.js
