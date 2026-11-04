@@ -94,7 +94,7 @@ def status() -> dict[str, Any]:
         for key in ("hostapd_pid", "dnsmasq_pid"):
             try: os.kill(int(state[key]), 0); alive[key] = True
             except (OSError, KeyError, ValueError, TypeError): alive[key] = False
-    return {"active": bool(state and all(alive.values())),
+    return {"configured": bool(state), "active": bool(state and all(alive.values())),
             "configuration": {k:v for k,v in (state or {}).items()
                               if k not in ("password", "hostapd_pid", "dnsmasq_pid")},
             "processes": alive, "interfaces": interfaces(), "default_routes": defaults(), "clients": _clients(state.get("interface") if state else None)}
