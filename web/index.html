@@ -461,6 +461,8 @@ button:focus-visible,input:focus-visible,select:focus-visible { outline:2px soli
 .metric { font-size:27px; letter-spacing:-.04em; } .metric-label,.muted { color:var(--muted); } .metric-grid { gap:18px; }
 .cellular-item { padding:15px; border:1px solid var(--border); border-radius:11px; background:rgba(8,17,31,.42); } .cellular-value { font-size:15px; }
 .hotspot-grid { gap:16px; } .hotspot-card { border-color:#34517a !important; background:linear-gradient(145deg,rgba(24,43,70,.98),rgba(15,27,46,.98)) !important; }
+.repeater-card { border-color:#314a68 !important; background:linear-gradient(145deg,rgba(18,31,50,.98),rgba(14,24,40,.98)) !important; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
 #hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
 .login-overlay { background:radial-gradient(ellipse at 50% 0%,rgba(48,103,187,.2),transparent 45%),var(--bg); }
 .login-box { border-radius:18px; border-color:var(--border); background:#111e32; box-shadow:0 28px 90px rgba(0,0,0,.45); } .login-box input { margin-bottom:12px; }
@@ -552,10 +554,11 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
     <div class="nav-group-label">მართვა</div>
     <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
     <a href="#wireless-section"><span class="nav-index">02</span><span><strong>Wi-Fi ქსელი</strong><small>ადაპტერები და Hotspot</small></span></a>
-    <a href="#network-section"><span class="nav-index">03</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
-    <a href="#mobile-section"><span class="nav-index">04</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
+    <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>Wi-Fi გამეორება</small></span></a>
+    <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
+    <a href="#mobile-section"><span class="nav-index">05</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
     <div class="nav-group-label">მოწყობილობა</div>
-    <a href="#system-section"><span class="nav-index">05</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
+    <a href="#system-section"><span class="nav-index">06</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
     <div class="nav-footer"><span class="nav-status-dot"></span><span>ადმინისტრატორის პანელი</span></div>
 </aside>
 
@@ -747,13 +750,6 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
             <pre id="wifiCapabilities">Loading...</pre>
         </section>
 
-        <section class="card">
-            <h3>რეპიტერის რეჟიმის მზადყოფნა</h3>
-            <p class="muted">
-                Read-only inspection of AP + Client and forwarding readiness.
-            </p>
-            <pre id="repeaterStatus">Loading...</pre>
-        </section>
 
         <section class="card">
             <h3>მარშრუტიზაციის ცხრილი</h3>
@@ -770,15 +766,15 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
             <pre id="wifiScan">Press Wi-Fi ქსელების ძიება</pre>
         </section>
 
-        <div <section class="card">
+        <section class="card">
             <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
             <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
             <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
         </section>
 
         <section class="card hotspot-card" style="grid-column: 1 / -1;">
-            <h3 id="hotspot-title">Wi-Fi Hotspot / Repeater</h3>
-            <p class="muted">შექმენი დაცული WPA2 hotspot ცალკე AP ინტერფეისზე. აქტიური Wi-Fi კავშირი არ გადაირთვება. Wi-Fi repeater იმუშავებს მხოლოდ მაშინ, თუ ჩიპსეტი ერთდროულად AP + Client რეჟიმს უჭერს მხარს.</p>
+            <h3 id="hotspot-title">Wi-Fi Hotspot</h3>
+            <p class="muted">შექმენი დაცული WPA2 hotspot ცალკე AP ინტერფეისზე. აქტიური Wi-Fi კავშირი არ გადაირთვება. </p>
             <div class="hotspot-grid">
                 <div>
                     <label for="hotspotInterface">AP ინტერფეისი</label>
@@ -821,7 +817,16 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
             <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
 
-        <div id="network-section" class="section-heading"><div><span class="section-kicker">03 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
+        <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>არსებული Wi-Fi კავშირის გამეორება ცალკე AP ქსელით</p></div></div>
+
+        <section class="card repeater-card" style="grid-column:1 / -1;">
+            <h3>Repeater-ის მზადყოფნა</h3>
+            <p class="muted">აქ გამოჩნდება AP + Client რეჟიმის, არხის თავსებადობისა და ინტერნეტის გაზიარების შემოწმება. ძირითადი Wi-Fi კავშირი არ შეიცვლება.</p>
+            <pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre>
+            <p class="muted">Repeater-ის ჩართვა ჯერ არ არის გააქტიურებული: ჯერ საჭიროა უსაფრთხო მართვისა და გათიშვის/აღდგენის სრული მექანიზმის დასრულება.</p>
+        </section>
+
+        <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
 
         <section class="card">
             <h3 id="dns-title">DNS-ის მართვა</h3>
@@ -855,7 +860,7 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
             <p class="muted">მართვა ჩაირთვება მხოლოდ აქტიური firewall backend-ის (nftables ან iptables) აღმოჩენისა და წესების სარეზერვო ასლის შექმნის შემდეგ.</p>
         </section>
 
-        <div id="mobile-section" class="section-heading"><div><span class="section-kicker">04 / CELLULAR</span><h2>მობილური ქსელი</h2><p>SIM ბარათისა და მობილური მოდემის პარამეტრები</p></div></div>
+        <div id="mobile-section" class="section-heading"><div><span class="section-kicker">05 / CELLULAR</span><h2>მობილური ქსელი</h2><p>SIM ბარათისა და მობილური მოდემის პარამეტრები</p></div></div>
 
         <section class="card">
             <h3>SIM / LTE / 5G პარამეტრები</h3>
@@ -867,7 +872,7 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
             <p class="muted">კლიენტების აღმოჩენა და IP/MAC-ის ჩვენება დაემატება. დაბლოკვა განხორციელდება მხოლოდ ადმინისტრატორის დადასტურებით.</p>
         </section>
 
-        <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
+        <div id="system-section" class="section-heading"><div><span class="section-kicker">06 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
 
         <section class="card">
             <h3 id="system-title">სისტემა, ჟურნალები და აღდგენა</h3>
