@@ -704,12 +704,11 @@ def get_wifi_scan():
     for name in names:
         found, scan_error, scan_method = [], None, None
         if nmcli_available:
-            rescan = run_command(["nmcli", "device", "wifi", "rescan", "ifname", name], timeout=15)
             listed = run_command([
-                "nmcli", "--terse", "--escape", "yes", "--fields",
+                "nmcli", "--wait", "20", "--terse", "--escape", "yes", "--fields",
                 "SSID,BSSID,CHAN,FREQ,RATE,SIGNAL,SECURITY",
-                "device", "wifi", "list", "ifname", name,
-            ], timeout=20)
+                "device", "wifi", "list", "--rescan", "yes", "ifname", name,
+            ], timeout=25)
             if listed["success"]:
                 for row in listed["output"].splitlines():
                     parts = _split_nmcli_row(row)
@@ -730,7 +729,7 @@ def get_wifi_scan():
                 if found:
                     scan_method = "NetworkManager"
             if not found:
-                scan_error = listed.get("error") or rescan.get("error")
+                scan_error = listed.get("error")
 
         if not found:
             raw = run_command(["iw", "dev", name, "scan"], timeout=30)
