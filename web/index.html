@@ -1682,6 +1682,7 @@ async function loadHotspotCapabilities() {
             tr("AP რეჟიმი: ","AP mode: ") + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
             tr("WAN წყარო: ","WAN source: ") + ((data.upstream_sources || []).map(item => item.interface + " (" + item.type + ")").join(", ") || tr("ნაგულისხმევი მარშრუტი ვერ მოიძებნა","No default route detected")),
             tr("ნაგულისხმევი მარშრუტი: ","Default route: ") + ((data.default_route_interfaces || []).join(", ") || "—"),
+            tr("აღმოჩენილი Wi-Fi ინტერფეისები:","Detected Wi-Fi interfaces:") + " " + ((data.interfaces || []).map(item => item.name + " (" + (item.type || "unknown") + ")").join(", ") || "—"),
             tr("ხელმისაწვდომი AP ინტერფეისები:","Eligible AP interfaces:"),
             ...((data.ap_candidates || []).map(item => item.name + " · " + (item.state || "unknown") + (item.eligible ? " · READY" : " · NOT READY"))),
             "",
