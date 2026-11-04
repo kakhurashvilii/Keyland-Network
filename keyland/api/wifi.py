@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from keyland.auth import require_admin
 from keyland.adapters.wifi.hotspot import (
-    get_hotspot_capabilities, start_hotspot, stop_hotspot,
+    get_hotspot_capabilities, start_hotspot, stop_hotspot, create_virtual_ap,
 )
 
 router = APIRouter(prefix="/api/v1/wifi/hotspot", tags=["Wi-Fi Hotspot"])
@@ -39,6 +39,19 @@ def hotspot_start(payload: HotspotRequest, user: dict = Depends(require_admin)):
 @router.post("/stop")
 def hotspot_stop(payload: StopRequest, user: dict = Depends(require_admin)):
     result = stop_hotspot(payload.confirmed)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+class VirtualApRequest(BaseModel):
+    interface: str = Field(min_length=1, max_length=15)
+    confirmed: bool = False
+
+
+@router.post("/create-interface")
+def hotspot_create_interface(payload: VirtualApRequest, user: dict = Depends(require_admin)):
+    result = create_virtual_ap(payload.interface, payload.confirmed)
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
