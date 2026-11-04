@@ -4,7 +4,7 @@ import shutil
 import os
 from pathlib import Path
 
-
+#detector.py
 def detect_device():
     system = platform.system().lower()
 

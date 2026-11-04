@@ -6,9 +6,10 @@ import socket
 import subprocess
 import threading
 import time
-
+#network.py
 import psutil
-
+from collections import deque
+from datetime import datetime, timezone
 
 SYSTEM = platform.system().lower()
 
@@ -16,7 +17,7 @@ SYSTEM = platform.system().lower()
 _traffic_lock = threading.Lock()
 _previous_counters = {}
 _previous_time = None
-
+_traffic_history = deque(maxlen=60)
 
 def run_command(args, timeout=8):
     """Run a fixed diagnostic command without invoking a shell."""
@@ -53,18 +54,21 @@ def run_command(args, timeout=8):
             "error": str(exc),
         }
 
-
-def get_interfaces():
+def get_interfaces(active_only=False):
     result = []
     addresses = psutil.net_if_addrs()
     statistics = psutil.net_if_stats()
 
     for name, addr_list in addresses.items():
         stat = statistics.get(name)
+        is_up = stat.isup if stat else False
+
+        if active_only and not is_up:
+            continue
 
         interface = {
             "name": name,
-            "is_up": stat.isup if stat else False,
+            "is_up": is_up,
             "speed_mbps": stat.speed if stat else None,
             "mtu": stat.mtu if stat else None,
             "addresses": [],
@@ -89,10 +93,8 @@ def get_interfaces():
         result.append(interface)
 
     return result
-
-
 def get_traffic():
-    """Return per-interface RX/TX counters and calculated Mbps rates."""
+    """Return interface traffic rates and store the last 60 samples."""
     global _previous_counters, _previous_time
 
     now = time.monotonic()
@@ -106,6 +108,8 @@ def get_traffic():
         )
 
         interfaces = []
+        total_rx = 0.0
+        total_tx = 0.0
 
         for name, current in counters.items():
             previous = _previous_counters.get(name)
@@ -124,6 +128,12 @@ def get_traffic():
                 rx_rate = (rx_delta * 8) / elapsed / 1_000_000
                 tx_rate = (tx_delta * 8) / elapsed / 1_000_000
 
+            rx_rate = round(rx_rate, 4)
+            tx_rate = round(tx_rate, 4)
+
+            total_rx += rx_rate
+            total_tx += tx_rate
+
             interfaces.append({
                 "name": name,
                 "bytes_recv": current.bytes_recv,
@@ -134,22 +144,77 @@ def get_traffic():
                 "errors_out": current.errout,
                 "drops_in": current.dropin,
                 "drops_out": current.dropout,
-                "rx_mbps": round(rx_rate, 4),
-                "tx_mbps": round(tx_rate, 4),
+                "rx_mbps": rx_rate,
+                "tx_mbps": tx_rate,
             })
 
-        _previous_counters = {
-            name: value for name, value in counters.items()
-        }
+        _previous_counters = dict(counters)
         _previous_time = now
+
+        sample = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "rx_mbps": round(total_rx, 4),
+            "tx_mbps": round(total_tx, 4),
+        }
+
+        _traffic_history.append(sample)
 
     return {
         "platform": SYSTEM,
         "sample_interval_seconds": round(elapsed, 3),
         "unit": "Mbps",
+        "total_rx_mbps": round(total_rx, 4),
+        "total_tx_mbps": round(total_tx, 4),
         "interfaces": interfaces,
     }
 
+
+def get_traffic_history():
+    """Return the last 60 traffic samples."""
+
+    with _traffic_lock:
+        samples = list(_traffic_history)
+
+    return {
+        "platform": SYSTEM,
+        "unit": "Mbps",
+        "count": len(samples),
+        "samples": samples,
+    }
+
+
+def get_internet_status():
+    """Check external connectivity without modifying network settings."""
+
+    targets = [
+        ("1.1.1.1", 443),
+        ("8.8.8.8", 53),
+    ]
+
+    for host, port in targets:
+        try:
+            with socket.create_connection(
+                (host, port),
+                timeout=2,
+            ):
+                return {
+                    "platform": SYSTEM,
+                    "connected": True,
+                    "target": f"{host}:{port}",
+                    "checked_at": datetime.now(
+                        timezone.utc
+                    ).isoformat(),
+                }
+
+        except OSError:
+            continue
+
+    return {
+        "platform": SYSTEM,
+        "connected": False,
+        "target": None,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 def get_system_resources():
     """Read CPU, memory, boot time and disk usage."""

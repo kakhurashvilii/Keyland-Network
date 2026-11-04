@@ -1,4 +1,5 @@
 
+#test_api.py
 from fastapi.testclient import TestClient
 
 from keyland.main import app
@@ -11,8 +12,7 @@ def test_health():
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "0.1.1"
-
+    assert response.json()["version"] == "0.1.2"
 
 def test_device():
     response = client.get("/api/v1/device")
@@ -86,3 +86,35 @@ def test_monitoring():
     assert "resources" in data
     assert "interfaces" in data
     assert "traffic" in data
+
+
+def test_traffic_history():
+    response = client.get("/api/v1/network/traffic/history")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "samples" in data
+    assert "count" in data
+    assert data["unit"] == "Mbps"
+
+
+def test_internet_status():
+    response = client.get("/api/v1/network/internet")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "connected" in data
+    assert isinstance(data["connected"], bool)
+
+
+def test_active_interfaces():
+    response = client.get(
+        "/api/v1/network/interfaces?active_only=true"
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert isinstance(data, list)
+
+    for interface in data:
+        assert interface["is_up"] is True

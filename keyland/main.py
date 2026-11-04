@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,10 +16,12 @@ from keyland.network import (
     get_traffic,
     get_wifi_scan,
     get_system_resources,
+    get_traffic_history,
+    get_internet_status,
 )
 
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 ROOT = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
@@ -55,8 +56,8 @@ def capabilities():
 
 
 @app.get("/api/v1/network/interfaces")
-def interfaces():
-    return get_interfaces()
+def interfaces(active_only: bool = False):
+    return get_interfaces(active_only=active_only)
 
 
 @app.get("/api/v1/network/routes")
@@ -79,6 +80,16 @@ def traffic():
     return get_traffic()
 
 
+@app.get("/api/v1/network/traffic/history")
+def traffic_history():
+    return get_traffic_history()
+
+
+@app.get("/api/v1/network/internet")
+def internet():
+    return get_internet_status()
+
+
 @app.get("/api/v1/wifi/scan")
 def wifi_scan():
     return get_wifi_scan()
@@ -96,4 +107,5 @@ def monitoring():
         "resources": get_system_resources(),
         "interfaces": get_interfaces(),
         "traffic": get_traffic(),
+        "internet": get_internet_status(),
     }
