@@ -144,7 +144,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         pool = [host for host in hosts if str(host) != cfg["gateway"]]
         first, last = pool[0], pool[-1]
         dconf = ROOT / "dnsmasq.conf"
-        dconf.write_text(f"interface={ap}\nbind-interfaces\nexcept-interface=lo\ndhcp-range={first},{hosts[-1]},{net.netmask},12h\ndhcp-option=3,{cfg['gateway']}\ndhcp-option=6,{','.join(cfg['dns_servers'])}\nno-resolv\n" + "".join(f"server={x}\n" for x in cfg["dns_servers"]) + f"pid-file={ROOT / 'dnsmasq.pid'}\n")
+        dconf.write_text(f"interface={ap}\nbind-interfaces\nexcept-interface=lo\ndhcp-range={first},{last},{net.netmask},12h\ndhcp-option=3,{cfg['gateway']}\ndhcp-option=6,{','.join(cfg['dns_servers'])}\nno-resolv\n" + "".join(f"server={x}\n" for x in cfg["dns_servers"]) + f"pid-file={ROOT / 'dnsmasq.pid'}\n")
         os.chmod(dconf, 0o600)
         dp = subprocess.Popen(["dnsmasq", "--keep-in-foreground", "--conf-file=" + str(dconf)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         state["dnsmasq_pid"] = dp.pid
