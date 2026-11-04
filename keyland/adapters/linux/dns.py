@@ -92,27 +92,38 @@ def set_dns(interface: str, servers: list[str], confirmed: bool) -> dict[str, An
 
     connection = _nm_connection(interface)
     if connection:
-        previous = _command(["nmcli", "-g", "ipv4.dns,ipv4.ignore-auto-dns", "connection", "show", connection])
-        old_lines = previous["output"].splitlines() if previous["success"] else []
-        old_dns = old_lines[0] if old_lines else ""
-        old_ignore = old_lines[1] if len(old_lines) > 1 else "no"
+        ipv4_addresses = [value for value in addresses if ipaddress.ip_address(value).version == 4]
+        ipv6_addresses = [value for value in addresses if ipaddress.ip_address(value).version == 6]
+        previous = _command([
+            "nmcli", "-g", "ipv4.dns,ipv4.ignore-auto-dns,ipv6.dns,ipv6.ignore-auto-dns",
+            "connection", "show", connection,
+        ])
+        old = previous["output"].splitlines() if previous["success"] else []
+        old += [""] * (4 - len(old))
         changed = _command([
             "nmcli", "connection", "modify", connection,
-            "ipv4.dns", ",".join(addresses),
-            "ipv4.ignore-auto-dns", "yes",
+            "ipv4.dns", ",".join(ipv4_addresses),
+            "ipv4.ignore-auto-dns", "yes" if ipv4_addresses else "no",
+            "ipv6.dns", ",".join(ipv6_addresses),
+            "ipv6.ignore-auto-dns", "yes" if ipv6_addresses else "no",
         ])
         if not changed["success"]:
             return {"success": False, "error": "NetworkManager rejected the DNS profile change."}
         applied = _command(["nmcli", "device", "reapply", interface])
-        verified = _command(["nmcli", "-g", "ipv4.dns", "connection", "show", connection])
-        actual = [item.strip() for item in verified["output"].replace(";", ",").split(",") if item.strip()]
-        if not applied["success"] or not verified["success"] or actual != addresses:
+        verified = _command([
+            "nmcli", "-g", "ipv4.dns,ipv6.dns", "connection", "show", connection,
+        ])
+        actual_lines = verified["output"].splitlines() if verified["success"] else []
+        actual_lines += [""] * (2 - len(actual_lines))
+        actual_v4 = [x.strip() for x in actual_lines[0].replace(";", ",").split(",") if x.strip()]
+        actual_v6 = [x.strip() for x in actual_lines[1].replace(";", ",").split(",") if x.strip()]
+        if not applied["success"] or not verified["success"] or set(actual_v4) != set(ipv4_addresses) or set(actual_v6) != set(ipv6_addresses):
             _command([
                 "nmcli", "connection", "modify", connection,
-                "ipv4.dns", old_dns,
-                "ipv4.ignore-auto-dns", old_ignore,
+                "ipv4.dns", old[0], "ipv4.ignore-auto-dns", old[1],
+                "ipv6.dns", old[2], "ipv6.ignore-auto-dns", old[3],
             ])
-            return {"success": False, "error": "DNS could not be verified after apply; the previous profile values were restored."}
+            return {"success": False, "error": "DNS could not be verified after apply; previous profile values were restored."}
         return {
             "success": True, "interface": interface, "servers": addresses,
             "manager": "NetworkManager", "persistent": True,
@@ -139,22 +150,30 @@ def reset_dns(interface: str, confirmed: bool) -> dict[str, Any]:
 
     connection = _nm_connection(interface)
     if connection:
-        previous = _command(["nmcli", "-g", "ipv4.dns,ipv4.ignore-auto-dns", "connection", "show", connection])
-        old_lines = previous["output"].splitlines() if previous["success"] else []
-        old_dns = old_lines[0] if old_lines else ""
-        old_ignore = old_lines[1] if len(old_lines) > 1 else "no"
+        previous = _command([
+            "nmcli", "-g", "ipv4.dns,ipv4.ignore-auto-dns,ipv6.dns,ipv6.ignore-auto-dns",
+            "connection", "show", connection,
+        ])
+        old = previous["output"].splitlines() if previous["success"] else []
+        old += [""] * (4 - len(old))
         changed = _command([
             "nmcli", "connection", "modify", connection,
             "ipv4.dns", "", "ipv4.ignore-auto-dns", "no",
+            "ipv6.dns", "", "ipv6.ignore-auto-dns", "no",
         ])
         if not changed["success"]:
             return {"success": False, "error": "NetworkManager could not restore automatic DNS."}
         applied = _command(["nmcli", "device", "reapply", interface])
-        verified = _command(["nmcli", "-g", "ipv4.ignore-auto-dns", "connection", "show", connection])
-        if not applied["success"] or not verified["success"] or verified["output"].strip().lower() != "no":
+        verified = _command([
+            "nmcli", "-g", "ipv4.ignore-auto-dns,ipv6.ignore-auto-dns",
+            "connection", "show", connection,
+        ])
+        flags = verified["output"].splitlines() if verified["success"] else []
+        if not applied["success"] or len(flags) < 2 or any(flag.strip().lower() != "no" for flag in flags[:2]):
             _command([
                 "nmcli", "connection", "modify", connection,
-                "ipv4.dns", old_dns, "ipv4.ignore-auto-dns", old_ignore,
+                "ipv4.dns", old[0], "ipv4.ignore-auto-dns", old[1],
+                "ipv6.dns", old[2], "ipv6.ignore-auto-dns", old[3],
             ])
             return {"success": False, "error": "Automatic DNS could not be verified; previous profile values were restored."}
         return {
