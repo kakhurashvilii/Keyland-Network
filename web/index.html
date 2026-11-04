@@ -1419,7 +1419,7 @@ function renderDnsStatus(data) {
         "დეტალური მდგომარეობა:",
         data.status || "დეტალური ინფორმაცია არ არის"
     ];
-    box.textContent = lines.join("\\n");
+    box.textContent = lines.join("\n");
 }
 
 async function loadDnsStatus() {
@@ -1436,7 +1436,7 @@ async function loadDnsStatus() {
         renderDnsStatus(data);
         element("dnsMessage").textContent = "მდგომარეობა განახლებულია.";
     } catch (error) {
-        box.textContent = "DNS-ის წაკითხვა ვერ მოხერხდა.\\n" + error.message;
+        box.textContent = "DNS-ის წაკითხვა ვერ მოხერხდა.\n" + error.message;
         element("dnsMessage").textContent = "შეამოწმეთ სერვერის ვერსია და API კავშირი.";
     }
 }
