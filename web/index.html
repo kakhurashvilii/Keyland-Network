@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ka">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10141d">
 <meta name="robots" content="noindex, nofollow">
-<title>Keyland Network v0.4.0</title>
+<title>Keyland Network — ქსელის მართვა</title>
 
 <style>
 :root {
@@ -346,6 +346,63 @@ footer {
     .metric { font-size: 22px; }
     .cellular-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* Keyland Network — refined router console */
+:root {
+    --bg: #0b1220;
+    --header: #101a2b;
+    --card: #121e30;
+    --border: #26364d;
+    --text: #e7eef9;
+    --muted: #93a4bc;
+    --blue: #2563eb;
+    --blue-light: #8bb8ff;
+    --green: #34d399;
+    --red: #fb7185;
+    --orange: #fbbf24;
+    --surface: #0e1929;
+}
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; }
+header { position: relative; padding: 24px max(20px, calc((100vw - 1320px)/2)); background: linear-gradient(120deg,#111e32,#0d1727 70%); }
+header h1 { letter-spacing: .08em; font-size: 21px; font-weight: 800; }
+header p { margin: 5px 0 10px; font-size: 13px; }
+main { max-width: 1320px; padding: 22px 24px 42px; }
+.grid { grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr)); gap: 18px; align-items: stretch; }
+.card { background: linear-gradient(160deg,rgba(20,34,54,.98),rgba(15,27,44,.98)); border: 1px solid var(--border); border-radius: 15px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.13); transition: border-color .18s ease, transform .18s ease; }
+.card:hover { border-color: #3c5678; transform: translateY(-1px); }
+.card h3 { display:flex; align-items:center; gap:9px; color:#b5d0ff; font-size:15px; font-weight:700; letter-spacing:.01em; margin:0 0 14px; scroll-margin-top:95px; }
+.card h3::before { content:""; width:4px; height:17px; border-radius:4px; background:var(--blue); flex:0 0 4px; }
+.metric { font-size:28px; letter-spacing:-.04em; }
+.metric-label,.muted { color:var(--muted); }
+pre { padding:12px 13px; border:1px solid rgba(68,88,116,.35); border-radius:9px; background:rgba(5,12,22,.36); line-height:1.55; }
+button,select { border:1px solid transparent; border-radius:9px; padding:10px 14px; font-weight:650; transition:filter .15s ease,background .15s ease,border-color .15s ease; }
+button { box-shadow:0 3px 10px rgba(0,0,0,.15); }
+button:active { transform:translateY(1px); }
+button.secondary { background:#24354d; border-color:#3b506c; color:#dce9fb; }
+input,select,textarea { max-width:100%; }
+input:not(.login-box input), select { background:#0b1626; color:var(--text); border:1px solid #34465f; border-radius:8px; padding:10px 12px; }
+input:not(.login-box input) { width:100%; margin:6px 0 12px; }
+label { display:block; color:#b6c5d9; font-size:12px; font-weight:650; margin-top:8px; }
+.primary-nav { position:sticky; top:0; z-index:100; display:flex; gap:8px; align-items:center; overflow-x:auto; padding:10px max(16px,calc((100vw - 1320px)/2)); background:rgba(10,18,31,.94); border-bottom:1px solid var(--border); backdrop-filter:blur(14px); }
+.primary-nav a { flex:0 0 auto; text-decoration:none; color:#b5c5db; border:1px solid #2a3b53; background:#142238; border-radius:999px; padding:7px 13px; font-size:12px; font-weight:650; }
+.primary-nav a:hover { color:white; border-color:#5b83bb; background:#1b3150; }
+#dashboard > #refreshButton { margin-top:2px; }
+#dnsStatus { min-height:90px; max-height:260px; }
+#dnsMessage { min-height:20px; padding:8px 10px; border-radius:8px; background:rgba(6,14,25,.32); }
+.cellular-item { background:#0e1a2b; border-color:#293c55; border-radius:10px; }
+.login-box { background:#121f32; border-color:#30445f; }
+.login-logo { letter-spacing:.08em; }
+footer { font-size:12px; }
+@media (max-width:700px) {
+  header { padding:18px 16px; }
+  main { padding:14px 12px 30px; }
+  .grid { grid-template-columns:1fr; gap:12px; }
+  .card { padding:16px; }
+  .primary-nav { padding:9px 12px; }
+  .cellular-grid { grid-template-columns:1fr 1fr; }
+}
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; scroll-behavior:auto !important; } }
+
 </style>
 </head>
 
@@ -357,10 +414,10 @@ footer {
     <form id="loginForm" class="login-box">
         <div class="login-logo">KEYLAND NETWORK</div>
         <div class="login-subtitle">
-            Universal Network Management Platform
+            ქსელის მართვის ერთიანი პანელი
         </div>
 
-        <label for="loginUsername">Administrator username</label>
+        <label for="loginUsername">ადმინისტრატორის სახელი</label>
         <input
             id="loginUsername"
             name="username"
@@ -372,9 +429,9 @@ footer {
             autofocus
         >
 
-        <label for="loginPassword">Password</label>
+        <label for="loginპაროლი">პაროლი</label>
         <input
-            id="loginPassword"
+            id="loginპაროლი"
             name="password"
             type="password"
             autocomplete="current-password"
@@ -384,10 +441,10 @@ footer {
         <div id="loginError" class="login-error"
              role="alert" aria-live="polite"></div>
 
-        <button id="loginButton" type="submit">Sign in</button>
+        <button id="loginButton" type="submit">შესვლა</button>
 
         <div class="login-footer">
-            Authorized administrators only
+            მხოლოდ ადმინისტრატორისთვის
         </div>
     </form>
 </div>
@@ -398,86 +455,94 @@ footer {
     <div class="header-row">
         <div>
             <h1>KEYLAND NETWORK</h1>
-            <p>Universal Network Management Platform</p>
+            <p>ქსელის მართვის ერთიანი პანელი</p>
 
             <div class="header-status">
-                <span class="status">● System dashboard</span>
+                <span class="status">● სისტემის მართვის პანელი</span>
                 <span class="muted" id="connection"
-                      aria-live="polite">Checking session...</span>
+                      aria-live="polite">სესიის შემოწმება...</span>
             </div>
         </div>
 
         <button id="logoutButton" type="button" class="hidden">
-            Logout
+            გასვლა
         </button>
     </div>
 </header>
+
+<nav class="primary-nav" aria-label="ძირითადი განყოფილებები">
+    <a href="#device-title">მიმოხილვა</a>
+    <a href="#cellular-title">მობილური ქსელი</a>
+    <a href="#wifi-hardware-title">Wi-Fi და ადაპტერები</a>
+    <a href="#dns-title">DNS</a>
+    <a href="#system-title">სისტემა</a>
+</nav>
 
 <!-- DASHBOARD -->
 
 <main id="dashboard" class="hidden">
 
     <button id="refreshButton" type="button">
-        Refresh information
+        მონაცემების განახლება
     </button>
 
     <button id="scanButton" type="button">
-        Scan Wi-Fi networks
+        Wi-Fi ქსელების ძიება
     </button>
 
-    <span class="muted" id="updated">Not updated yet</span>
+    <span class="muted" id="updated">ჯერ არ განახლებულა</span>
 
     <div class="grid">
 
         <section class="card">
-            <h3>Device</h3>
-            <pre id="device">Waiting...</pre>
+            <h3 id="device-title">მოწყობილობა</h3>
+            <pre id="device">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>System Resources</h3>
+            <h3>სისტემური რესურსები</h3>
 
             <div class="metric-grid">
                 <div>
                     <div class="metric" id="cpu">--%</div>
-                    <div class="metric-label">CPU usage</div>
+                    <div class="metric-label">პროცესორის დატვირთვა</div>
                     <div class="bar"><div id="cpuBar"></div></div>
                 </div>
 
                 <div>
                     <div class="metric" id="ram">--%</div>
-                    <div class="metric-label">RAM usage</div>
+                    <div class="metric-label">ოპერატიული მეხსიერება</div>
                     <div class="bar"><div id="ramBar"></div></div>
                 </div>
 
                 <div>
                     <div class="metric" id="disk">--%</div>
-                    <div class="metric-label">Disk usage</div>
+                    <div class="metric-label">დისკის გამოყენება</div>
                     <div class="bar"><div id="diskBar"></div></div>
                 </div>
 
                 <div>
                     <div class="metric" id="cores">--</div>
-                    <div class="metric-label">Logical CPU cores</div>
+                    <div class="metric-label">პროცესორის ნაკადები</div>
                 </div>
             </div>
 
-            <pre id="resources">Waiting...</pre>
+            <pre id="resources">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>Internet Status</h3>
+            <h3>ინტერნეტის მდგომარეობა</h3>
             <div id="internetStatus" class="internet-status unknown">
-                Checking...
+                მოწმდება...
             </div>
-            <pre id="internetDetails">Waiting for result...</pre>
+            <pre id="internetDetails">შედეგის მოლოდინი...</pre>
         </section>
 
         <!-- CELLULAR / SIM / LTE -->
 
         <section class="card" style="grid-column: 1 / -1;">
             <div class="cellular-heading">
-                <h3>SIM / MOBILE NETWORK</h3>
+                <h3 id="cellular-title">SIM / მობილური ქსელი</h3>
                 <span id="cellularTechnology" class="cellular-badge">
                     UNKNOWN
                 </span>
@@ -491,7 +556,7 @@ footer {
 
                 <div class="cellular-item">
                     <div class="metric-label">SIM STATUS</div>
-                    <div class="cellular-value" id="simStatus">Checking...</div>
+                    <div class="cellular-value" id="simStatus">მოწმდება...</div>
                 </div>
 
                 <div class="cellular-item">
@@ -535,25 +600,25 @@ footer {
 
             <div class="cellular-interfaces">
                 <div class="metric-label">CELLULAR INTERFACES / IP ADDRESSES</div>
-                <pre id="cellularInterfaces">Waiting...</pre>
+                <pre id="cellularInterfaces">მოლოდინი...</pre>
             </div>
 
             <pre id="cellularDetails">Waiting for cellular modem...</pre>
         </section>
 
         <section class="card">
-            <h3>Network Traffic</h3>
+            <h3>ქსელური ტრაფიკი</h3>
 
             <div class="traffic-stats">
                 <div>
-                    <div class="metric-label">Download RX</div>
+                    <div class="metric-label">ჩამოტვირთვა RX</div>
                     <div class="traffic-value rx-color" id="totalRx">
                         0 Mbps
                     </div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Upload TX</div>
+                    <div class="metric-label">ატვირთვა TX</div>
                     <div class="traffic-value tx-color" id="totalTx">
                         0 Mbps
                     </div>
@@ -565,33 +630,33 @@ footer {
             </div>
 
             <div class="chart-legend">
-                <span class="rx-color">● RX Download</span>
-                <span class="tx-color">● TX Upload</span>
-                <span>Last 60 samples</span>
+                <span class="rx-color">● მიღება RX</span>
+                <span class="tx-color">● გაგზავნა TX</span>
+                <span>ბოლო 60 ჩანაწერი</span>
             </div>
 
             <pre id="traffic">Waiting for first sample...</pre>
         </section>
 
         <section class="card">
-            <h3>Capabilities</h3>
-            <pre id="capabilities">Waiting...</pre>
+            <h3>მოწყობილობის შესაძლებლობები</h3>
+            <pre id="capabilities">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>Network Interfaces</h3>
+            <h3>ქსელის ინტერფეისები</h3>
             <label for="interfaceFilter" class="muted">
-                Interface filter:
+                ინტერფეისის ფილტრი:
             </label>
             <select id="interfaceFilter">
-                <option value="all">All interfaces</option>
-                <option value="active">Active interfaces only</option>
+                <option value="all">ყველა ინტერფეისი</option>
+                <option value="active">მხოლოდ აქტიური</option>
             </select>
-            <pre id="interfaces">Waiting...</pre>
+            <pre id="interfaces">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>Wi-Fi Hardware Capabilities</h3>
+            <h3 id="wifi-hardware-title">Wi-Fi ადაპტერის შესაძლებლობები</h3>
             <p class="muted">
                 Supported Wi-Fi modes, bands, channels and interfaces.
             </p>
@@ -599,7 +664,7 @@ footer {
         </section>
 
         <section class="card">
-            <h3>Repeater Readiness</h3>
+            <h3>რეპიტერის რეჟიმის მზადყოფნა</h3>
             <p class="muted">
                 Read-only inspection of AP + Client and forwarding readiness.
             </p>
@@ -607,22 +672,22 @@ footer {
         </section>
 
         <section class="card">
-            <h3>Routing Table</h3>
-            <pre id="routes">Waiting...</pre>
+            <h3>მარშრუტიზაციის ცხრილი</h3>
+            <pre id="routes">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>Wi-Fi Connection</h3>
-            <pre id="wifi">Waiting...</pre>
+            <h3>Wi-Fi კავშირი</h3>
+            <pre id="wifi">მოლოდინი...</pre>
         </section>
 
         <section class="card">
-            <h3>Nearby Wi-Fi Networks</h3>
-            <pre id="wifiScan">Press Scan Wi-Fi networks</pre>
+            <h3>ახლომდებარე Wi-Fi ქსელები</h3>
+            <pre id="wifiScan">Press Wi-Fi ქსელების ძიება</pre>
         </section>
 
         <section class="card">
-            <h3>DNS მართვა</h3>
+            <h3 id="dns-title">DNS-ის მართვა</h3>
             <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
             <label for="dnsInterface">ქსელის ინტერფეისი</label>
             <input id="dnsInterface" type="text" maxlength="15" placeholder="მაგ. wlan0">
@@ -636,7 +701,7 @@ footer {
         </section>
 
         <section class="card">
-            <h3>Wi-Fi და ჩიპსეტები</h3>
+            <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
             <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
             <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
         </section>
@@ -652,23 +717,23 @@ footer {
         </section>
 
         <section class="card">
-            <h3>SIM / LTE / 5G</h3>
+            <h3>SIM / LTE / 5G პარამეტრები</h3>
             <p class="muted">მოდემის სტატუსი და სიგნალი უკვე იკითხება. APN-ისა და ქსელის რეჟიმის შეცვლა დაემატება ModemManager-ის მხარდაჭერის შემოწმებით და ცალკე დადასტურებით.</p>
         </section>
 
         <section class="card">
-            <h3>დაკავშირებული მოწყობილობები</h3>
+            <h3>ქსელთან დაკავშირებული მოწყობილობები</h3>
             <p class="muted">კლიენტების აღმოჩენა და IP/MAC-ის ჩვენება დაემატება. დაბლოკვა განხორციელდება მხოლოდ ადმინისტრატორის დადასტურებით.</p>
         </section>
 
         <section class="card">
-            <h3>სისტემა, ლოგები და აღდგენა</h3>
+            <h3 id="system-title">სისტემა, ჟურნალები და აღდგენა</h3>
             <p class="muted">სერვისების მონიტორინგი ხელმისაწვდომია. სარეზერვო ასლის შექმნა და აღდგენა დაემატება ცვლილებების უსაფრთხო მართვის ნაწილად.</p>
         </section>
 
         <section class="card">
             <h3>Services / Tools</h3>
-            <pre id="services">Waiting...</pre>
+            <pre id="services">მოლოდინი...</pre>
         </section>
 
     </div>
@@ -847,12 +912,12 @@ element("loginForm").addEventListener("submit", async event => {
     error.textContent = "";
 
     const username = element("loginUsername").value.trim();
-    const password = element("loginPassword").value;
+    const password = element("loginპაროლი").value;
 
     try {
         const result = await performLogin(username, password);
 
-        element("loginPassword").value = "";
+        element("loginპაროლი").value = "";
         showDashboard(result.username);
         startPolling();
 
@@ -876,16 +941,16 @@ async function logout() {
         });
 
         if (!response.ok) {
-            throw new Error("Logout failed: HTTP " + response.status);
+            throw new Error("გასვლა failed: HTTP " + response.status);
         }
 
         showLogin("You have been logged out.");
 
     } catch (error) {
-        console.error("Logout error:", error);
+        console.error("გასვლა error:", error);
 
         if (state.authenticated) {
-            element("connection").textContent = "Logout error";
+            element("connection").textContent = "გასვლა error";
         }
 
     } finally {
@@ -1336,13 +1401,43 @@ async function loadData() {
 }
 
 /* DNS MANAGEMENT */
+function renderDnsStatus(data) {
+    const box = element("dnsStatus");
+    if (!data.available) {
+        box.textContent = "DNS-ის მართვა ამ სისტემაზე მიუწვდომელია.\nმიზეზი: " + (data.error || "systemd-resolved ვერ მოიძებნა") +
+            "\n\nშენიშვნა: პანელი ჯერ არ შეცვლის ქსელის მენეჯერის მუდმივ პარამეტრებს.";
+        return;
+    }
+    const lines = [
+        "მდგომარეობა: ხელმისაწვდომია",
+        "მართვის სისტემა: " + (data.manager || "უცნობია"),
+        "ცვლილება: დროებითი (გადატვირთვის შემდეგ შეიძლება აღდგეს)",
+        "",
+        "DNS სერვერები ინტერფეისების მიხედვით:",
+        ...(Array.isArray(data.dns_by_link) && data.dns_by_link.length ? data.dns_by_link : ["ინტერფეისების DNS ჩანაწერები ვერ მოიძებნა"]),
+        "",
+        "დეტალური მდგომარეობა:",
+        data.status || "დეტალური ინფორმაცია არ არის"
+    ];
+    box.textContent = lines.join("\\n");
+}
+
 async function loadDnsStatus() {
     if (!state.authenticated) return;
+    const box = element("dnsStatus");
+    box.textContent = "DNS-ის მდგომარეობა იტვირთება...";
     try {
-        const data = await fetchJSON(API + "/network/dns");
-        element("dnsStatus").textContent = JSON.stringify(data, null, 2);
+        const response = await apiFetch(API + "/network/dns");
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+            throw new Error("DNS API ვერ მოიძებნა (404). განაახლეთ პროექტი main ბრენჩიდან და გადატვირთეთ Keyland Network სერვისი.");
+        }
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        renderDnsStatus(data);
+        element("dnsMessage").textContent = "მდგომარეობა განახლებულია.";
     } catch (error) {
-        element("dnsStatus").textContent = "DNS-ის წაკითხვა ვერ მოხერხდა: " + error.message;
+        box.textContent = "DNS-ის წაკითხვა ვერ მოხერხდა.\\n" + error.message;
+        element("dnsMessage").textContent = "შეამოწმეთ სერვერის ვერსია და API კავშირი.";
     }
 }
 
