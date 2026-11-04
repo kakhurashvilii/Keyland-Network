@@ -109,7 +109,7 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
     if wan not in {x.get("dev") for x in defaults()}: raise ValueError("Selected upstream has no active default route.")
     devs = interfaces()
     apdev = next((x for x in devs if x["name"] == ap), None)
-    if not apdev or apdev["type"] not in ("AP", "managed"): raise ValueError("AP interface does not exist or is not wireless.")
+    if not apdev or apdev["type"] != "AP": raise ValueError("A dedicated interface already in AP mode is required (normally keyland-ap).")
     if ap in {x.get("dev") for x in defaults()}: raise ValueError("Refusing to use the default-route interface as AP.")
     if mode == "repeater":
         upstream = next((x for x in devs if x["name"] == wan), None)
@@ -201,7 +201,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         r = run(["nft", "-f", "-"], stdin=rules)
         if not r["ok"]: raise RuntimeError("NAT rules failed: " + str(r["err"] or r["out"]))
         state["firewall_table"] = TABLE
-        write_state(state)
+        write_state({k: v for k, v in state.items() if k != "password"})
         return {"success": True, "active": True, "mode": cfg["mode"], "interface": ap,
                 "upstream_interface": wan, "ssid": cfg["ssid"], "ipv4_cidr": cfg["ipv4_cidr"],
                 "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
