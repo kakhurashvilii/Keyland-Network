@@ -149,7 +149,16 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         state["dnsmasq_pid"] = dp.pid
         time.sleep(1)
         if dp.poll() is not None: raise RuntimeError("dnsmasq exited during startup.")
-        rules = (f"table inet {TABLE} {{ chain forward {{ type filter hook forward priority filter; policy accept; iifname \\"{ap}\\" oifname \\"{wan}\\" accept; iifname \\"{wan}\\" oifname \\"{ap}\\" ct state established,related accept; }} chain postrouting {{ type nat hook postrouting priority srcnat; policy accept; oifname \\"{wan}\\" ip saddr {cfg['network']} masquerade; }} }}")
+        rules = f'''table inet {TABLE} {{
+ chain forward {{ type filter hook forward priority filter; policy accept;
+  iifname "{ap}" oifname "{wan}" accept;
+  iifname "{wan}" oifname "{ap}" ct state established,related accept;
+ }}
+ chain postrouting {{ type nat hook postrouting priority srcnat; policy accept;
+  oifname "{wan}" ip saddr {cfg["network"]} masquerade;
+ }}
+}}'''
+
         if run(["nft", "list", "table", "inet", TABLE])["ok"]: raise RuntimeError("Keyland nftables table already exists; refusing to overwrite it.")
         r = run(["nft", "-f", "-"], stdin=rules)
         if not r["ok"]: raise RuntimeError("NAT rules failed: " + str(r["err"] or r["out"]))
