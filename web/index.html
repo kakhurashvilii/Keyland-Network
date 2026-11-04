@@ -1549,6 +1549,7 @@ async function loadHotspotCapabilities() {
             tr("მართვის სისტემა: ","Manager: ") + (data.manager || "—"),
             tr("Hotspot მდგომარეობა: ","Hotspot status: ") + (data.hotspot_active ? tr("ჩართულია","ACTIVE") : tr("გამორთულია","STOPPED")),
             tr("AP რეჟიმი: ","AP mode: ") + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
+            tr("WAN წყარო: ","WAN source: ") + ((data.upstream_sources || []).map(item => item.interface + " (" + item.type + ")").join(", ") || tr("ნაგულისხმევი მარშრუტი ვერ მოიძებნა","No default route detected")),
             tr("ნაგულისხმევი მარშრუტი: ","Default route: ") + ((data.default_route_interfaces || []).join(", ") || "—"),
             tr("ხელმისაწვდომი AP ინტერფეისები:","Eligible AP interfaces:"),
             ...((data.ap_candidates || []).map(item => item.name + " · " + (item.state || "unknown") + (item.eligible ? " · READY" : " · NOT READY"))),
