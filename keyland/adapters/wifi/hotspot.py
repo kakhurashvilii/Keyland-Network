@@ -215,12 +215,13 @@ def get_hotspot_capabilities() -> dict[str, Any]:
     }
 
 
-def _validate(payload: dict[str, Any]) -> tuple[str, str, list[str], str | None]:
+def _validate(payload: dict[str, Any]) -> tuple[str, str, list[str], str, str]:
     interface = payload.get("interface")
     ssid = payload.get("ssid")
     password = payload.get("password")
     security = payload.get("security", "wpa2-psk")
     dns = payload.get("dns_servers", [])
+    ipv4_cidr = payload.get("ipv4_cidr", "192.168.88.1/24")
 
     if not isinstance(interface, str) or not _IFACE.fullmatch(interface) or interface == "lo":
         raise ValueError("Choose a valid wireless interface.")
@@ -239,13 +240,43 @@ def _validate(payload: dict[str, Any]) -> tuple[str, str, list[str], str | None]
     if any(address.version != 4 for address in parsed_dns):
         raise ValueError("Hotspot profile DNS currently accepts IPv4 addresses only.")
     addresses = [str(address) for address in parsed_dns]
-    return interface, ssid, addresses, password
+    try:
+        ap_address = ipaddress.ip_interface(ipv4_cidr)
+    except (ValueError, TypeError):
+        raise ValueError("Hotspot IPv4 must be a valid address with CIDR prefix, for example 192.168.88.1/24.")
+    if ap_address.version != 4 or not 8 <= ap_address.network.prefixlen <= 30:
+        raise ValueError("Hotspot IPv4 must be IPv4 with a subnet prefix between /8 and /30.")
+    if ap_address.ip in (ap_address.network.network_address, ap_address.network.broadcast_address):
+        raise ValueError("Hotspot IPv4 cannot be the network or broadcast address.")
+
+    # Refuse overlapping subnets so the AP network cannot collide with upstream links.
+    addr_result = _run(["ip", "-j", "-4", "addr", "show"])
+    if addr_result["success"]:
+        try:
+            for link in json.loads(addr_result["output"]):
+                if link.get("ifname") in {interface, "lo"}:
+                    continue
+                for info in link.get("addr_info", []):
+                    if info.get("family") != "inet":
+                        continue
+                    existing_address = ipaddress.ip_interface(f'{info["local"]}/{info["prefixlen"]}')
+                    if ap_address.network.overlaps(existing_address.network):
+                        raise ValueError(
+                            f"Hotspot subnet {ap_address.network} overlaps with "
+                            f"{link.get('ifname')} ({existing_address}). Choose a different Hotspot IP/subnet."
+                        )
+        except (ValueError, KeyError, TypeError) as exc:
+            if isinstance(exc, ValueError) and str(exc).startswith("Hotspot subnet"):
+                raise
+            # A malformed read-only address listing must not prevent setup.
+
+    return interface, ssid, addresses, password, str(ap_address)
 
 
 def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
     """Create/update and activate the dedicated NetworkManager AP profile."""
     try:
-        interface, ssid, dns, password = _validate(payload)
+        interface, ssid, dns, password, ipv4_cidr = _validate(payload)
     except ValueError as exc:
         return {"success": False, "error": str(exc)}
 
@@ -273,15 +304,19 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
 
     dns_value = ",".join(dns)
     settings = [
+        "connection.interface-name", interface,
+        "802-11-wireless.ssid", ssid,
         "802-11-wireless.mode", "ap",
         "wifi-sec.key-mgmt", "wpa-psk",
         "wifi-sec.psk", password,
         "ipv4.method", "shared",
+        "ipv4.addresses", ipv4_cidr,
+        "ipv4.never-default", "yes",
         "ipv6.method", "disabled",
         "connection.autoconnect", "no",
+        "ipv4.dns", dns_value,
+        "ipv4.ignore-auto-dns", "yes" if dns_value else "no",
     ]
-    if dns_value:
-        settings.extend(["ipv4.dns", dns_value, "ipv4.ignore-auto-dns", "yes"])
 
     if profile_exists:
         result = _run(["nmcli", "connection", "modify", _PROFILE, "connection.interface-name", interface, *settings])
@@ -293,18 +328,25 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
         ])
 
     if not result["success"]:
-        return {"success": False, "error": "NetworkManager could not prepare the hotspot profile."}
+        reason = result.get("error") or result.get("output") or "unknown NetworkManager error"
+        return {"success": False, "error": f"Could not prepare NetworkManager hotspot profile: {reason}"}
 
-    activated = _run(["nmcli", "connection", "up", _PROFILE, "ifname", interface], timeout=25)
+    activated = _run(["nmcli", "connection", "up", _PROFILE, "ifname", interface], timeout=35)
     if not activated["success"]:
         if not profile_exists:
             _run(["nmcli", "connection", "delete", _PROFILE])
-        return {"success": False, "error": "Hotspot activation failed. The newly created profile was rolled back."}
+        reason = activated.get("error") or activated.get("output") or "unknown activation error"
+        return {
+            "success": False,
+            "error": f"Hotspot activation failed on {interface}: {reason}",
+            "profile_rolled_back": not profile_exists,
+        }
 
     return {
         "success": True, "active": True, "interface": interface,
         "ssid": ssid, "security": "WPA2-PSK",
-        "dns_servers": dns, "addressing": "NetworkManager shared IPv4 (DHCP/NAT)",
+        "dns_servers": dns, "ipv4_cidr": ipv4_cidr,
+        "addressing": "NetworkManager shared IPv4 (DHCP/NAT)",
         "persistent": True, "profile": _PROFILE,
         "message": "Hotspot profile activated. Verify client connectivity before relying on it.",
     }
