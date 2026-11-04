@@ -244,3 +244,27 @@ def test_dns_apply_requires_explicit_confirmation():
         },
     )
     assert response.status_code == 400
+
+
+def test_hotspot_capabilities_requires_admin():
+    response = unauth_client.get("/api/v1/wifi/hotspot/capabilities")
+    assert response.status_code == 401
+
+
+def test_hotspot_capabilities_endpoint():
+    response = client.get("/api/v1/wifi/hotspot/capabilities")
+    assert response.status_code == 200
+    assert "ap_candidates" in response.json()
+
+
+def test_hotspot_start_rejects_weak_password():
+    response = client.post(
+        "/api/v1/wifi/hotspot/start",
+        json={
+            "interface": "ap0",
+            "ssid": "Keyland",
+            "password": "short",
+            "confirmed": True,
+        },
+    )
+    assert response.status_code == 422
