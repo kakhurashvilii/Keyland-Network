@@ -1894,8 +1894,8 @@ element("hotspotStopButton").addEventListener("click", stopHotspot);
 element("hotspotMode").addEventListener("change", () => {
     const options = Array.from(element("hotspotUpstream").options);
     const preferred = options.find(o => element("hotspotMode").value === "repeater"
-        ? o.value.startsWith("wlan") || o.textContent.includes("(wifi)")
-        : o.textContent.includes("(cellular)"));
+        ? o.textContent.toLowerCase().includes("wifi")
+        : o.textContent.toLowerCase().includes("cellular"));
     if (preferred) element("hotspotUpstream").value = preferred.value;
 });
 
