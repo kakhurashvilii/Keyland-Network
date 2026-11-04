@@ -1865,10 +1865,6 @@ async function stopHotspot() {
     } catch(error) { element("hotspotMessage").textContent = tr("გამორთვა ვერ მოხერხდა: ","Stop failed: ") + error.message; }
     finally { button.disabled = false; }
 }
-element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
-element("hotspotStartButton").addEventListener("click", startHotspot);
-element("hotspotStopButton").addEventListener("click", stopHotspot);
-
 async function createVirtualApInterface() {
     const interfaceName = element("hotspotSourceInterface").value;
     if (!interfaceName) {
