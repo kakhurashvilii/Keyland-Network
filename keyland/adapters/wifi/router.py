@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress, json, os, re, shutil, signal, subprocess, time
 from pathlib import Path
 from typing import Any
+from keyland.adapters.wifi.capabilities import parse_interface_combinations
 
 ROOT = Path("/run/keyland-router")
 STATE = ROOT / "state.json"
@@ -117,8 +118,14 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("Repeater mode requires a connected Wi-Fi client upstream.")
     if mode == "repeater" and wan.startswith(("rmnet", "qmap", "wwan", "ppp")):
         raise ValueError("Select Hotspot mode for cellular/SIM upstream.")
-    # Shared PHY must remain on the station's channel.
+    # The driver must explicitly report AP + managed concurrency on a shared PHY.
     station = next((x for x in devs if x["type"] == "managed" and x.get("ssid")), None)
+    if station and station.get("phy") == apdev.get("phy"):
+        iw_list = run(["iw", "list"], timeout=20)
+        combinations = parse_interface_combinations(iw_list["out"]) if iw_list["ok"] else {}
+        if not combinations.get("ap_client_combination_mentioned"):
+            raise ValueError("The Wi-Fi driver does not confirm simultaneous AP + Client operation on this PHY.")
+    # Shared PHY must remain on the station's channel.
     channel = (station or {}).get("channel") or apdev.get("channel") or 6
     return {"mode": mode, "interface": ap, "upstream_interface": wan, "ssid": ssid,
             "password": password, "ipv4_cidr": str(addr), "gateway": str(addr.ip),
@@ -242,5 +249,7 @@ def stop(confirmed: bool) -> dict[str, Any]:
     run(["sysctl", "-w", "net.ipv4.ip_forward=" + state.get("previous_ip_forward", "0")])
     if not run(["nmcli", "device", "set", ap, "managed", "yes"])["ok"]: errors.append("Could not restore NetworkManager management.")
     STATE.unlink(missing_ok=True)
+    for name in ("hostapd.conf", "dnsmasq.conf"):
+        (ROOT / name).unlink(missing_ok=True)
     return {"success": not errors, "active": False, "errors": errors,
             "message": "AP and NAT stopped; selected upstream was not reconfigured."}
