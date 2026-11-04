@@ -24,7 +24,7 @@ def patch_preflight(addr_output="[]", interfaces=None, routes=None):
     return (
         patch.object(router, "run", return_value={"ok": True, "out": addr_output, "err": None}),
         patch.object(router, "interfaces", return_value=interfaces or [
-            {"name": "keyland-ap", "type": "AP", "phy": "phy#0", "channel": 6},
+            {"name": "keyland-ap", "type": "AP", "phy": "phy#1", "channel": 6},
             {"name": "wlan0", "type": "managed", "ssid": "DiagOnNet", "channel": 6, "phy": "phy#0"},
         ]),
         patch.object(router, "defaults", return_value=routes or [
