@@ -622,6 +622,51 @@ footer {
         </section>
 
         <section class="card">
+            <h3>DNS მართვა</h3>
+            <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
+            <label for="dnsInterface">ქსელის ინტერფეისი</label>
+            <input id="dnsInterface" type="text" maxlength="15" placeholder="მაგ. wlan0">
+            <label for="dnsServers">DNS სერვერები (მძიმით გამოყოფილი)</label>
+            <input id="dnsServers" type="text" placeholder="1.1.1.1, 8.8.8.8">
+            <p><button id="dnsApplyButton" type="button">DNS-ის გამოყენება</button>
+            <button id="dnsResetButton" type="button">ავტომატურზე დაბრუნება</button>
+            <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
+            <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
+            <p id="dnsMessage" class="muted" role="status"></p>
+        </section>
+
+        <section class="card">
+            <h3>Wi-Fi და ჩიპსეტები</h3>
+            <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
+            <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
+        </section>
+
+        <section class="card">
+            <h3>WAN / LAN და DHCP</h3>
+            <p class="muted">ინტერფეისების, მისამართებისა და მარშრუტების მონიტორინგი ხელმისაწვდომია. მისამართის, Gateway-ის, DHCP-ისა და MTU-ის შეცვლამდე დაემატება წინასწარი შემოწმება და უკან დაბრუნება.</p>
+        </section>
+
+        <section class="card">
+            <h3>Firewall და NAT</h3>
+            <p class="muted">მართვა ჩაირთვება მხოლოდ აქტიური firewall backend-ის (nftables ან iptables) აღმოჩენისა და წესების სარეზერვო ასლის შექმნის შემდეგ.</p>
+        </section>
+
+        <section class="card">
+            <h3>SIM / LTE / 5G</h3>
+            <p class="muted">მოდემის სტატუსი და სიგნალი უკვე იკითხება. APN-ისა და ქსელის რეჟიმის შეცვლა დაემატება ModemManager-ის მხარდაჭერის შემოწმებით და ცალკე დადასტურებით.</p>
+        </section>
+
+        <section class="card">
+            <h3>დაკავშირებული მოწყობილობები</h3>
+            <p class="muted">კლიენტების აღმოჩენა და IP/MAC-ის ჩვენება დაემატება. დაბლოკვა განხორციელდება მხოლოდ ადმინისტრატორის დადასტურებით.</p>
+        </section>
+
+        <section class="card">
+            <h3>სისტემა, ლოგები და აღდგენა</h3>
+            <p class="muted">სერვისების მონიტორინგი ხელმისაწვდომია. სარეზერვო ასლის შექმნა და აღდგენა დაემატება ცვლილებების უსაფრთხო მართვის ნაწილად.</p>
+        </section>
+
+        <section class="card">
             <h3>Services / Tools</h3>
             <pre id="services">Waiting...</pre>
         </section>
@@ -1289,6 +1334,60 @@ async function loadData() {
         button.disabled = false;
     }
 }
+
+/* DNS MANAGEMENT */
+async function loadDnsStatus() {
+    if (!state.authenticated) return;
+    try {
+        const data = await fetchJSON(API + "/network/dns");
+        element("dnsStatus").textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        element("dnsStatus").textContent = "DNS-ის წაკითხვა ვერ მოხერხდა: " + error.message;
+    }
+}
+
+async function submitDns(path, payload, confirmationText) {
+    if (!state.authenticated) return;
+    if (!window.confirm(confirmationText)) return;
+    const buttons = ["dnsApplyButton", "dnsResetButton", "dnsRefreshButton"];
+    buttons.forEach(id => element(id).disabled = true);
+    try {
+        const response = await apiFetch(API + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...payload, confirmed: true })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || result.error || ("HTTP " + response.status));
+        element("dnsMessage").textContent = "მოთხოვნა შესრულდა. შედეგი გადაამოწმეთ ქვემოთ.";
+        await loadDnsStatus();
+    } catch (error) {
+        element("dnsMessage").textContent = "შეცდომა: " + error.message;
+    } finally {
+        buttons.forEach(id => element(id).disabled = false);
+    }
+}
+
+element("dnsApplyButton").addEventListener("click", () => {
+    const iface = element("dnsInterface").value.trim();
+    const servers = element("dnsServers").value.split(",").map(v => v.trim()).filter(Boolean);
+    if (!iface || !servers.length) {
+        element("dnsMessage").textContent = "შეავსეთ ინტერფეისი და DNS სერვერები.";
+        return;
+    }
+    submitDns("/network/dns", { interface: iface, servers }, "არჩეულ ინტერფეისზე დროებითი DNS პარამეტრები შეიცვლება. გავაგრძელოთ?");
+});
+
+element("dnsResetButton").addEventListener("click", () => {
+    const iface = element("dnsInterface").value.trim();
+    if (!iface) {
+        element("dnsMessage").textContent = "მიუთითეთ ინტერფეისი.";
+        return;
+    }
+    submitDns("/network/dns/reset", { interface: iface }, "არჩეულ ინტერფეისზე DNS ავტომატურ რეჟიმზე დაბრუნდება. გავაგრძელოთ?");
+});
+
+element("dnsRefreshButton").addEventListener("click", loadDnsStatus);
 
 /* WI-FI SCAN */
 
