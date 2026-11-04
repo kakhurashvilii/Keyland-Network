@@ -533,6 +533,35 @@ footer{letter-spacing:.1em}
 @media(max-width:1100px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}}
 @media(max-width:760px){.app-layout{padding:10px}.primary-nav{border-radius:9px}.primary-nav a{min-height:39px}.nav-index{display:none}header{padding:13px 15px}}
 
+
+/* Final layout corrections: stable WinBox-style sidebar and aligned sections */
+.app-layout{display:grid;grid-template-columns:238px minmax(0,1fr);gap:24px;max-width:1740px;margin:0 auto;padding:22px 26px 40px;align-items:start}
+.primary-nav{position:sticky;top:18px;z-index:20;display:flex;flex-direction:column;align-items:stretch;gap:7px;overflow:visible;min-height:calc(100vh - 36px);padding:16px 11px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(180deg,#111e31,#0d1727);box-shadow:var(--shadow);backdrop-filter:none}
+.primary-nav a{display:flex;flex:0 0 auto;align-items:center;gap:10px;min-height:48px;padding:7px 9px;border:1px solid transparent;border-radius:9px;background:transparent;color:#b8c8de;font-size:12px}
+.primary-nav a:hover,.primary-nav a:focus-visible{background:#1a2b43;border-color:#344e70;color:#fff}
+.nav-index{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:7px;background:#1c304b;color:#8fc0ff;font-size:10px;font-weight:800}
+.nav-footer{margin-top:auto;padding:14px 8px 4px;border-top:1px solid var(--border);color:var(--muted);font-size:10px}
+main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
+#dashboard>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+#dashboard>.grid>.section-heading{grid-column:1/-1;width:100%;margin:12px 0 0;padding:14px 4px 3px}
+#dashboard>.grid>.card{min-width:0;width:100%;height:100%;padding:18px;border:1px solid #293c55;border-radius:12px;background:linear-gradient(155deg,#14243a,#101b2c);box-shadow:0 8px 22px rgba(0,0,0,.14)}
+#dashboard>.grid>.card[style*="grid-column"]{grid-column:1/-1}
+#dashboard>#refreshButton,#dashboard>#scanButton{margin:0 7px 12px 0}
+#dashboard>#updated{display:inline-block;margin:0 0 12px;color:var(--muted)}
+.section-heading h2{font-size:20px}
+.repeater-scan-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 8px;padding:12px;border:1px solid #2a405b;border-radius:10px;background:#0d1929}
+.repeater-scan-toolbar p{margin:4px 0 0}
+.wifi-results{margin-top:10px}
+.wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.wifi-result-card{min-width:0;padding:12px;border:1px solid #2b405b;border-radius:9px;background:#0c1828}
+.wifi-result-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wifi-result-heading strong{min-width:0;overflow-wrap:anywhere;color:#e7f0fc;font-size:12px}
+.wifi-security{flex:0 0 auto;padding:3px 7px;border-radius:5px;background:#1b3049;color:#9fc9ff;font-size:9px}
+.wifi-result-card p{margin:7px 0 0;font-size:10px;overflow-wrap:anywhere}
+#repeaterStatus{max-height:210px}
+@media(max-width:1050px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}.primary-nav{top:12px}}
+@media(max-width:760px){.app-layout{display:block;padding:10px}.primary-nav{position:relative;top:auto;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:14px;padding:9px}.nav-brand,.nav-group-label,.nav-footer{grid-column:1/-1}.primary-nav a{min-height:40px;font-size:10px}.nav-index{width:23px;height:23px;flex-basis:23px}main#dashboard{padding:0}#dashboard>.grid{grid-template-columns:1fr;gap:11px}.wifi-results-grid{grid-template-columns:1fr}.repeater-scan-toolbar{align-items:flex-start;flex-direction:column}.repeater-scan-toolbar button{width:100%}}
+
 </style>
 </head>
 
@@ -877,7 +906,12 @@ footer{letter-spacing:.1em}
             <h3>Repeater-ის მზადყოფნა</h3>
             <p class="muted">აქ გამოჩნდება AP + Client რეჟიმის, არხის თავსებადობისა და ინტერნეტის გაზიარების შემოწმება. ძირითადი Wi-Fi კავშირი არ შეიცვლება.</p>
             <pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre>
-            <p class="muted">Repeater-ის ჩართვა ჯერ არ არის გააქტიურებული: ჯერ საჭიროა უსაფრთხო მართვისა და გათიშვის/აღდგენის სრული მექანიზმის დასრულება.</p>
+            <div class="repeater-scan-toolbar">
+                <div><strong>ახლომდებარე ქსელები</strong><p class="muted">დაასკანერე ხელმისაწვდომი Wi-Fi ქსელები და შეამოწმე სიგნალი. ეს არ ცვლის მიმდინარე კავშირს.</p></div>
+                <button id="repeaterScanButton" type="button" class="secondary">ქსელების ძებნა</button>
+            </div>
+            <div id="repeaterScanResults" class="wifi-results" aria-live="polite"><p class="muted">ჯერ არ შესრულებულა სკანირება.</p></div>
+            <p class="muted">Repeater-ის ავტომატური ჩართვა ამ ეტაპზე გამორთულია: ჯერ საჭიროა ამ მოწყობილობაზე AP + Client ერთდროული მუშაობის დადასტურება და კავშირის აღდგენის უსაფრთხო მექანიზმი.</p>
         </section>
 
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
@@ -1926,32 +1960,83 @@ element("dnsRefreshButton").addEventListener("click", loadDnsStatus);
 
 /* WI-FI SCAN */
 
-async function scanWifi() {
-    if (!state.authenticated || state.scanLoading) return;
+function renderWifiScan(targetId, data) {
+    const target = element(targetId);
+    if (!target) return;
+    target.replaceChildren();
 
+    const networks = Array.isArray(data.networks) ? data.networks : [];
+    if (!networks.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = data.error || "ქსელები ვერ მოიძებნა. შეამოწმე Wi-Fi ინტერფეისი, rfkill და უფლებები.";
+        target.appendChild(empty);
+        if (Array.isArray(data.interfaces) && data.interfaces.length) {
+            const detail = document.createElement("pre");
+            detail.textContent = JSON.stringify(data.interfaces, null, 2);
+            target.appendChild(detail);
+        }
+        return;
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "wifi-results-grid";
+    networks.forEach(network => {
+        const card = document.createElement("article");
+        card.className = "wifi-result-card";
+        const heading = document.createElement("div");
+        heading.className = "wifi-result-heading";
+        const name = document.createElement("strong");
+        name.textContent = network.ssid || "(დამალული ქსელი)";
+        const security = document.createElement("span");
+        security.className = "wifi-security";
+        security.textContent = network.security || "უცნობი დაცვა";
+        heading.append(name, security);
+        const meta = document.createElement("p");
+        meta.className = "muted";
+        const signal = network.signal_percent != null
+            ? network.signal_percent + "%"
+            : network.signal_dbm != null ? network.signal_dbm + " dBm" : "—";
+        meta.textContent = [
+            network.bssid || "",
+            network.channel ? "არხი " + network.channel : "",
+            network.frequency_mhz ? network.frequency_mhz + " MHz" : "",
+            "სიგნალი " + signal
+        ].filter(Boolean).join(" · ");
+        card.append(heading, meta);
+        grid.appendChild(card);
+    });
+    target.appendChild(grid);
+
+    const footer = document.createElement("p");
+    footer.className = "muted";
+    footer.textContent = "ნაპოვნია " + networks.length + " ქსელი · " +
+        ((data.interfaces || []).map(item => item.interface + ": " + item.count).join(" / ") || "Wi-Fi scan");
+    target.appendChild(footer);
+}
+
+async function scanWifi(targetId = "wifiScan") {
+    if (!state.authenticated || state.scanLoading) return;
     state.scanLoading = true;
 
-    const button = element("scanButton");
-    button.disabled = true;
-
-    element("wifiScan").textContent = "Scanning...";
+    const buttonId = targetId === "repeaterScanResults" ? "repeaterScanButton" : "scanButton";
+    const button = element(buttonId);
+    if (button) button.disabled = true;
+    const target = element(targetId);
+    if (target) target.textContent = "Wi-Fi ქსელების ძიება მიმდინარეობს...";
 
     try {
         const data = await fetchJSON(API + "/wifi/scan");
-
         if (state.authenticated) {
-            showJSON("wifiScan", data);
+            renderWifiScan(targetId, data);
+            if (targetId !== "wifiScan") renderWifiScan("wifiScan", data);
+            else renderWifiScan("repeaterScanResults", data);
         }
-
     } catch (error) {
-        if (state.authenticated) {
-            element("wifiScan").textContent =
-                "Scan error: " + error.message;
-        }
-
+        if (state.authenticated && target) target.textContent = "სკანირების შეცდომა: " + error.message;
     } finally {
         state.scanLoading = false;
-        button.disabled = false;
+        if (button) button.disabled = false;
     }
 }
 
@@ -1959,6 +2044,7 @@ async function scanWifi() {
 
 element("refreshButton").addEventListener("click", loadData);
 element("scanButton").addEventListener("click", scanWifi);
+element("repeaterScanButton").addEventListener("click", () => scanWifi("repeaterScanResults"));
 
 element("interfaceFilter").addEventListener(
     "change",
