@@ -1516,8 +1516,20 @@ const translations = {
  "AP ინტერფეისი":"AP interface",
  "Hotspot-ის სახელი (SSID)":"Hotspot name (SSID)",
  "უსაფრთხოება":"Security",
- "პაროლი (8–63 სიმბოლო)":"Password (8–63 characters)"
+ "პაროლი (8–63 სიმბოლო)":"Password (8–63 characters)",
+ "SIM, ModemManager, LTE/4G/5G and mobile interface monitoring.":"SIM-ის, ModemManager-ის, LTE/4G/5G-ისა და მობილური ინტერფეისების მონიტორინგი.",
+ "SIM STATUS":"SIM-ის სტატუსი",
+ "OPERATOR":"ოპერატორი",
+ "MODEM STATUS":"მოდემის სტატუსი",
+ "Loading...":"იტვირთება...",
+ "Scanning...":"სკანირება...",
+ "Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.",
+ "Read-only inspection of AP + Client and forwarding readiness.":"AP + Client რეჟიმისა და ტრაფიკის გადაცემის მზადყოფნის მხოლოდ წაკითხვადი შემოწმება.",
+ "Press Scan Wi-Fi networks":"დააჭირე Wi-Fi ქსელების ძიებას",
+ "Connection error: ":"კავშირის შეცდომა: "
 };
+const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+
 const originalTextNodes = new WeakMap();
 let uiLanguage = localStorage.getItem("keyland-language") === "en" ? "en" : "ka";
 function applyLanguage(language) {
@@ -1531,8 +1543,8 @@ function applyLanguage(language) {
         const original = originalTextNodes.get(node);
         const trimmed = original.trim();
         if (!trimmed) continue;
-        const translated = translations[trimmed];
-        if (uiLanguage === "en" && translated) {
+        const translated = uiLanguage === "en" ? translations[trimmed] : reverseTranslations[trimmed];
+        if (translated) {
             node.nodeValue = original.replace(trimmed, translated);
         } else {
             node.nodeValue = original;
