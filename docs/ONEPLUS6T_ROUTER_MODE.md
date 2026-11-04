@@ -1,54 +1,71 @@
-# OnePlus 6T Router Mode
+# OnePlus 6T Router Wi-Fi
 
-Keyland Network v0.5.0 adds guarded router controls intended for Kali NetHunter Pro on the OnePlus 6T (fajita, sdm845).
+Keyland Network includes an experimental Linux router controller for Kali NetHunter Pro on OnePlus 6T (fajita / sdm845).
 
-## WAN options
+## Router modes
 
-- **Mobile-data WAN:** the phone must expose a working cellular interface (for example `rmnet_ipa0` or `qmapmux0.0`) and a usable default route. The hotspot uses NetworkManager's shared IPv4 mode for DHCP and NAT.
-- **Wi-Fi repeater WAN:** the phone must maintain an upstream Wi-Fi client connection and expose a separate AP interface. If both roles share one PHY, `iw list` must report a simultaneous managed + AP interface combination. A single Wi-Fi radio without that capability cannot act as a repeater at the same time.
+- **Hotspot:** share a selected active WAN interface, including cellular interfaces such as qmapmux0.0/rmnet or Wi-Fi.
+- **Wi-Fi repeater:** use an already-connected Wi-Fi client interface as WAN and a separate AP interface as LAN. The phone's single radio must support concurrent managed + AP operation. Both roles must use the same channel.
+- The dashboard exposes the AP interface, SSID, WPA2 passphrase, LAN gateway/CIDR, DNS servers, operating mode, and upstream WAN selector.
 
-## Hotspot controls
+## Linux services used
 
-The dashboard can inspect Wi-Fi PHYs and NetworkManager devices, choose an eligible AP interface, and configure:
-- SSID (1–32 UTF-8 bytes)
-- WPA2-PSK password (8–63 characters)
-- IPv4 DNS servers (optional)
-- NetworkManager shared IPv4 mode (DHCP/NAT)
-- Optional creation of a `keyland-ap` virtual interface when the driver confirms AP mode and, for an active Wi-Fi upstream on the same PHY, concurrent AP + Client support
-- Start and stop of the dedicated `Keyland-Hotspot` profile
+- hostapd: WPA2 access point on a dedicated AP interface (normally keyland-ap).
+- dnsmasq: DHCP leases and DNS forwarding on the AP interface only.
+- nftables: an isolated table named keyland_router for forwarding and NAT.
+- iproute2: a dedicated policy-routing table (42002) routes AP-client traffic through the selected WAN without changing the phone's existing default routes.
+- NetworkManager: only the dedicated AP interface is marked unmanaged while hostapd owns it. The selected upstream interface is not reconfigured.
 
-The controller refuses to repurpose a default-route interface and refuses an AP interface already used by another connection. It never changes drivers or silently disconnects the active Wi-Fi link. Virtual AP creation is a separate confirmed operation and is attempted only after capability checks. If no separate AP interface exists, the UI reports that a hardware/driver preflight is required.
-
-## DNS
-
-DNS management detects NetworkManager first and saves IPv4/IPv6 DNS values in the active connection profile with a live reapply and read-back verification. If the interface is not managed by NetworkManager, it can use `systemd-resolved` when available; that path is runtime-only. Automatic DNS reset is available.
-
-## Access and safety
-
-- One local administrator account; no public registration.
-- All write endpoints require administrator authentication and explicit confirmation.
-- Cookie-authenticated writes remain protected by CSRF validation.
-- No arbitrary shell command endpoint; subprocess calls use fixed argument arrays and no shell.
-- Management UI should remain on the trusted LAN. Do not expose it directly to the public Internet.
-- Changes that could interrupt the only management path are intentionally not offered by this hotspot controller.
-
-## Not yet implemented
-
-This release is not a complete OpenWrt replacement. Persistent WAN/LAN addressing, DHCP server administration outside the hotspot profile, full firewall rule editor, client blocking, APN/operator controls, route editing, and timed rollback for all network changes still require separate modules and device testing.
-
-## Device validation checklist
-
-Run these commands on the OnePlus 6T before enabling hotspot or repeater mode:
+Install required packages on Kali:
 
 ```bash
-uname -a
-ip -br link
-ip route
-iw dev
-iw list
-nmcli device status
-nmcli connection show --active
-systemctl status NetworkManager --no-pager
+sudo apt update
+sudo apt install hostapd dnsmasq nftables iproute2 iw network-manager
 ```
 
-Confirm the cellular default route or upstream Wi-Fi is stable, that a dedicated AP interface is available, and that the driver's interface-combination section explicitly permits AP + managed operation when using Wi-Fi repeater mode. Do not test by disabling the current `wlan0`, cellular interface, Tailscale, or ZeroTier connection.
+The application must have the required root privileges to manage AP interface addressing, sysctl forwarding, nftables and policy routing.
+
+## Start/stop API
+
+- GET /api/v1/wifi/hotspot/router/status
+- POST /api/v1/wifi/hotspot/router/start
+- POST /api/v1/wifi/hotspot/router/stop
+
+All endpoints require administrator authentication. Start/stop require explicit confirmation. Start validates that the selected WAN currently has a default route, that the AP interface is already a separate AP-mode interface, and that the AP subnet does not overlap an existing IPv4 network.
+
+Example request:
+
+```json
+{
+  "mode": "hotspot",
+  "interface": "keyland-ap",
+  "upstream_interface": "qmapmux0.0",
+  "ssid": "Keyland-Hotspot",
+  "password": "replace-with-your-own-ASCII-passphrase",
+  "ipv4_cidr": "192.168.88.1/24",
+  "dns_servers": ["1.1.1.1", "8.8.8.8"],
+  "confirmed": true
+}
+```
+
+## Safety behavior
+
+- The active WAN interface, its address, connection profile and default routes are not changed.
+- The active wlan0 connection is not intentionally disconnected or switched to AP mode.
+- Only the selected dedicated AP interface is detached from NetworkManager during operation.
+- The AP's IPv4 forwarding, nftables table and policy-routing table are removed on stop; the previous global IPv4-forwarding value is restored.
+- The AP password is kept in a root-only runtime hostapd configuration and is not written to the status file.
+- The controller refuses to overwrite an existing nftables table or policy-routing table/priority.
+- The dashboard remains administrator-only; do not expose it directly to the public Internet.
+
+## Important limitations / validation
+
+This is not yet a complete OpenWrt replacement. Repeater operation on the OnePlus 6T is experimental and must be validated on the actual ath10k_snoc firmware. The driver's reported AP+managed combination does not guarantee stable concurrent operation. If hostapd fails to start, inspect /run/keyland-router/hostapd.log and kernel logs.
+
+After starting, test:
+1. A client can see the SSID and complete WPA2 association.
+2. The client receives an address in the configured LAN subnet.
+3. The client can resolve DNS and reach the Internet through the selected WAN.
+4. The phone's own Wi-Fi, SIM, Tailscale and ZeroTier connections remain available.
+
+Do not treat a successful API response as proof of end-to-end forwarding. Do not enable the feature on a remote-only management path until tested locally.
