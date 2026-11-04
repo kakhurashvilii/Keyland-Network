@@ -580,130 +580,191 @@ def get_wifi():
     }
 
 
-def get_wifi_scan():
-    """Scan nearby Wi-Fi networks where the OS and driver permit it."""
-    if SYSTEM == "windows":
-        result = run_command([
-            "netsh", "wlan", "show", "networks", "mode=bssid"
-        ], timeout=20)
+def _wifi_channel(frequency: int | None) -> int | None:
+    if frequency is None:
+        return None
+    if frequency == 2484:
+        return 14
+    if 2412 <= frequency <= 2472:
+        return (frequency - 2407) // 5
+    if 5000 <= frequency <= 5895:
+        return (frequency - 5000) // 5
+    if 5955 <= frequency <= 7115:
+        return (frequency - 5950) // 5
+    return None
 
-        if not result["success"]:
-            return {
-                "platform": SYSTEM,
-                "available": False,
-                "networks": [],
-                "error": result["error"],
+
+def _parse_iw_scan(output: str, interface: str) -> list[dict]:
+    networks = []
+    current = None
+
+    def finish():
+        if current and current.get("ssid"):
+            current["interface"] = interface
+            current["channel"] = _wifi_channel(current.get("frequency_mhz"))
+            current["security"] = (
+                "WPA3" if current.pop("_wpa3", False)
+                else "WPA2/WPA" if current.pop("_secured", False)
+                else "Open"
+            )
+            networks.append(current)
+
+    for raw in output.splitlines():
+        line = raw.strip()
+        if line.startswith("BSS "):
+            finish()
+            current = {
+                "ssid": "",
+                "bssid": line.split()[1].split("(")[0],
+                "frequency_mhz": None,
+                "signal_dbm": None,
+                "_secured": False,
+                "_wpa3": False,
             }
+        elif current is not None:
+            if line.startswith("freq:"):
+                try:
+                    current["frequency_mhz"] = int(line.split(":", 1)[1].strip())
+                except ValueError:
+                    pass
+            elif line.startswith("signal:"):
+                match = re.search(r"-?\d+(?:\.\d+)?", line.split(":", 1)[1])
+                if match:
+                    current["signal_dbm"] = float(match.group())
+            elif line.startswith("SSID:"):
+                current["ssid"] = line.split(":", 1)[1].strip()
+            elif line.startswith(("RSN:", "WPA:")):
+                current["_secured"] = True
+                if "SAE" in line:
+                    current["_wpa3"] = True
+    finish()
+    return networks
 
-        networks = []
-        current = None
-        current_bssid = None
 
+def _split_nmcli_row(line: str) -> list[str]:
+    fields, value, escaped = [], [], False
+    for char in line:
+        if escaped:
+            value.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == ":":
+            fields.append("".join(value))
+            value = []
+        else:
+            value.append(char)
+    fields.append("".join(value))
+    return fields
+
+
+def get_wifi_scan():
+    """Scan Wi-Fi networks using NetworkManager first, then the nl80211 iw fallback."""
+    if SYSTEM == "windows":
+        result = run_command(["netsh", "wlan", "show", "networks", "mode=bssid"], timeout=20)
+        if not result["success"]:
+            return {"platform": SYSTEM, "available": False, "networks": [], "error": result["error"]}
+        networks, current, current_bssid = [], None, None
         for raw_line in result["output"].splitlines():
             line = raw_line.strip()
-
             if line.startswith("SSID ") and ":" in line:
                 if current:
                     networks.append(current)
-
-                key, value = line.split(":", 1)
-                current = {
-                    "ssid": value.strip(),
-                    "authentication": None,
-                    "encryption": None,
-                    "bssids": [],
-                }
+                current = {"ssid": line.split(":", 1)[1].strip(), "bssids": []}
                 current_bssid = None
-
-            elif current and line.startswith("Authentication") and ":" in line:
-                current["authentication"] = line.split(":", 1)[1].strip()
-
-            elif current and line.startswith("Encryption") and ":" in line:
-                current["encryption"] = line.split(":", 1)[1].strip()
-
             elif current and line.startswith("BSSID ") and ":" in line:
-                current_bssid = {
-                    "bssid": line.split(":", 1)[1].strip()
-                }
+                current_bssid = {"bssid": line.split(":", 1)[1].strip()}
                 current["bssids"].append(current_bssid)
-
             elif current_bssid and ":" in line:
                 key, value = line.split(":", 1)
                 key = key.strip().lower()
-
-                if key in ("signal", "radio type", "channel"):
+                if key in ("signal", "channel", "radio type"):
                     current_bssid[key.replace(" ", "_")] = value.strip()
-
         if current:
             networks.append(current)
+        return {"platform": SYSTEM, "available": True, "count": len(networks), "networks": networks}
 
-        return {
-            "platform": SYSTEM,
-            "available": True,
-            "count": len(networks),
-            "networks": networks,
-        }
+    if SYSTEM != "linux":
+        return {"platform": SYSTEM, "available": False, "networks": [], "error": "Wi-Fi scanning is not supported on this platform"}
 
-    if SYSTEM == "linux":
-        if not shutil.which("iw"):
-            return {
-                "platform": SYSTEM,
-                "available": False,
-                "networks": [],
-                "error": "iw command not found",
-            }
+    devices = run_command(["iw", "dev"])
+    if not devices["success"]:
+        return {"platform": SYSTEM, "available": False, "networks": [], "error": devices.get("error") or "Could not list Wi-Fi interfaces"}
 
-        devices = run_command(["iw", "dev"])
+    names = [
+        line.strip().split(maxsplit=1)[1]
+        for line in devices["output"].splitlines()
+        if line.strip().startswith("Interface ")
+    ]
+    if not names:
+        return {"platform": SYSTEM, "available": False, "networks": [], "error": "No wireless interfaces found"}
 
-        if not devices["success"]:
-            return {
-                "platform": SYSTEM,
-                "available": False,
-                "networks": [],
-                "error": devices["error"],
-            }
+    networks, scans = [], []
+    nmcli_available = shutil.which("nmcli") is not None
+    for name in names:
+        found, scan_error, scan_method = [], None, None
+        if nmcli_available:
+            listed = run_command([
+                "nmcli", "--wait", "20", "--terse", "--escape", "yes", "--fields",
+                "SSID,BSSID,CHAN,FREQ,RATE,SIGNAL,SECURITY",
+                "device", "wifi", "list", "--rescan", "yes", "ifname", name,
+            ], timeout=25)
+            if listed["success"]:
+                for row in listed["output"].splitlines():
+                    parts = _split_nmcli_row(row)
+                    if len(parts) < 7 or not parts[1]:
+                        continue
+                    try:
+                        frequency = int(parts[3]) if parts[3] else None
+                        channel = int(parts[2]) if parts[2] else _wifi_channel(frequency)
+                        signal = int(parts[5]) if parts[5] else None
+                    except ValueError:
+                        frequency, channel, signal = None, None, None
+                    found.append({
+                        "interface": name, "ssid": parts[0], "bssid": parts[1],
+                        "channel": channel, "frequency_mhz": frequency,
+                        "rate": parts[4], "signal_percent": signal,
+                        "security": parts[6] or "Open",
+                    })
+                if found:
+                    scan_method = "NetworkManager"
+            if not found:
+                scan_error = listed.get("error")
 
-        names = []
-        for line in devices["output"].splitlines():
-            line = line.strip()
-            if line.startswith("Interface "):
-                names.append(line.split(maxsplit=1)[1])
+        if not found:
+            raw = run_command(["iw", "dev", name, "scan"], timeout=30)
+            if raw["success"]:
+                found = _parse_iw_scan(raw["output"], name)
+                scan_method = "iw"
+            else:
+                scan_error = raw.get("error") or scan_error or "Scan failed"
 
-        if not names:
-            return {
-                "platform": SYSTEM,
-                "available": False,
-                "networks": [],
-                "error": "No wireless interfaces found",
-            }
+        networks.extend(found)
+        scans.append({
+            "interface": name, "success": bool(found),
+            "count": len(found), "method": scan_method, "error": scan_error,
+        })
 
-        scans = []
-        for name in names:
-            result = run_command(
-                ["iw", "dev", name, "scan"],
-                timeout=25,
-            )
-            scans.append({
-                "interface": name,
-                "success": result["success"],
-                "details": result["output"],
-                "error": result["error"],
-            })
+    # De-duplicate BSS entries returned by multiple interfaces.
+    unique = {}
+    for item in networks:
+        key = (item.get("bssid"), item.get("ssid"))
+        unique[key] = item
 
-        return {
-            "platform": SYSTEM,
-            "available": any(item["success"] for item in scans),
-            "networks": scans,
-            "note": "Linux Wi-Fi scanning may require root privileges.",
-        }
-
+    result_networks = sorted(
+        unique.values(),
+        key=lambda item: (
+            -(item.get("signal_percent") if item.get("signal_percent") is not None
+              else item.get("signal_dbm") if item.get("signal_dbm") is not None else -999)
+        ),
+    )
     return {
-        "platform": SYSTEM,
-        "available": False,
-        "networks": [],
-        "error": "Wi-Fi scanning is not supported on this platform",
+        "platform": SYSTEM, "available": bool(result_networks),
+        "count": len(result_networks), "networks": result_networks,
+        "interfaces": scans,
+        "error": None if result_networks else "No networks returned. Check interface state, rfkill, permissions and driver scan support.",
+        "note": "Scanning uses NetworkManager when possible and falls back to iw. It does not change the active connection.",
     }
-
 
 def get_services():
     tools = {
