@@ -628,7 +628,7 @@ def _parse_iw_scan(output: str, interface: str) -> list[dict]:
                 except ValueError:
                     pass
             elif line.startswith("signal:"):
-                match = re.search(r"-?\\d+(?:\\.\\d+)?", line.split(":", 1)[1])
+                match = re.search(r"-?\d+(?:\.\d+)?", line.split(":", 1)[1])
                 if match:
                     current["signal_dbm"] = float(match.group())
             elif line.startswith("SSID:"):
@@ -647,7 +647,7 @@ def _split_nmcli_row(line: str) -> list[str]:
         if escaped:
             value.append(char)
             escaped = False
-        elif char == "\\\\":
+        elif char == "\\":
             escaped = True
         elif char == ":":
             fields.append("".join(value))
