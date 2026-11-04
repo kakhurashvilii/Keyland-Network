@@ -1811,6 +1811,8 @@ async function loadHotspotCapabilities() {
             "WAN candidates: " + ((data.upstream_sources || []).map(x => x.interface + " (" + x.type + ")").join(", ") || "none"),
             "Default routes: " + ((data.default_route_interfaces || []).join(", ") || "none"),
             "Router Wi-Fi: " + (status.active ? "ACTIVE" : "STOPPED"),
+            "Connected clients: " + ((status.clients || []).length),
+            ...((status.clients || []).map(x => x.mac + " · " + (x.signal || "signal n/a") + " · RX " + (x.rx_bytes || 0) + " B · TX " + (x.tx_bytes || 0) + " B")),
             "Manager: hostapd + dnsmasq + nftables",
             "",
             ...(data.limitations || [])
