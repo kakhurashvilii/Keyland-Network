@@ -319,7 +319,7 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
     ]
 
     if profile_exists:
-        result = _run(["nmcli", "connection", "modify", _PROFILE, "connection.interface-name", interface, *settings])
+        result = _run(["nmcli", "connection", "modify", _PROFILE, *settings])
     else:
         result = _run([
             "nmcli", "connection", "add", "type", "wifi",
