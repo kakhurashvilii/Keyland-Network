@@ -1810,7 +1810,7 @@ async function loadHotspotCapabilities() {
             "AP interface: " + ((data.interfaces || []).filter(x => x.type === "AP").map(x => x.name).join(", ") || "none"),
             "WAN candidates: " + ((data.upstream_sources || []).map(x => x.interface + " (" + x.type + ")").join(", ") || "none"),
             "Default routes: " + ((data.default_route_interfaces || []).join(", ") || "none"),
-            "Router Wi-Fi: " + (status.active ? "ACTIVE" : "STOPPED"),
+            "Router Wi-Fi: " + (status.active ? "ACTIVE" : status.configured ? "INCOMPLETE · CLEANUP REQUIRED" : "STOPPED"),
             "Connected clients: " + ((status.clients || []).length),
             ...((status.clients || []).map(x => x.mac + " · " + (x.signal || "signal n/a") + " · RX " + (x.rx_bytes || 0) + " B · TX " + (x.tx_bytes || 0) + " B")),
             "Manager: hostapd + dnsmasq + nftables",
@@ -1821,7 +1821,9 @@ async function loadHotspotCapabilities() {
         output.textContent = lines.join("\n");
         element("hotspotMessage").textContent = status.active
             ? tr("როუტერი ჩართულია.","Router Wi-Fi is active.")
-            : tr("აირჩიე WAN და AP ინტერფეისი, შემდეგ ჩართე.","Choose WAN and AP interface, then start.");
+            : status.configured
+                ? tr("წინა გაშვება არასრულად დასრულდა. ჯერ გამორთე/გაწმინდე კონფიგურაცია.","Previous startup was incomplete. Stop and clean it before restarting.")
+                : tr("აირჩიე WAN და AP ინტერფეისი, შემდეგ ჩართე.","Choose WAN and AP interface, then start.");
     } catch (error) {
         output.textContent = tr("შემოწმება ვერ მოხერხდა: ","Preflight failed: ") + error.message;
     }
