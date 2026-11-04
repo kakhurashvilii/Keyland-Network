@@ -185,9 +185,12 @@ def _validate(payload: dict[str, Any]) -> tuple[str, str, list[str], str | None]
     if not isinstance(dns, list) or len(dns) > 4:
         raise ValueError("Provide up to four DNS server addresses.")
     try:
-        addresses = [str(ipaddress.ip_address(item)) for item in dns]
+        parsed_dns = [ipaddress.ip_address(item) for item in dns]
     except (ValueError, TypeError):
         raise ValueError("One or more DNS server addresses are invalid.")
+    if any(address.version != 4 for address in parsed_dns):
+        raise ValueError("Hotspot profile DNS currently accepts IPv4 addresses only.")
+    addresses = [str(address) for address in parsed_dns]
     return interface, ssid, addresses, password
 
 
