@@ -278,6 +278,47 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+
+def create_virtual_ap(interface: str, confirmed: bool) -> dict[str, Any]:
+    """Create a separate AP virtual interface without touching the upstream link."""
+    if confirmed is not True:
+        return {"success": False, "error": "Explicit administrator confirmation is required."}
+    if not isinstance(interface, str) or not _IFACE.fullmatch(interface) or interface == "lo":
+        return {"success": False, "error": "Invalid source Wi-Fi interface."}
+    if not shutil.which("iw"):
+        return {"success": False, "error": "iw is not installed."}
+
+    preflight = get_hotspot_capabilities()
+    if not preflight.get("available") or not preflight.get("ap_mode_supported"):
+        return {"success": False, "error": "The driver does not currently report AP mode support."}
+
+    source = next((item for item in preflight["interfaces"] if item["name"] == interface), None)
+    if not source or source.get("type") not in {"managed", "AP"}:
+        return {"success": False, "error": "Select an existing Wi-Fi interface reported by iw."}
+    if any(item["name"] == "keyland-ap" for item in preflight["interfaces"]):
+        return {"success": True, "created": False, "interface": "keyland-ap", "message": "The Keyland AP interface already exists."}
+
+    active_wifi = source.get("ssid") is not None or interface in preflight.get("default_route_interfaces", [])
+    if active_wifi:
+        combinations = preflight.get("interface_combinations") or {}
+        if not combinations.get("ap_client_combination_mentioned"):
+            return {"success": False, "error": "The source Wi-Fi is active, but simultaneous AP + Client support is not confirmed by the driver. No changes were made."}
+
+    result = _run(["iw", "dev", interface, "interface", "add", "keyland-ap", "type", "__ap"])
+    if not result["success"]:
+        return {"success": False, "error": "The driver refused to create a virtual AP interface. The active connection was left unchanged."}
+
+    created = next((item for item in _wifi_interfaces() if item["name"] == "keyland-ap"), None)
+    if not created:
+        _run(["iw", "dev", "keyland-ap", "del"])
+        return {"success": False, "error": "The new AP interface could not be verified and was rolled back."}
+
+    return {
+        "success": True, "created": True, "interface": "keyland-ap",
+        "phy": created.get("phy"),
+        "message": "Separate AP interface created. Refresh capability detection before starting the hotspot.",
+    }
+
 def stop_hotspot(confirmed: bool) -> dict[str, Any]:
     if confirmed is not True:
         return {"success": False, "error": "Explicit administrator confirmation is required."}
