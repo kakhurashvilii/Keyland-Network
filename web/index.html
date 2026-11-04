@@ -1,28 +1,72 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10141d">
+<meta name="robots" content="noindex, nofollow">
 <title>Keyland Network</title>
 
 <style>
-* { box-sizing: border-box; }
+:root {
+    color-scheme: dark;
+    --bg: #10141d;
+    --header: #171e2b;
+    --card: #1a2230;
+    --border: #30394a;
+    --text: #e8edf5;
+    --muted: #8d9bb0;
+    --blue: #2869d8;
+    --blue-light: #78aaff;
+    --green: #50d69b;
+    --red: #ff7070;
+}
+
+* {
+    box-sizing: border-box;
+}
 
 body {
     margin: 0;
-    background: #10141d;
-    color: #e8edf5;
+    background: var(--bg);
+    color: var(--text);
     font-family: Arial, sans-serif;
+}
+
+body.login-active {
+    overflow: hidden;
 }
 
 header {
     padding: 22px;
-    background: #171e2b;
-    border-bottom: 1px solid #30394a;
+    background: var(--header);
+    border-bottom: 1px solid var(--border);
 }
 
-header h1 { margin: 0; font-size: 24px; }
-header p { color: #8d9bb0; }
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+header p {
+    color: var(--muted);
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
 
 main {
     max-width: 1250px;
@@ -32,21 +76,25 @@ main {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(260px, 1fr)
+    );
     gap: 15px;
 }
 
 .card {
-    background: #1a2230;
-    border: 1px solid #30394a;
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 18px;
     overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .card h3 {
     margin-top: 0;
-    color: #78aaff;
+    color: var(--blue-light);
 }
 
 pre {
@@ -58,22 +106,36 @@ pre {
     overflow: auto;
 }
 
-.status { color: #50d69b; }
-.muted { color: #8d9bb0; font-size: 12px; }
+.status {
+    color: var(--green);
+}
 
-button, select {
-    background: #2869d8;
+.muted {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+button,
+select {
+    background: var(--blue);
     border: 0;
     padding: 10px 16px;
     color: white;
     border-radius: 7px;
     cursor: pointer;
     margin: 4px 4px 14px 0;
+    font-size: 14px;
 }
 
-select option {
-    background: #1a2230;
-    color: white;
+button:hover {
+    filter: brightness(1.12);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--blue-light);
+    outline-offset: 2px;
 }
 
 button:disabled {
@@ -87,7 +149,10 @@ button:disabled {
     margin: 8px 0;
 }
 
-.metric-label { color: #8d9bb0; font-size: 12px; }
+.metric-label {
+    color: var(--muted);
+    font-size: 12px;
+}
 
 .metric-grid {
     display: grid;
@@ -97,7 +162,7 @@ button:disabled {
 
 .bar {
     height: 8px;
-    background: #30394a;
+    background: var(--border);
     border-radius: 10px;
     overflow: hidden;
     margin-top: 7px;
@@ -105,8 +170,9 @@ button:disabled {
 
 .bar > div {
     height: 100%;
-    background: #50d69b;
+    background: var(--green);
     width: 0%;
+    transition: width .3s ease;
 }
 
 .internet-status {
@@ -115,9 +181,17 @@ button:disabled {
     margin: 12px 0;
 }
 
-.online { color: #50d69b; }
-.offline { color: #ff7070; }
-.unknown { color: #8d9bb0; }
+.online {
+    color: var(--green);
+}
+
+.offline {
+    color: var(--red);
+}
+
+.unknown {
+    color: var(--muted);
+}
 
 .traffic-stats {
     display: grid;
@@ -132,8 +206,13 @@ button:disabled {
     margin-top: 5px;
 }
 
-.rx-color { color: #50d69b; }
-.tx-color { color: #78aaff; }
+.rx-color {
+    color: var(--green);
+}
+
+.tx-color {
+    color: var(--blue-light);
+}
 
 .chart-container {
     width: 100%;
@@ -153,7 +232,7 @@ button:disabled {
     flex-wrap: wrap;
     margin-top: 10px;
     font-size: 12px;
-    color: #8d9bb0;
+    color: var(--muted);
 }
 
 footer {
@@ -161,74 +240,264 @@ footer {
     text-align: center;
     padding: 30px;
 }
+
+/* Login */
+
+.login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg);
+}
+
+.login-box {
+    width: 100%;
+    max-width: 390px;
+    padding: 30px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, .35);
+}
+
+.login-logo {
+    color: var(--blue-light);
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 25px;
+}
+
+.login-box label {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 7px;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 18px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+.login-box button {
+    width: 100%;
+    margin: 5px 0 0;
+    padding: 12px;
+}
+
+.login-error {
+    min-height: 20px;
+    margin-bottom: 8px;
+    color: var(--red);
+    font-size: 13px;
+}
+
+.login-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 600px) {
+    header {
+        padding: 16px;
+    }
+
+    main {
+        padding: 12px;
+    }
+
+    .login-box {
+        padding: 22px;
+    }
+
+    .metric {
+        font-size: 22px;
+    }
+}
 </style>
 </head>
 
-<body>
+<body class="login-active">
+
+<!-- LOGIN -->
+
+<div id="loginOverlay" class="login-overlay">
+    <form id="loginForm" class="login-box">
+        <div class="login-logo">KEYLAND NETWORK</div>
+
+        <div class="login-subtitle">
+            Universal Network Management Platform
+        </div>
+
+        <label for="loginUsername">
+            Administrator username
+        </label>
+
+        <input
+            id="loginUsername"
+            name="username"
+            type="text"
+            autocomplete="username"
+            minlength="3"
+            maxlength="32"
+            required
+            autofocus
+        >
+
+        <label for="loginPassword">
+            Password
+        </label>
+
+        <input
+            id="loginPassword"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+        >
+
+        <div
+            id="loginError"
+            class="login-error"
+            role="alert"
+            aria-live="polite"
+        ></div>
+
+        <button id="loginButton" type="submit">
+            Sign in
+        </button>
+
+        <div class="login-footer">
+            Authorized administrators only
+        </div>
+    </form>
+</div>
+
+<!-- DASHBOARD -->
 
 <header>
-    <h1>KEYLAND NETWORK</h1>
-    <p>Universal Network Management Platform</p>
-    <span class="status">● System dashboard</span>
-    <span class="muted" id="connection">Connecting...</span>
+    <div class="header-row">
+        <div>
+            <h1>KEYLAND NETWORK</h1>
+            <p>Universal Network Management Platform</p>
+
+            <div class="header-status">
+                <span class="status">● System dashboard</span>
+                <span
+                    class="muted"
+                    id="connection"
+                    aria-live="polite"
+                >
+                    Checking session...
+                </span>
+            </div>
+        </div>
+
+        <button
+            id="logoutButton"
+            type="button"
+            class="hidden"
+        >
+            Logout
+        </button>
+    </div>
 </header>
 
-<main>
+<main id="dashboard" class="hidden">
 
-    <button id="refreshButton" onclick="loadData()">
+    <button id="refreshButton" type="button">
         Refresh information
     </button>
 
-    <button id="scanButton" onclick="scanWifi()">
+    <button id="scanButton" type="button">
         Scan Wi-Fi networks
     </button>
 
-    <span class="muted" id="updated">Not updated yet</span>
+    <span class="muted" id="updated">
+        Not updated yet
+    </span>
 
     <div class="grid">
 
         <section class="card">
             <h3>Device</h3>
-            <pre id="device">Loading...</pre>
+            <pre id="device">Waiting...</pre>
         </section>
 
         <section class="card">
             <h3>System Resources</h3>
 
             <div class="metric-grid">
+
                 <div>
                     <div class="metric" id="cpu">--%</div>
                     <div class="metric-label">CPU usage</div>
-                    <div class="bar"><div id="cpuBar"></div></div>
+                    <div class="bar">
+                        <div id="cpuBar"></div>
+                    </div>
                 </div>
 
                 <div>
                     <div class="metric" id="ram">--%</div>
                     <div class="metric-label">RAM usage</div>
-                    <div class="bar"><div id="ramBar"></div></div>
+                    <div class="bar">
+                        <div id="ramBar"></div>
+                    </div>
                 </div>
 
                 <div>
                     <div class="metric" id="disk">--%</div>
                     <div class="metric-label">Disk usage</div>
-                    <div class="bar"><div id="diskBar"></div></div>
+                    <div class="bar">
+                        <div id="diskBar"></div>
+                    </div>
                 </div>
 
                 <div>
                     <div class="metric" id="cores">--</div>
                     <div class="metric-label">Logical CPU cores</div>
                 </div>
+
             </div>
 
-            <pre id="resources">Loading...</pre>
+            <pre id="resources">Waiting...</pre>
         </section>
 
         <section class="card">
             <h3>Internet Status</h3>
-            <div id="internetStatus" class="internet-status unknown">
+
+            <div
+                id="internetStatus"
+                class="internet-status unknown"
+            >
                 Checking...
             </div>
-            <pre id="internetDetails">Waiting for result...</pre>
+
+            <pre id="internetDetails">
+Waiting for result...
+            </pre>
         </section>
 
         <section class="card">
@@ -237,14 +506,20 @@ footer {
             <div class="traffic-stats">
                 <div>
                     <div class="metric-label">Download RX</div>
-                    <div class="traffic-value rx-color" id="totalRx">
+                    <div
+                        class="traffic-value rx-color"
+                        id="totalRx"
+                    >
                         0 Mbps
                     </div>
                 </div>
 
                 <div>
                     <div class="metric-label">Upload TX</div>
-                    <div class="traffic-value tx-color" id="totalTx">
+                    <div
+                        class="traffic-value tx-color"
+                        id="totalTx"
+                    >
                         0 Mbps
                     </div>
                 </div>
@@ -260,12 +535,14 @@ footer {
                 <span>Last 60 samples</span>
             </div>
 
-            <pre id="traffic">Waiting for first sample...</pre>
+            <pre id="traffic">
+Waiting for first sample...
+            </pre>
         </section>
 
         <section class="card">
             <h3>Capabilities</h3>
-            <pre id="capabilities">Loading...</pre>
+            <pre id="capabilities">Waiting...</pre>
         </section>
 
         <section class="card">
@@ -275,61 +552,80 @@ footer {
                 Interface filter:
             </label>
 
-            <select id="interfaceFilter" onchange="loadInterfaces()">
+            <select id="interfaceFilter">
                 <option value="all">All interfaces</option>
                 <option value="active">Active interfaces only</option>
             </select>
 
-            <pre id="interfaces">Loading...</pre>
+            <pre id="interfaces">Waiting...</pre>
         </section>
 
         <section class="card">
             <h3>Routing Table</h3>
-            <pre id="routes">Loading...</pre>
+            <pre id="routes">Waiting...</pre>
         </section>
 
         <section class="card">
             <h3>Wi-Fi Connection</h3>
-            <pre id="wifi">Loading...</pre>
+            <pre id="wifi">Waiting...</pre>
         </section>
 
         <section class="card">
             <h3>Nearby Wi-Fi Networks</h3>
-            <pre id="wifiScan">Press Scan Wi-Fi networks</pre>
+            <pre id="wifiScan">
+Press Scan Wi-Fi networks
+            </pre>
         </section>
 
         <section class="card">
             <h3>Services / Tools</h3>
-            <pre id="services">Loading...</pre>
+            <pre id="services">Waiting...</pre>
         </section>
 
     </div>
 </main>
 
 <footer>
-    KEYLAND NETWORK · VERSION 0.1.2
+    KEYLAND NETWORK · VERSION 0.2.0
 </footer>
 
 <script>
-let loading = false;
-let scanLoading = false;
-let interfaceLoading = false;
+"use strict";
 
-async function fetchJSON(endpoint) {
-    const response = await fetch(endpoint, {
-        cache: "no-store"
-    });
+/* =========================================
+   APPLICATION STATE
+========================================= */
 
-    if (!response.ok) {
-        throw new Error("HTTP " + response.status);
-    }
+const state = {
+    authenticated: false,
+    loading: false,
+    scanLoading: false,
+    interfaceLoading: false,
+    pollingTimer: null,
+    sessionCheckInProgress: false
+};
 
-    return response.json();
+const API = "/api/v1";
+
+
+/* =========================================
+   DOM HELPERS
+========================================= */
+
+function element(id) {
+    return document.getElementById(id);
 }
 
-function showJSON(element, data) {
-    document.getElementById(element).textContent =
-        JSON.stringify(data, null, 2);
+function showJSON(id, data) {
+    element(id).textContent = JSON.stringify(
+        data,
+        null,
+        2
+    );
+}
+
+function setConnection(message) {
+    element("connection").textContent = message;
 }
 
 function setMetric(id, value, barId) {
@@ -338,73 +634,383 @@ function setMetric(id, value, barId) {
         Math.min(100, Number(value) || 0)
     );
 
-    document.getElementById(id).textContent =
+    element(id).textContent =
         safe.toFixed(1) + "%";
 
-    document.getElementById(barId).style.width =
-        safe + "%";
+    element(barId).style.width = safe + "%";
 }
 
+
+/* =========================================
+   CSRF COOKIE
+========================================= */
+
+function getCookie(name) {
+    const prefix = name + "=";
+
+    const item = document.cookie
+        .split("; ")
+        .find(value => value.startsWith(prefix));
+
+    if (!item) {
+        return null;
+    }
+
+    return decodeURIComponent(
+        item.substring(prefix.length)
+    );
+}
+
+
+/* =========================================
+   AUTHENTICATION UI
+========================================= */
+
+function showLogin(message = "") {
+    state.authenticated = false;
+
+    stopPolling();
+
+    document.body.classList.add("login-active");
+
+    element("loginOverlay").classList.remove("hidden");
+    element("dashboard").classList.add("hidden");
+    element("logoutButton").classList.add("hidden");
+
+    setConnection("● Authentication required");
+
+    element("loginError").textContent = message;
+}
+
+function showDashboard(username) {
+    state.authenticated = true;
+
+    document.body.classList.remove("login-active");
+
+    element("loginOverlay").classList.add("hidden");
+    element("dashboard").classList.remove("hidden");
+    element("logoutButton").classList.remove("hidden");
+
+    setConnection("● Connected: " + username);
+}
+
+
+/* =========================================
+   AUTHENTICATED FETCH
+========================================= */
+
+async function apiFetch(endpoint, options = {}) {
+    const headers = new Headers(options.headers || {});
+
+    const method = (options.method || "GET").toUpperCase();
+
+    const unsafeMethods = [
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE"
+    ];
+
+    if (unsafeMethods.includes(method)) {
+        const csrfToken = getCookie("keyland_csrf");
+
+        if (csrfToken) {
+            headers.set("X-CSRF-Token", csrfToken);
+        }
+    }
+
+    const response = await fetch(endpoint, {
+        ...options,
+        method,
+        headers,
+        credentials: "same-origin",
+        cache: "no-store"
+    });
+
+    if (response.status === 401) {
+        showLogin(
+            "Your session has expired. Please sign in again."
+        );
+
+        throw new Error("Authentication required");
+    }
+
+    return response;
+}
+
+async function fetchJSON(endpoint) {
+    const response = await apiFetch(endpoint);
+
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+    }
+
+    return response.json();
+}
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+async function performLogin(username, password) {
+    const body = new URLSearchParams();
+
+    body.set("username", username);
+    body.set("password", password);
+
+    const response = await fetch(
+        API + "/auth/login",
+        {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+                "Content-Type":
+                    "application/x-www-form-urlencoded"
+            },
+            body
+        }
+    );
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error(
+                "Incorrect username or password"
+            );
+        }
+
+        if (response.status === 403) {
+            throw new Error(
+                "Login request rejected by security policy"
+            );
+        }
+
+        throw new Error(
+            "Login failed: HTTP " + response.status
+        );
+    }
+
+    return response.json();
+}
+
+element("loginForm").addEventListener(
+    "submit",
+    async event => {
+        event.preventDefault();
+
+        if (state.sessionCheckInProgress) {
+            return;
+        }
+
+        const button = element("loginButton");
+        const error = element("loginError");
+
+        button.disabled = true;
+        error.textContent = "";
+
+        const username = element(
+            "loginUsername"
+        ).value.trim();
+
+        const password = element(
+            "loginPassword"
+        ).value;
+
+        try {
+            const result = await performLogin(
+                username,
+                password
+            );
+
+            element("loginPassword").value = "";
+
+            showDashboard(result.username);
+
+            startPolling();
+
+        } catch (err) {
+            error.textContent = err.message;
+        } finally {
+            button.disabled = false;
+        }
+    }
+);
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+async function logout() {
+    const button = element("logoutButton");
+
+    button.disabled = true;
+
+    try {
+        const response = await apiFetch(
+            API + "/auth/logout",
+            {
+                method: "POST"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Logout failed: HTTP " + response.status
+            );
+        }
+
+        showLogin("You have been logged out.");
+
+    } catch (error) {
+        console.error("Logout error:", error);
+
+        if (state.authenticated) {
+            setConnection("Logout error");
+        }
+    } finally {
+        button.disabled = false;
+    }
+}
+
+element("logoutButton").addEventListener(
+    "click",
+    logout
+);
+
+
+/* =========================================
+   SESSION CHECK
+========================================= */
+
+async function initializeApp() {
+    if (state.sessionCheckInProgress) {
+        return;
+    }
+
+    state.sessionCheckInProgress = true;
+
+    try {
+        const response = await fetch(
+            API + "/auth/me",
+            {
+                credentials: "same-origin",
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            showLogin();
+            return;
+        }
+
+        const user = await response.json();
+
+        showDashboard(user.username);
+
+        startPolling();
+
+    } catch (error) {
+        console.error("Session check:", error);
+
+        showLogin("Cannot connect to the server.");
+
+    } finally {
+        state.sessionCheckInProgress = false;
+    }
+}
+
+
+/* =========================================
+   NETWORK INTERFACES
+========================================= */
+
 async function loadInterfaces() {
-    if (interfaceLoading) return;
+    if (!state.authenticated || state.interfaceLoading) {
+        return;
+    }
 
-    interfaceLoading = true;
+    state.interfaceLoading = true;
 
-    const filter = document.getElementById(
+    const filter = element(
         "interfaceFilter"
     ).value;
 
     const endpoint = filter === "active"
-        ? "/api/v1/network/interfaces?active_only=true"
-        : "/api/v1/network/interfaces";
+        ? API + "/network/interfaces?active_only=true"
+        : API + "/network/interfaces";
 
     try {
         const data = await fetchJSON(endpoint);
+
         showJSON("interfaces", data);
+
     } catch (error) {
-        document.getElementById("interfaces").textContent =
-            "Interface error: " + error.message;
+        if (state.authenticated) {
+            element("interfaces").textContent =
+                "Interface error: " + error.message;
+        }
+
     } finally {
-        interfaceLoading = false;
+        state.interfaceLoading = false;
     }
 }
 
+
+/* =========================================
+   INTERNET STATUS
+========================================= */
+
 function updateInternet(data) {
-    const element = document.getElementById(
-        "internetStatus"
-    );
+    const status = element("internetStatus");
 
     if (data.connected === true) {
-        element.textContent = "● Internet connected";
-        element.className = "internet-status online";
+        status.textContent = "● Internet connected";
+        status.className = "internet-status online";
+
+    } else if (data.connected === false) {
+        status.textContent = "● Internet unavailable";
+        status.className = "internet-status offline";
+
     } else {
-        element.textContent = "● Internet unavailable";
-        element.className = "internet-status offline";
+        status.textContent = "● Status unknown";
+        status.className = "internet-status unknown";
     }
 
     showJSON("internetDetails", data);
 }
 
+
+/* =========================================
+   TRAFFIC
+========================================= */
+
 function updateTraffic(data) {
-    document.getElementById("totalRx").textContent =
+    element("totalRx").textContent =
         Number(data.total_rx_mbps || 0).toFixed(4) +
         " Mbps";
 
-    document.getElementById("totalTx").textContent =
+    element("totalTx").textContent =
         Number(data.total_tx_mbps || 0).toFixed(4) +
         " Mbps";
 
     showJSON("traffic", data);
 }
 
+
+/* =========================================
+   TRAFFIC CHART
+========================================= */
+
 function drawTrafficChart(samples) {
-    const canvas = document.getElementById(
-        "trafficChart"
-    );
+    const canvas = element("trafficChart");
 
     const rect = canvas.getBoundingClientRect();
 
-    if (!rect.width || !rect.height) return;
+    if (!rect.width || !rect.height) {
+        return;
+    }
 
     const ratio = window.devicePixelRatio || 1;
 
@@ -413,7 +1019,14 @@ function drawTrafficChart(samples) {
 
     const ctx = canvas.getContext("2d");
 
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.setTransform(
+        ratio,
+        0,
+        0,
+        ratio,
+        0,
+        0
+    );
 
     const width = rect.width;
     const height = rect.height;
@@ -438,10 +1051,14 @@ function drawTrafficChart(samples) {
         Number(sample.tx_mbps) || 0
     ]);
 
-    const maxValue = Math.max(0.1, ...values) * 1.2;
+    const maxValue = Math.max(
+        0.1,
+        ...values
+    ) * 1.2;
 
     for (let i = 0; i <= 4; i++) {
         const y = top + chartHeight * i / 4;
+
         const label = (
             maxValue * (1 - i / 4)
         ).toFixed(3);
@@ -456,16 +1073,19 @@ function drawTrafficChart(samples) {
 
     if (!samples.length) {
         ctx.fillStyle = "#8d9bb0";
+
         ctx.fillText(
             "Waiting for traffic samples...",
             left + 10,
             top + chartHeight / 2
         );
+
         return;
     }
 
     function drawLine(key, color) {
         ctx.beginPath();
+
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
 
@@ -495,7 +1115,9 @@ function drawTrafficChart(samples) {
     drawLine("tx_mbps", "#78aaff");
 
     ctx.fillStyle = "#8d9bb0";
+
     ctx.fillText("Oldest", left, height - 5);
+
     ctx.fillText(
         "Latest",
         width - right - 35,
@@ -505,156 +1127,269 @@ function drawTrafficChart(samples) {
 
 async function loadTrafficHistory() {
     const data = await fetchJSON(
-        "/api/v1/network/traffic/history"
+        API + "/network/traffic/history"
     );
 
-    drawTrafficChart(data.samples || []);
+    if (state.authenticated) {
+        drawTrafficChart(data.samples || []);
+    }
 }
 
-async function loadData() {
-    if (loading) return;
 
-    loading = true;
+/* =========================================
+   SYSTEM RESOURCES
+========================================= */
 
-    const button = document.getElementById(
-        "refreshButton"
+function updateResources(data) {
+    if (!data) {
+        return;
+    }
+
+    if (data.memory) {
+        setMetric(
+            "ram",
+            data.memory.percent,
+            "ramBar"
+        );
+    }
+
+    setMetric(
+        "cpu",
+        data.cpu_percent,
+        "cpuBar"
     );
+
+    if (data.disk) {
+        setMetric(
+            "disk",
+            data.disk.percent,
+            "diskBar"
+        );
+    }
+
+    element("cores").textContent =
+        data.cpu_logical_cores ?? "--";
+}
+
+
+/* =========================================
+   MAIN DASHBOARD
+========================================= */
+
+async function loadData() {
+    if (!state.authenticated || state.loading) {
+        return;
+    }
+
+    state.loading = true;
+
+    const button = element("refreshButton");
 
     button.disabled = true;
 
-    document.getElementById("connection").textContent =
-        "Refreshing...";
+    setConnection("Refreshing...");
 
     const jobs = [
-        ["device", "/api/v1/device"],
-        ["capabilities", "/api/v1/capabilities"],
-        ["routes", "/api/v1/network/routes"],
-        ["wifi", "/api/v1/wifi"],
-        ["services", "/api/v1/services"],
-        ["resources", "/api/v1/system/resources"],
-        ["traffic", "/api/v1/network/traffic"],
-        ["internet", "/api/v1/network/internet"]
+        ["device", API + "/device"],
+        ["capabilities", API + "/capabilities"],
+        ["routes", API + "/network/routes"],
+        ["wifi", API + "/wifi"],
+        ["services", API + "/services"],
+        ["resources", API + "/system/resources"],
+        ["traffic", API + "/network/traffic"],
+        ["internet", API + "/network/internet"]
     ];
 
     try {
         const results = await Promise.allSettled(
-            jobs.map(async ([element, url]) => {
+            jobs.map(async ([name, url]) => {
                 const data = await fetchJSON(url);
 
-                if (element === "traffic") {
-                    updateTraffic(data);
-                } else if (element === "internet") {
-                    updateInternet(data);
-                } else {
-                    showJSON(element, data);
+                if (!state.authenticated) {
+                    return { name, data };
                 }
 
-                return { element, data };
+                if (name === "traffic") {
+                    updateTraffic(data);
+
+                } else if (name === "internet") {
+                    updateInternet(data);
+
+                } else if (name === "resources") {
+                    updateResources(data);
+                    showJSON("resources", data);
+
+                } else {
+                    showJSON(name, data);
+                }
+
+                return { name, data };
             })
         );
 
-        let failures = 0;
+        if (!state.authenticated) {
+            return;
+        }
 
-        const successful = {};
+        let failures = 0;
 
         for (const result of results) {
             if (result.status === "rejected") {
                 failures++;
-            } else {
-                successful[result.value.element] =
-                    result.value.data;
             }
         }
 
-        const data = successful.resources;
-
-        if (data) {
-            setMetric(
-                "cpu",
-                data.cpu_percent,
-                "cpuBar"
-            );
-
-            setMetric(
-                "ram",
-                data.memory.percent,
-                "ramBar"
-            );
-
-            if (data.disk) {
-                setMetric(
-                    "disk",
-                    data.disk.percent,
-                    "diskBar"
+        await Promise.all([
+            loadInterfaces(),
+            loadTrafficHistory()
+        ]).catch(error => {
+            if (state.authenticated) {
+                failures++;
+                console.error(
+                    "Additional data error:",
+                    error
                 );
             }
+        });
 
-            document.getElementById("cores").textContent =
-                data.cpu_logical_cores ?? "--";
+        if (!state.authenticated) {
+            return;
         }
 
-        try {
-            await Promise.all([
-                loadInterfaces(),
-                loadTrafficHistory()
-            ]);
-        } catch (error) {
-            failures++;
-            console.error("Additional data error:", error);
-        }
-
-        document.getElementById("connection").textContent =
+        setConnection(
             failures === 0
                 ? "● Connected"
-                : "● Partial data";
+                : "● Partial data"
+        );
 
-        document.getElementById("updated").textContent =
-            "Updated: " + new Date().toLocaleTimeString();
+        element("updated").textContent =
+            "Updated: " +
+            new Date().toLocaleTimeString();
 
     } catch (error) {
-        document.getElementById("connection").textContent =
-            "Connection error: " + error.message;
+        if (state.authenticated) {
+            setConnection(
+                "Connection error: " + error.message
+            );
+        }
+
     } finally {
-        loading = false;
+        state.loading = false;
         button.disabled = false;
     }
 }
 
+
+/* =========================================
+   WI-FI SCAN
+========================================= */
+
 async function scanWifi() {
-    if (scanLoading) return;
+    if (!state.authenticated || state.scanLoading) {
+        return;
+    }
 
-    scanLoading = true;
+    state.scanLoading = true;
 
-    const button = document.getElementById("scanButton");
+    const button = element("scanButton");
 
     button.disabled = true;
 
-    document.getElementById("wifiScan").textContent =
-        "Scanning...";
+    element("wifiScan").textContent = "Scanning...";
 
     try {
         const data = await fetchJSON(
-            "/api/v1/wifi/scan"
+            API + "/wifi/scan"
         );
 
-        showJSON("wifiScan", data);
+        if (state.authenticated) {
+            showJSON("wifiScan", data);
+        }
 
     } catch (error) {
-        document.getElementById("wifiScan").textContent =
-            "Scan error: " + error.message;
+        if (state.authenticated) {
+            element("wifiScan").textContent =
+                "Scan error: " + error.message;
+        }
+
     } finally {
-        scanLoading = false;
+        state.scanLoading = false;
         button.disabled = false;
     }
 }
 
+
+/* =========================================
+   DASHBOARD CONTROLS
+========================================= */
+
+element("refreshButton").addEventListener(
+    "click",
+    loadData
+);
+
+element("scanButton").addEventListener(
+    "click",
+    scanWifi
+);
+
+element("interfaceFilter").addEventListener(
+    "change",
+    loadInterfaces
+);
+
+
+/* =========================================
+   POLLING
+========================================= */
+
+function startPolling() {
+    stopPolling();
+
+    if (!state.authenticated) {
+        return;
+    }
+
+    loadData();
+
+    state.pollingTimer = setInterval(() => {
+        if (state.authenticated) {
+            loadData();
+        }
+    }, 2000);
+}
+
+function stopPolling() {
+    if (state.pollingTimer !== null) {
+        clearInterval(state.pollingTimer);
+        state.pollingTimer = null;
+    }
+}
+
+
+/* =========================================
+   CHART RESIZE
+========================================= */
+
+let resizeTimer = null;
+
 window.addEventListener("resize", () => {
-    loadTrafficHistory().catch(console.error);
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(() => {
+        if (state.authenticated) {
+            loadTrafficHistory().catch(console.error);
+        }
+    }, 250);
 });
 
-loadData();
 
-setInterval(loadData, 2000);
+/* =========================================
+   START APPLICATION
+========================================= */
+
+initializeApp();
+
 </script>
 
 </body>
