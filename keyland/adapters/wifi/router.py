@@ -272,8 +272,9 @@ def stop(confirmed: bool) -> dict[str, Any]:
     run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
     run(["sysctl", "-w", "net.ipv4.ip_forward=" + state.get("previous_ip_forward", "0")])
     if not run(["nmcli", "device", "set", ap, "managed", "yes"])["ok"]: errors.append("Could not restore NetworkManager management.")
-    STATE.unlink(missing_ok=True)
-    for name in ("hostapd.conf", "dnsmasq.conf"):
-        (ROOT / name).unlink(missing_ok=True)
-    return {"success": not errors, "active": False, "errors": errors,
+    if not errors:
+        STATE.unlink(missing_ok=True)
+        for name in ("hostapd.conf", "dnsmasq.conf"):
+            (ROOT / name).unlink(missing_ok=True)
+    return {"success": not errors, "active": False, "configured": bool(errors), "errors": errors,
             "message": "AP and NAT stopped; selected upstream was not reconfigured."}
