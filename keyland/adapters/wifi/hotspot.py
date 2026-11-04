@@ -105,6 +105,10 @@ def get_hotspot_capabilities() -> dict[str, Any]:
     defaults = _default_interfaces()
     nm_by_name = {item["name"]: item for item in devices}
     candidates = []
+    upstream_wifi = [
+        item for item in wifi
+        if item["name"] in defaults and item.get("type") == "managed"
+    ]
 
     for item in wifi:
         nm = nm_by_name.get(item["name"], {})
@@ -112,13 +116,32 @@ def get_hotspot_capabilities() -> dict[str, Any]:
         is_disconnected = nm.get("state", "").lower() in {"disconnected", "unavailable"}
         is_ap = item.get("type") == "AP"
         is_default = item["name"] in defaults
+        same_phy_upstream = any(
+            upstream.get("phy") and upstream.get("phy") == item.get("phy")
+            for upstream in upstream_wifi
+        )
+        concurrency_ok = (
+            not same_phy_upstream
+            or combinations.get("ap_client_combination_mentioned", False)
+        )
+        eligible = bool(
+            is_wifi and not is_default and (is_ap or is_disconnected)
+            and "AP" in modes and concurrency_ok
+        )
+        reason = (
+            "Driver does not report AP mode" if "AP" not in modes
+            else "Wi-Fi upstream uses the same PHY; simultaneous AP + Client support is not confirmed"
+            if not concurrency_ok
+            else None
+        )
         if is_wifi and not is_default and (is_ap or is_disconnected):
             candidates.append({
                 **item,
                 "state": nm.get("state"),
                 "connection": nm.get("connection"),
-                "eligible": "AP" in modes and (is_ap or is_disconnected),
-                "reason": None if "AP" in modes else "Driver does not report AP mode",
+                "shares_phy_with_upstream": same_phy_upstream,
+                "eligible": eligible,
+                "reason": reason,
             })
 
     return {
@@ -128,6 +151,7 @@ def get_hotspot_capabilities() -> dict[str, Any]:
         "supported_modes": modes,
         "interface_combinations": combinations,
         "default_route_interfaces": sorted(defaults),
+        "upstream_wifi_interfaces": [item["name"] for item in upstream_wifi],
         "interfaces": wifi,
         "ap_candidates": candidates,
         "hotspot_profile": _PROFILE,
