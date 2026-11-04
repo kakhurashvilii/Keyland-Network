@@ -157,7 +157,7 @@ def get_hotspot_capabilities() -> dict[str, Any]:
         "hotspot_profile": _PROFILE,
         "security_modes": ["WPA2-PSK"],
         "dns_supported": True,
-        "safe_to_apply": bool(candidates) and "AP" in modes,
+        "safe_to_apply": any(item["eligible"] for item in candidates),
         "limitations": [
             "Only a separate AP interface is eligible; an active upstream Wi-Fi interface is never repurposed.",
             "Wi-Fi repeater mode requires the chipset/driver to support simultaneous managed + AP operation on the same PHY.",
