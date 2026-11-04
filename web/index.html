@@ -461,6 +461,7 @@ button:focus-visible,input:focus-visible,select:focus-visible { outline:2px soli
 .metric { font-size:27px; letter-spacing:-.04em; } .metric-label,.muted { color:var(--muted); } .metric-grid { gap:18px; }
 .cellular-item { padding:15px; border:1px solid var(--border); border-radius:11px; background:rgba(8,17,31,.42); } .cellular-value { font-size:15px; }
 .hotspot-grid { gap:16px; } .hotspot-card { border-color:#34517a !important; background:linear-gradient(145deg,rgba(24,43,70,.98),rgba(15,27,46,.98)) !important; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
 .login-overlay { background:radial-gradient(ellipse at 50% 0%,rgba(48,103,187,.2),transparent 45%),var(--bg); }
 .login-box { border-radius:18px; border-color:var(--border); background:#111e32; box-shadow:0 28px 90px rgba(0,0,0,.45); } .login-box input { margin-bottom:12px; }
 footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
@@ -794,6 +795,11 @@ footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
                 <div>
                     <label for="hotspotSecurity">უსაფრთხოება</label>
                     <select id="hotspotSecurity"><option value="wpa2-psk">WPA2-PSK (AES)</option></select>
+                </div>
+                <div>
+                    <label for="hotspotIpv4">Hotspot-ის IP მისამართი / ქსელი (CIDR)</label>
+                    <input id="hotspotIpv4" type="text" inputmode="text" value="192.168.88.1/24" placeholder="192.168.88.1/24" autocomplete="off" spellcheck="false">
+                    <p class="muted">მაგალითი: 192.168.88.1/24. ეს იქნება Hotspot-ის Gateway; DHCP/NAT-ს NetworkManager მართავს.</p>
                 </div>
                 <div class="hotspot-wide">
                     <label for="hotspotDns">DNS სერვერები (არასავალდებულო)</label>
@@ -1694,6 +1700,7 @@ async function startHotspot() {
     const ssid = element("hotspotSsid").value.trim();
     const password = element("hotspotPassword").value;
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
+    const ipv4Cidr = element("hotspotIpv4").value.trim();
     if (!interfaceName) {
         element("hotspotMessage").textContent = tr("აირჩიე ხელმისაწვდომი AP ინტერფეისი.","Select an eligible AP interface.");
         return;
@@ -1702,17 +1709,21 @@ async function startHotspot() {
         element("hotspotMessage").textContent = tr("პაროლი უნდა შეიცავდეს 8–63 სიმბოლოს.","Password must contain 8–63 characters.");
         return;
     }
-    if (!window.confirm(tr("Hotspot ჩაირთვება ცალკე ინტერფეისზე WPA2 დაცვით და NetworkManager shared DHCP/NAT რეჟიმით. გავაგრძელოთ?","Start WPA2 hotspot on the dedicated interface using NetworkManager shared DHCP/NAT?"))) return;
+    if (!/^\d{1,3}(?:\.\d{1,3}){3}\/(?:[8-9]|[12]\d|30)$/.test(ipv4Cidr)) {
+        element("hotspotMessage").textContent = tr("შეიყვანე სწორი IPv4/CIDR, მაგალითად 192.168.88.1/24.","Enter a valid IPv4/CIDR, e.g. 192.168.88.1/24.");
+        return;
+    }
+    if (!window.confirm(tr("Hotspot ჩაირთვება მითითებული IP-ით, WPA2 დაცვით და NetworkManager DHCP/NAT რეჟიმით. გავაგრძელოთ?","Start WPA2 hotspot using the selected IP and NetworkManager DHCP/NAT?"))) return;
     const button = element("hotspotStartButton");
     button.disabled = true;
     try {
         const response = await apiFetch(API + "/wifi/hotspot/start", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({interface:interfaceName,ssid,password,security:"wpa2-psk",dns_servers:dnsServers,confirmed:true})
+            body:JSON.stringify({interface:interfaceName,ssid,password,security:"wpa2-psk",dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,confirmed:true})
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
-        element("hotspotMessage").textContent = tr("Hotspot ჩაირთო: ","Hotspot started: ") + data.ssid + " · " + data.interface + " · WPA2";
+        element("hotspotMessage").textContent = tr("Hotspot ჩაირთო: ","Hotspot started: ") + data.ssid + " · " + data.interface + " · " + (data.ipv4_cidr || ipv4Cidr) + " · WPA2";
         await loadHotspotCapabilities();
     } catch(error) {
         element("hotspotMessage").textContent = tr("ჩართვა ვერ მოხერხდა: ","Could not start hotspot: ") + error.message;
