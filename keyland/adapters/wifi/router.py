@@ -106,8 +106,8 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(ap, str) or not IFACE.fullmatch(ap) or ap == "lo": raise ValueError("Invalid AP interface.")
     if not isinstance(wan, str) or not IFACE.fullmatch(wan) or wan in (ap, "lo"): raise ValueError("Choose a valid upstream interface.")
     ssid, password = p.get("ssid"), p.get("password")
-    if not isinstance(ssid, str) or not 1 <= len(ssid.encode()) <= 32: raise ValueError("SSID must contain 1–32 UTF-8 bytes.")
-    if not isinstance(password, str) or not 8 <= len(password) <= 63 or not password.isascii(): raise ValueError("WPA2 password must contain 8–63 ASCII characters.")
+    if not isinstance(ssid, str) or not 1 <= len(ssid.encode()) <= 32 or any(ord(ch) < 32 or ord(ch) == 127 for ch in ssid): raise ValueError("SSID must contain 1–32 UTF-8 bytes and no control characters.")
+    if not isinstance(password, str) or not 8 <= len(password) <= 63 or not password.isascii() or not password.isprintable(): raise ValueError("WPA2 password must contain 8–63 printable ASCII characters.")
     try: addr = ipaddress.ip_interface(p.get("ipv4_cidr", "192.168.88.1/24"))
     except (ValueError, TypeError): raise ValueError("Invalid AP IPv4/CIDR.")
     if addr.version != 4 or not 8 <= addr.network.prefixlen <= 30 or addr.ip in (addr.network.network_address, addr.network.broadcast_address):
