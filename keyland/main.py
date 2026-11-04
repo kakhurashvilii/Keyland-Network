@@ -15,6 +15,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from keyland.detector import detect_device, detect_capabilities
 from keyland.adapters.wifi.capabilities import get_wifi_capabilities
+from keyland.adapters.wifi.repeater import get_repeater_status
+from keyland.adapters.cellular.monitor import (
+    get_cellular_status,
+    get_cellular_signal,
+    get_cellular_usage,
+)
 from keyland.network import (
     get_interfaces,
     get_routes,
@@ -41,7 +47,7 @@ from keyland.schemas import TokenResponse
 from keyland.initialize import initialize
 
 
-VERSION = "0.2.0"
+VERSION = "0.4.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
@@ -262,6 +268,21 @@ def traffic_history(user: dict = Depends(require_admin)):
 def internet(user: dict = Depends(require_admin)):
     return get_internet_status()
 
+# Cellular / SIM / LTE / 4G / 5G
+
+@app.get("/api/v1/cellular/status")
+def cellular_status(user: dict = Depends(require_admin)):
+    return get_cellular_status()
+
+
+@app.get("/api/v1/cellular/signal")
+def cellular_signal(user: dict = Depends(require_admin)):
+    return get_cellular_signal()
+
+
+@app.get("/api/v1/cellular/usage")
+def cellular_usage(user: dict = Depends(require_admin)):
+    return get_cellular_usage()
 
 @app.get("/api/v1/network/diagnostics")
 def network_diagnostics(user: dict = Depends(require_admin)):
@@ -275,6 +296,14 @@ def wifi_scan(user: dict = Depends(require_admin)):
 @app.get("/api/v1/wifi/capabilities")
 def wifi_capabilities(user: dict = Depends(require_admin)):
     return get_wifi_capabilities()
+
+
+@app.get("/api/v1/wifi/repeater/status")
+def wifi_repeater_status(
+    user: dict = Depends(require_admin),
+):
+    """Read-only AP/client/repeater readiness inspection."""
+    return get_repeater_status()
 
 @app.get("/api/v1/system/resources")
 def system_resources(user: dict = Depends(require_admin)):

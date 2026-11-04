@@ -1,16 +1,19 @@
+
 import platform
 import re
 import shutil
 import subprocess
+from typing import Any
 
 
-def run_readonly(command: list[str], timeout: int = 15) -> dict:
-    """Run a fixed, read-only system inspection command."""
-    if not shutil.which(command[0]):
+def run_readonly(command: list[str], timeout: int = 15) -> dict[str, Any]:
+    """Run a fixed diagnostic command without changing system state."""
+
+    if not command or not shutil.which(command[0]):
         return {
             "success": False,
             "output": "",
-            "error": f"Required command not found: {command[0]}",
+            "error": f"Command not found: {command[0] if command else 'unknown'}",
         }
 
     try:
@@ -23,15 +26,15 @@ def run_readonly(command: list[str], timeout: int = 15) -> dict:
             errors="replace",
         )
 
-        output = result.stdout or ""
-        error = result.stderr or ""
-
         return {
             "success": result.returncode == 0,
-            "output": output,
-            "error": error.strip() or (
-                f"Command exited with code {result.returncode}"
-                if result.returncode else None
+            "output": result.stdout or "",
+            "error": (
+                result.stderr.strip()
+                or (
+                    f"Command exited with code {result.returncode}"
+                    if result.returncode else None
+                )
             ),
         }
 
@@ -41,6 +44,7 @@ def run_readonly(command: list[str], timeout: int = 15) -> dict:
             "output": "",
             "error": "Command timed out",
         }
+
     except OSError as exc:
         return {
             "success": False,
@@ -49,86 +53,196 @@ def run_readonly(command: list[str], timeout: int = 15) -> dict:
         }
 
 
-def detect_linux_wifi_capabilities() -> dict:
+def parse_linux_interfaces(output: str) -> list[dict[str, Any]]:
+    interfaces = []
+    current = None
+
+    for raw in output.splitlines():
+        line = raw.strip()
+
+        if line.startswith("Interface "):
+            if current:
+                interfaces.append(current)
+
+            current = {
+                "name": line.split(maxsplit=1)[1],
+                "type": None,
+                "phy": None,
+                "ssid": None,
+                "channel": None,
+                "frequency_mhz": None,
+            }
+
+        elif current and line.startswith("type "):
+            current["type"] = line.split(maxsplit=1)[1]
+
+        elif current and line.startswith("wiphy "):
+            current["phy"] = line.split(maxsplit=1)[1]
+
+        elif current and line.startswith("ssid "):
+            current["ssid"] = line[5:].strip()
+
+        elif current:
+            match = re.search(
+                r"channel\s+(\d+)\s+\((\d+)\s+MHz\)",
+                line,
+                re.IGNORECASE,
+            )
+
+            if match:
+                current["channel"] = int(match.group(1))
+                current["frequency_mhz"] = int(match.group(2))
+
+    if current:
+        interfaces.append(current)
+
+    return interfaces
+
+
+def parse_supported_modes(output: str) -> list[str]:
+    modes = []
+    in_modes = False
+
+    for raw in output.splitlines():
+        line = raw.strip()
+
+        if line == "Supported interface modes:":
+            in_modes = True
+            continue
+
+        if in_modes:
+            if line.startswith("*"):
+                mode = line.lstrip("* ").strip()
+
+                if mode and mode not in modes:
+                    modes.append(mode)
+
+            elif line:
+                in_modes = False
+
+    return modes
+
+
+def parse_channels(output: str) -> tuple[list[dict], list[str]]:
+    channels = []
+    bands = set()
+
+    for line in output.splitlines():
+        match = re.search(
+            r"\*\s+(\d+)\s+MHz\s+\[(\d+)\]",
+            line,
+        )
+
+        if not match:
+            continue
+
+        frequency = int(match.group(1))
+        channel = int(match.group(2))
+
+        if 2400 <= frequency < 2500:
+            bands.add("2.4 GHz")
+        elif 4900 <= frequency < 5925:
+            bands.add("5 GHz")
+        elif 5925 <= frequency <= 7125:
+            bands.add("6 GHz")
+
+        channels.append({
+            "frequency_mhz": frequency,
+            "channel": channel,
+        })
+
+    return channels, sorted(bands)
+
+
+def parse_interface_combinations(output: str) -> dict[str, Any]:
+    """
+    Preserve driver-reported valid interface combinations.
+
+    AP and managed support individually does not prove
+    simultaneous AP + Client operation.
+    """
+
+    lines = output.splitlines()
+    combinations = []
+    in_section = False
+
+    for raw in lines:
+        line = raw.strip()
+
+        if line.startswith("valid interface combinations:"):
+            in_section = True
+            continue
+
+        if in_section:
+            if not line:
+                continue
+
+            if line.endswith(":") and not line.startswith("#"):
+                in_section = False
+                continue
+
+            combinations.append(line)
+
+    combined_text = " ".join(combinations)
+
+    ap_client_mentioned = (
+        bool(re.search(r"#\s*\{\s*AP\s*\}", combined_text))
+        and bool(re.search(r"#\s*\{\s*managed\s*\}", combined_text))
+    )
+
+    return {
+        "reported": bool(combinations),
+        "ap_client_combination_mentioned": ap_client_mentioned,
+        "details": combinations,
+        "simultaneous_ap_client": (
+            "driver_reports_combination"
+            if ap_client_mentioned
+            else "unknown"
+        ),
+        "note": (
+            "The driver-reported combination must be checked together "
+            "with interface limits, PHY assignment and actual testing."
+        ),
+    }
+
+
+def detect_linux_wifi_capabilities() -> dict[str, Any]:
     if not shutil.which("iw"):
         return {
             "available": False,
             "platform": "linux",
             "interfaces": [],
             "error": "iw is not installed",
-            "note": "Install iw to inspect wireless capabilities.",
         }
 
     devices = run_readonly(["iw", "dev"])
     phy_info = run_readonly(["iw", "list"], timeout=25)
 
-    interfaces = []
-    current = None
+    interfaces = (
+        parse_linux_interfaces(devices["output"])
+        if devices["success"] else []
+    )
 
-    if devices["success"]:
-        for raw in devices["output"].splitlines():
-            line = raw.strip()
+    if not phy_info["success"]:
+        return {
+            "available": bool(interfaces),
+            "platform": "linux",
+            "interfaces": interfaces,
+            "capabilities": None,
+            "errors": {
+                "interfaces": devices["error"],
+                "phy": phy_info["error"],
+            },
+        }
 
-            if line.startswith("Interface "):
-                if current:
-                    interfaces.append(current)
+    output = phy_info["output"]
 
-                current = {
-                    "name": line.split(maxsplit=1)[1],
-                    "type": None,
-                    "phy": None,
-                }
-
-            elif current and line.startswith("type "):
-                current["type"] = line.split(maxsplit=1)[1]
-
-            elif current and line.startswith("wiphy "):
-                current["phy"] = line.split(maxsplit=1)[1]
-
-        if current:
-            interfaces.append(current)
-
-    modes = []
-    bands = set()
-    channels = []
-
-    if phy_info["success"]:
-        in_modes = False
-
-        for raw in phy_info["output"].splitlines():
-            line = raw.strip()
-
-            if line == "Supported interface modes:":
-                in_modes = True
-                continue
-
-            if in_modes:
-                if line.startswith("*"):
-                    mode = line.lstrip("* ").strip()
-                    if mode and mode not in modes:
-                        modes.append(mode)
-                elif line and not line.startswith("*"):
-                    in_modes = False
-
-            match = re.search(r"\*\s+(\d+)\s+MHz\s+\[(\d+)\]", line)
-            if match:
-                frequency = int(match.group(1))
-                channel = int(match.group(2))
-
-                if 2400 <= frequency < 2500:
-                    bands.add("2.4 GHz")
-                elif 4900 <= frequency < 5925:
-                    bands.add("5 GHz")
-                elif 5925 <= frequency <= 7125:
-                    bands.add("6 GHz")
-
-                channels.append({
-                    "frequency_mhz": frequency,
-                    "channel": channel,
-                })
+    modes = parse_supported_modes(output)
+    channels, bands = parse_channels(output)
+    combinations = parse_interface_combinations(output)
 
     return {
-        "available": bool(interfaces) or phy_info["success"],
+        "available": True,
         "platform": "linux",
         "interfaces": interfaces,
         "capabilities": {
@@ -136,23 +250,28 @@ def detect_linux_wifi_capabilities() -> dict:
             "client": "managed" in modes,
             "monitor": "monitor" in modes,
             "supported_modes": modes,
-            "bands": sorted(bands),
+            "bands": bands,
             "channels": channels,
+            "concurrent_modes": combinations,
         },
         "errors": {
             "interfaces": devices["error"],
-            "phy": phy_info["error"],
+            "phy": None,
         },
         "note": (
-            "Capabilities are driver-reported. Actual operation may "
-            "also depend on regulatory rules, firmware and hardware."
+            "Capabilities are reported by the wireless driver. "
+            "Actual operation also depends on firmware, regulatory "
+            "rules, hardware and PHY interface combinations."
         ),
     }
 
 
-def detect_windows_wifi_capabilities() -> dict:
+def detect_windows_wifi_capabilities() -> dict[str, Any]:
     result = run_readonly([
-        "netsh", "wlan", "show", "drivers"
+        "netsh",
+        "wlan",
+        "show",
+        "drivers",
     ])
 
     if not result["success"]:
@@ -165,8 +284,6 @@ def detect_windows_wifi_capabilities() -> dict:
 
     output = result["output"]
 
-    # Windows output may be localized. If a field cannot be identified,
-    # report unknown instead of guessing.
     radio_types = None
     hosted_network = None
 
@@ -178,13 +295,16 @@ def detect_windows_wifi_capabilities() -> dict:
 
         if "hosted network supported" in normalized and ":" in line:
             value = line.split(":", 1)[1].strip().lower()
+
             if value in ("yes", "no"):
                 hosted_network = value == "yes"
 
     bands = []
+
     if radio_types:
         if re.search(r"802\.11[abgn]", radio_types, re.I):
             bands.append("2.4 GHz")
+
         if re.search(r"802\.11[acax]", radio_types, re.I):
             bands.append("5 GHz")
 
@@ -193,24 +313,30 @@ def detect_windows_wifi_capabilities() -> dict:
         "platform": "windows",
         "interfaces": [],
         "capabilities": {
-            "access_point": True if hosted_network else None,
+            "access_point": hosted_network,
             "legacy_hosted_network": hosted_network,
             "client": True,
             "monitor": None,
             "supported_modes": None,
             "bands": bands,
             "channels": [],
+            "concurrent_modes": {
+                "simultaneous_ap_client": "unknown",
+                "note": (
+                    "Windows driver information does not prove "
+                    "simultaneous AP and Client operation."
+                ),
+            },
         },
         "driver_information": output,
         "note": (
-            "Windows driver output is used for a preliminary check. "
-            "Hosted Network support does not guarantee Mobile Hotspot "
-            "or simultaneous AP/client operation."
+            "Windows Hosted Network support does not guarantee "
+            "Mobile Hotspot or simultaneous AP/client operation."
         ),
     }
 
 
-def get_wifi_capabilities() -> dict:
+def get_wifi_capabilities() -> dict[str, Any]:
     system = platform.system().lower()
 
     if system == "linux":
