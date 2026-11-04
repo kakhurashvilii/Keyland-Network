@@ -323,6 +323,8 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
         return {"success": False, "error": "The selected AP interface is already used by another connection. It was not changed."}
 
     dns_value = ",".join(dns)
+    # Do not pass an empty ipv4.dns value to nmcli: on some NetworkManager
+    # versions this is rejected as an invalid setting and surfaced as HTTP 400.
     settings = [
         "connection.interface-name", interface,
         "802-11-wireless.ssid", ssid,
@@ -334,9 +336,13 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
         "ipv4.never-default", "yes",
         "ipv6.method", "disabled",
         "connection.autoconnect", "no",
-        "ipv4.dns", dns_value,
-        "ipv4.ignore-auto-dns", "yes" if dns_value else "no",
     ]
+    if dns_value:
+        settings.extend(["ipv4.dns", dns_value, "ipv4.ignore-auto-dns", "yes"])
+    else:
+        # Explicitly clear a previous custom DNS list when reusing the profile.
+        if profile_exists:
+            settings.extend(["ipv4.dns", "", "ipv4.ignore-auto-dns", "no"])
 
     if profile_exists:
         result = _run(["nmcli", "connection", "modify", _PROFILE, *settings])
@@ -351,14 +357,20 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
         reason = result.get("error") or result.get("output") or "unknown NetworkManager error"
         return {"success": False, "error": f"Could not prepare NetworkManager hotspot profile: {reason}"}
 
-    activated = _run(["nmcli", "connection", "up", _PROFILE, "ifname", interface], timeout=35)
+    activated = _run(["nmcli", "--wait", "30", "connection", "up", _PROFILE, "ifname", interface], timeout=38)
     if not activated["success"]:
         if not profile_exists:
             _run(["nmcli", "connection", "delete", _PROFILE])
         reason = activated.get("error") or activated.get("output") or "unknown activation error"
+        device_state = _run([
+            "nmcli", "--fields",
+            "GENERAL.STATE,GENERAL.REASON,GENERAL.CONNECTION,GENERAL.MANAGED",
+            "device", "show", interface,
+        ])
+        device_detail = device_state.get("output") or device_state.get("error") or "device diagnostics unavailable"
         return {
             "success": False,
-            "error": f"Hotspot activation failed on {interface}: {reason}",
+            "error": f"Hotspot activation failed on {interface}: {reason}. Device status: {device_detail}",
             "profile_rolled_back": not profile_exists,
         }
 
