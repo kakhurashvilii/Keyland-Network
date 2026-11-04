@@ -403,6 +403,16 @@ footer { font-size:12px; }
 }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; scroll-behavior:auto !important; } }
 
+
+.header-actions { display:flex; gap:8px; align-items:center; }
+.hotspot-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 18px; }
+.hotspot-wide { grid-column:1/-1; }
+.hotspot-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+button.danger { background:#7f2939; border-color:#a33c51; }
+.hotspot-card { border-color:#365273; }
+#hotspotPreflight { max-height:240px; }
+@media(max-width:700px) { .hotspot-grid { grid-template-columns:1fr; } .hotspot-wide { grid-column:auto; } .header-actions { margin-left:auto; } }
+
 </style>
 </head>
 
@@ -461,12 +471,14 @@ footer { font-size:12px; }
                 <span class="status">● სისტემის მართვის პანელი</span>
                 <span class="muted" id="connection"
                       aria-live="polite">სესიის შემოწმება...</span>
+                <span class="cellular-badge" id="serverVersion">API · --</span>
             </div>
         </div>
 
-        <button id="logoutButton" type="button" class="hidden">
-            გასვლა
-        </button>
+        <div class="header-actions">
+            <button id="languageToggle" type="button" class="secondary" aria-label="Change language">EN</button>
+            <button id="logoutButton" type="button" class="hidden">გასვლა</button>
+        </div>
     </div>
 </header>
 
@@ -475,6 +487,7 @@ footer { font-size:12px; }
     <a href="#cellular-title">მობილური ქსელი</a>
     <a href="#wifi-hardware-title">Wi-Fi და ადაპტერები</a>
     <a href="#dns-title">DNS</a>
+    <a href="#hotspot-title">Hotspot</a>
     <a href="#system-title">სისტემა</a>
 </nav>
 
@@ -698,6 +711,46 @@ footer { font-size:12px; }
             <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
             <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
             <p id="dnsMessage" class="muted" role="status"></p>
+        </section>
+
+        <section class="card hotspot-card" style="grid-column: 1 / -1;">
+            <h3 id="hotspot-title">Wi-Fi Hotspot / Repeater</h3>
+            <p class="muted">შექმენი დაცული WPA2 hotspot ცალკე AP ინტერფეისზე. აქტიური Wi-Fi კავშირი არ გადაირთვება. Wi-Fi repeater იმუშავებს მხოლოდ მაშინ, თუ ჩიპსეტი ერთდროულად AP + Client რეჟიმს უჭერს მხარს.</p>
+            <div class="hotspot-grid">
+                <div>
+                    <label for="hotspotInterface">AP ინტერფეისი</label>
+                    <select id="hotspotInterface" aria-describedby="hotspotPreflight"><option value="">ჯერ შეამოწმე მოწყობილობა</option></select>
+                </div>
+                <div>
+                    <label for="hotspotSsid">Hotspot-ის სახელი (SSID)</label>
+                    <input id="hotspotSsid" type="text" maxlength="32" value="Keyland-Hotspot" autocomplete="off">
+                </div>
+                <div>
+                    <label for="hotspotPassword">პაროლი (8–63 სიმბოლო)</label>
+                    <input id="hotspotPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="შეიყვანე ძლიერი პაროლი">
+                </div>
+                <div>
+                    <label for="hotspotSecurity">უსაფრთხოება</label>
+                    <select id="hotspotSecurity"><option value="wpa2-psk">WPA2-PSK (AES)</option></select>
+                </div>
+                <div class="hotspot-wide">
+                    <label for="hotspotDns">DNS სერვერები (არასავალდებულო)</label>
+                    <input id="hotspotDns" type="text" placeholder="1.1.1.1, 8.8.8.8">
+                    <p class="muted">DNS მიეთითება hotspot-ის NetworkManager პროფილში. კლიენტების DHCP/DNS/NAT მომსახურებას NetworkManager-ის shared რეჟიმი უზრუნველყოფს.</p>
+                </div>
+            </div>
+            <div class="hotspot-wide">
+                <label for="hotspotSourceInterface">საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)</label>
+                <select id="hotspotSourceInterface"><option value="">ინტერფეისის არჩევა</option></select>
+            </div>
+            <div class="hotspot-actions">
+                <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
+                <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
+                <button id="hotspotStartButton" type="button" disabled>Hotspot-ის ჩართვა</button>
+                <button id="hotspotStopButton" type="button" class="danger secondary">Hotspot-ის გამორთვა</button>
+            </div>
+            <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+            <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
 
         <section class="card">
@@ -962,10 +1015,20 @@ element("logoutButton").addEventListener("click", logout);
 
 /* SESSION CHECK */
 
+
+async function loadServerVersion() {
+    try {
+        const health = await fetchJSON(API + "/health");
+        element("serverVersion").textContent = "Keyland v" + (health.version || "—");
+    } catch (_) {
+        element("serverVersion").textContent = "API · offline";
+    }
+}
 async function initializeApp() {
     if (state.sessionCheckInProgress) return;
 
     state.sessionCheckInProgress = true;
+    loadServerVersion();
 
     try {
         const response = await fetch(API + "/auth/me", {
@@ -1400,6 +1463,219 @@ async function loadData() {
     }
 }
 
+
+/* Georgian / English interface */
+const translations = {
+ "ქსელის მართვის ერთიანი პანელი":"Network Management Console",
+ "ადმინისტრატორის სახელი":"Administrator username",
+ "პაროლი":"Password",
+ "შესვლა":"Sign in",
+ "მხოლოდ ადმინისტრატორისთვის":"Administrators only",
+ "გასვლა":"Sign out",
+ "მიმოხილვა":"Overview",
+ "მობილური ქსელი":"Mobile network",
+ "Wi-Fi და ადაპტერები":"Wi-Fi & adapters",
+ "სისტემა":"System",
+ "მონაცემების განახლება":"Refresh data",
+ "Wi-Fi ქსელების ძიება":"Scan Wi-Fi networks",
+ "ჯერ არ განახლებულა":"Not updated yet",
+ "მოწყობილობა":"Device",
+ "სისტემური რესურსები":"System resources",
+ "პროცესორის დატვირთვა":"CPU usage",
+ "ოპერატიული მეხსიერება":"Memory usage",
+ "დისკის გამოყენება":"Disk usage",
+ "პროცესორის ნაკადები":"CPU threads",
+ "ინტერნეტის მდგომარეობა":"Internet status",
+ "SIM / მობილური ქსელი":"SIM / Mobile network",
+ "მოწყობილობის შესაძლებლობები":"Device capabilities",
+ "ქსელის ინტერფეისები":"Network interfaces",
+ "Wi-Fi ადაპტერის შესაძლებლობები":"Wi-Fi adapter capabilities",
+ "რეპიტერის რეჟიმის მზადყოფნა":"Repeater readiness",
+ "მარშრუტიზაციის ცხრილი":"Routing table",
+ "Wi-Fi კავშირი":"Wi-Fi connection",
+ "ახლომდებარე Wi-Fi ქსელები":"Nearby Wi-Fi networks",
+ "DNS-ის მართვა":"DNS management",
+ "ქსელის ინტერფეისი":"Network interface",
+ "DNS სერვერები (მძიმით გამოყოფილი)":"DNS servers (comma-separated)",
+ "DNS სერვერები (არასავალდებულო)":"DNS servers (optional)",
+ "DNS-ის გამოყენება":"Apply DNS",
+ "ავტომატურზე დაბრუნება":"Restore automatic",
+ "მდგომარეობის ნახვა":"Refresh status",
+ "Wi-Fi ადაპტერები და ჩიპსეტები":"Wi-Fi adapters & chipsets",
+ "WAN / LAN და DHCP":"WAN / LAN & DHCP",
+ "Firewall და NAT":"Firewall & NAT",
+ "SIM / LTE / 5G პარამეტრები":"SIM / LTE / 5G settings",
+ "ქსელთან დაკავშირებული მოწყობილობები":"Connected devices",
+ "სისტემა, ჟურნალები და აღდგენა":"System, logs & recovery",
+ "შესაძლებლობების შემოწმება":"Check capabilities",
+ "ცალკე AP ინტერფეისის შექმნა":"Create dedicated AP interface",
+ "საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)":"Source Wi-Fi interface (to create virtual AP)",
+ "ინტერფეისის არჩევა":"Select interface",
+ "Hotspot-ის ჩართვა":"Start hotspot",
+ "Hotspot-ის გამორთვა":"Stop hotspot",
+ "AP ინტერფეისი":"AP interface",
+ "Hotspot-ის სახელი (SSID)":"Hotspot name (SSID)",
+ "უსაფრთხოება":"Security",
+ "პაროლი (8–63 სიმბოლო)":"Password (8–63 characters)",
+ "SIM, ModemManager, LTE/4G/5G and mobile interface monitoring.":"SIM-ის, ModemManager-ის, LTE/4G/5G-ისა და მობილური ინტერფეისების მონიტორინგი.",
+ "SIM STATUS":"SIM-ის სტატუსი",
+ "OPERATOR":"ოპერატორი",
+ "MODEM STATUS":"მოდემის სტატუსი",
+ "Loading...":"იტვირთება...",
+ "Scanning...":"სკანირება...",
+ "Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.",
+ "Read-only inspection of AP + Client and forwarding readiness.":"AP + Client რეჟიმისა და ტრაფიკის გადაცემის მზადყოფნის მხოლოდ წაკითხვადი შემოწმება.",
+ "Press Scan Wi-Fi networks":"დააჭირე Wi-Fi ქსელების ძიებას",
+ "Connection error: ":"კავშირის შეცდომა: "
+};
+const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+
+const originalTextNodes = new WeakMap();
+let uiLanguage = localStorage.getItem("keyland-language") === "en" ? "en" : "ka";
+function applyLanguage(language) {
+    uiLanguage = language === "en" ? "en" : "ka";
+    localStorage.setItem("keyland-language", uiLanguage);
+    document.documentElement.lang = uiLanguage;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+        if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
+        const original = originalTextNodes.get(node);
+        const trimmed = original.trim();
+        if (!trimmed) continue;
+        const translated = uiLanguage === "en" ? translations[trimmed] : reverseTranslations[trimmed];
+        if (translated) {
+            node.nodeValue = original.replace(trimmed, translated);
+        } else {
+            node.nodeValue = original;
+        }
+    }
+    const toggle = document.getElementById("languageToggle");
+    if (toggle) toggle.textContent = uiLanguage === "en" ? "ქარ" : "EN";
+}
+function tr(ka, en) { return uiLanguage === "en" ? en : ka; }
+document.getElementById("languageToggle").addEventListener("click", () => applyLanguage(uiLanguage === "en" ? "ka" : "en"));
+applyLanguage(uiLanguage);
+
+/* Hotspot preflight and guarded controls */
+async function loadHotspotCapabilities() {
+    const output = element("hotspotPreflight");
+    const select = element("hotspotInterface");
+    const start = element("hotspotStartButton");
+    output.textContent = tr("მოწყობილობის შესაძლებლობები მოწმდება...","Checking device capabilities...");
+    start.disabled = true;
+    try {
+        const data = await fetchJSON(API + "/wifi/hotspot/capabilities");
+        select.replaceChildren(new Option(tr("აირჩიე AP ინტერფეისი","Select an AP interface"), ""));
+        const sourceSelect = element("hotspotSourceInterface");
+        sourceSelect.replaceChildren(new Option(tr("ინტერფეისის არჩევა","Select interface"), ""));
+        (data.interfaces || []).forEach(item => sourceSelect.add(new Option(item.name + " · " + (item.type || "Wi-Fi"), item.name)));
+        element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).length > 0);
+        (data.ap_candidates || []).filter(item => item.eligible).forEach(item => {
+            select.add(new Option(item.name + " · " + (item.type || "Wi-Fi"), item.name));
+        });
+        start.disabled = !(data.safe_to_apply && select.options.length > 1);
+        element("hotspotStopButton").disabled = !data.hotspot_active;
+        if (data.hotspot_active && data.hotspot_active_interface) {
+            const activeOption = Array.from(select.options).find(option => option.value === data.hotspot_active_interface);
+            if (activeOption) select.value = data.hotspot_active_interface;
+        }
+        const lines = [
+            tr("მართვის სისტემა: ","Manager: ") + (data.manager || "—"),
+            tr("Hotspot მდგომარეობა: ","Hotspot status: ") + (data.hotspot_active ? tr("ჩართულია","ACTIVE") : tr("გამორთულია","STOPPED")),
+            tr("AP რეჟიმი: ","AP mode: ") + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
+            tr("WAN წყარო: ","WAN source: ") + ((data.upstream_sources || []).map(item => item.interface + " (" + item.type + ")").join(", ") || tr("ნაგულისხმევი მარშრუტი ვერ მოიძებნა","No default route detected")),
+            tr("ნაგულისხმევი მარშრუტი: ","Default route: ") + ((data.default_route_interfaces || []).join(", ") || "—"),
+            tr("ხელმისაწვდომი AP ინტერფეისები:","Eligible AP interfaces:"),
+            ...((data.ap_candidates || []).map(item => item.name + " · " + (item.state || "unknown") + (item.eligible ? " · READY" : " · NOT READY"))),
+            "",
+            ...(data.limitations || [])
+        ];
+        output.textContent = lines.join("\n");
+        if (!data.safe_to_apply) {
+            element("hotspotMessage").textContent = tr(
+                "უსაფრთხო AP ინტერფეისი ვერ მოიძებნა. აქტიურ wlan0 კავშირს არ შევეხები. ჯერ საჭიროა ცალკე AP ინტერფეისი და AP+Client მხარდაჭერის დადასტურება.",
+                "No safe AP interface found. The active wlan0 connection will not be touched. A separate AP interface and verified AP+Client capability are required."
+            );
+        } else {
+            element("hotspotMessage").textContent = tr("მზადაა: აირჩიე ცალკე AP ინტერფეისი.","Ready: select a dedicated AP interface.");
+        }
+    } catch (error) {
+        output.textContent = tr("შესაძლებლობების შემოწმება ვერ მოხერხდა: ","Capability check failed: ") + error.message;
+    }
+}
+async function startHotspot() {
+    const interfaceName = element("hotspotInterface").value;
+    const ssid = element("hotspotSsid").value.trim();
+    const password = element("hotspotPassword").value;
+    const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
+    if (!interfaceName) {
+        element("hotspotMessage").textContent = tr("აირჩიე ხელმისაწვდომი AP ინტერფეისი.","Select an eligible AP interface.");
+        return;
+    }
+    if (password.length < 8 || password.length > 63) {
+        element("hotspotMessage").textContent = tr("პაროლი უნდა შეიცავდეს 8–63 სიმბოლოს.","Password must contain 8–63 characters.");
+        return;
+    }
+    if (!window.confirm(tr("Hotspot ჩაირთვება ცალკე ინტერფეისზე WPA2 დაცვით და NetworkManager shared DHCP/NAT რეჟიმით. გავაგრძელოთ?","Start WPA2 hotspot on the dedicated interface using NetworkManager shared DHCP/NAT?"))) return;
+    const button = element("hotspotStartButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/start", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:interfaceName,ssid,password,security:"wpa2-psk",dns_servers:dnsServers,confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr("Hotspot ჩაირთო: ","Hotspot started: ") + data.ssid + " · " + data.interface + " · WPA2";
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent = tr("ჩართვა ვერ მოხერხდა: ","Could not start hotspot: ") + error.message;
+    } finally { button.disabled = false; }
+}
+async function stopHotspot() {
+    if (!window.confirm(tr("გამორთო Keyland-Hotspot?","Stop Keyland-Hotspot?"))) return;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/stop", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr("Hotspot გამორთულია.","Hotspot stopped.");
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent = tr("გამორთვა ვერ მოხერხდა: ","Could not stop hotspot: ") + error.message;
+    }
+}
+
+async function createVirtualApInterface() {
+    const interfaceName = element("hotspotSourceInterface").value;
+    if (!interfaceName) {
+        element("hotspotMessage").textContent = tr("აირჩიე საწყისი Wi-Fi ინტერფეისი.","Select the source Wi-Fi interface.");
+        return;
+    }
+    if (!window.confirm(tr("შეიქმნება ცალკე keyland-ap ინტერფეისი. აქტიური Wi-Fi კავშირი არ უნდა გაითიშოს, მაგრამ დრაივერის შეზღუდვის შემთხვევაში ოპერაცია შეიძლება უარყოფილი იყოს. გავაგრძელოთ?","Create a separate keyland-ap interface. The active Wi-Fi connection will not be intentionally disconnected; the driver may reject this if concurrency is unsupported. Continue?"))) return;
+    const button = element("hotspotCreateInterfaceButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/create-interface", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:interfaceName,confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = data.message || tr("AP ინტერფეისი შეიქმნა.","AP interface created.");
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent = tr("AP ინტერფეისის შექმნა ვერ მოხერხდა: ","Could not create AP interface: ") + error.message;
+    } finally { button.disabled = false; }
+}
+element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualApInterface);
+element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
+element("hotspotStartButton").addEventListener("click", startHotspot);
+element("hotspotStopButton").addEventListener("click", stopHotspot);
+
 /* DNS MANAGEMENT */
 function renderDnsStatus(data) {
     const box = element("dnsStatus");
@@ -1430,7 +1706,15 @@ async function loadDnsStatus() {
         const response = await apiFetch(API + "/network/dns");
         const data = await response.json().catch(() => ({}));
         if (response.status === 404) {
-            throw new Error("DNS API ვერ მოიძებნა (404). განაახლეთ პროექტი main ბრენჩიდან და გადატვირთეთ Keyland Network სერვისი.");
+            let version = "უცნობია";
+            try {
+                const health = await fetchJSON(API + "/health");
+                version = health.version || version;
+            } catch (_) {}
+            throw new Error(tr(
+                "DNS API ამ გაშვებულ სერვერზე არ არის რეგისტრირებული (HTTP 404). სერვერის ვერსია: " + version + ". შეამოწმე, რომ გაშვებულია Keyland Network v0.5.0 ან უფრო ახალი და გადაიტვირთა სწორი systemd სერვისი.",
+                "The running server does not expose the DNS endpoint (HTTP 404). Server version: " + version + ". Ensure Keyland Network v0.5.0 or newer is deployed and the correct systemd service has been restarted."
+            ));
         }
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
         renderDnsStatus(data);
@@ -1454,10 +1738,10 @@ async function submitDns(path, payload, confirmationText) {
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || result.error || ("HTTP " + response.status));
-        element("dnsMessage").textContent = "მოთხოვნა შესრულდა. შედეგი გადაამოწმეთ ქვემოთ.";
+        element("dnsMessage").textContent = tr("მოთხოვნა შესრულდა. შედეგი გადაამოწმეთ ქვემოთ.","Request applied. Verify the result below.");
         await loadDnsStatus();
     } catch (error) {
-        element("dnsMessage").textContent = "შეცდომა: " + error.message;
+        element("dnsMessage").textContent = tr("შეცდომა: ","Error: ") + error.message;
     } finally {
         buttons.forEach(id => element(id).disabled = false);
     }
@@ -1533,6 +1817,8 @@ function startPolling() {
     if (!state.authenticated) return;
 
     loadData();
+    loadDnsStatus();
+    loadHotspotCapabilities();
 
     state.pollingTimer = setInterval(() => {
         if (state.authenticated) {

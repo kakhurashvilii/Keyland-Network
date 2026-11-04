@@ -48,7 +48,9 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "0.2.0"
+    assert response.json()["version"] == "0.5.0"
+    assert response.json()["api"] == "v1"
+    assert response.json()["management"]["dns"] == "/api/v1/network/dns"
 
 
 def test_device():
@@ -240,5 +242,37 @@ def test_dns_apply_requires_explicit_confirmation():
             "servers": ["1.1.1.1"],
             "confirmed": False,
         },
+    )
+    assert response.status_code == 400
+
+
+def test_hotspot_capabilities_requires_admin():
+    response = unauth_client.get("/api/v1/wifi/hotspot/capabilities")
+    assert response.status_code == 401
+
+
+def test_hotspot_capabilities_endpoint():
+    response = client.get("/api/v1/wifi/hotspot/capabilities")
+    assert response.status_code == 200
+    assert "ap_candidates" in response.json()
+
+
+def test_hotspot_start_rejects_weak_password():
+    response = client.post(
+        "/api/v1/wifi/hotspot/start",
+        json={
+            "interface": "ap0",
+            "ssid": "Keyland",
+            "password": "short",
+            "confirmed": True,
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_hotspot_virtual_interface_requires_confirmation():
+    response = client.post(
+        "/api/v1/wifi/hotspot/create-interface",
+        json={"interface": "wlan0", "confirmed": False},
     )
     assert response.status_code == 400
