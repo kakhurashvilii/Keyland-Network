@@ -189,6 +189,7 @@ def test_invalid_admin_password():
     assert response.status_code == 401
 
 
+
 def test_regular_user_cannot_access_admin():
     create_user(
         username="regularuser",
@@ -196,6 +197,7 @@ def test_regular_user_cannot_access_admin():
         role="user",
     )
 
+    # ჩვეულებრივ მომხმარებელს ადმინისტრატორის Token არ ეძლევა.
     login = unauth_client.post(
         "/api/v1/auth/token",
         data={
@@ -204,16 +206,11 @@ def test_regular_user_cannot_access_admin():
         },
     )
 
-    assert login.status_code == 200
+    assert login.status_code == 401
 
-    token = login.json()["access_token"]
-
-    response = unauth_client.get(
-        "/api/v1/auth/admin-check",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert response.status_code == 403
+    # Token-ის გარეშე ადმინისტრატორის API მიუწვდომელია.
+    response = unauth_client.get("/api/v1/auth/admin-check")
+    assert response.status_code == 401
 
 
 def test_admin_access():

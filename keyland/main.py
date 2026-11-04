@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from keyland.detector import detect_device, detect_capabilities
-
+from keyland.adapters.wifi.capabilities import get_wifi_capabilities
 from keyland.network import (
     get_interfaces,
     get_routes,
@@ -272,6 +272,9 @@ def network_diagnostics(user: dict = Depends(require_admin)):
 def wifi_scan(user: dict = Depends(require_admin)):
     return get_wifi_scan()
 
+@app.get("/api/v1/wifi/capabilities")
+def wifi_capabilities(user: dict = Depends(require_admin)):
+    return get_wifi_capabilities()
 
 @app.get("/api/v1/system/resources")
 def system_resources(user: dict = Depends(require_admin)):
