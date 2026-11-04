@@ -39,28 +39,50 @@ def _run(args: list[str], timeout: int = 12) -> dict[str, Any]:
 def _wifi_interfaces() -> list[dict[str, Any]]:
     if not shutil.which("iw"):
         return []
+
     result = _run(["iw", "dev"])
     if not result["success"]:
         return []
+
     found: list[dict[str, Any]] = []
     phy = None
     current = None
+
     for raw in result["output"].splitlines():
         line = raw.strip()
+
         if line.startswith("phy#"):
+            if current:
+                found.append(current)
+                current = None
             phy = line
+
+        elif line.startswith("Unnamed/non-netdev interface"):
+            if current:
+                found.append(current)
+                current = None
+
         elif line.startswith("Interface "):
             if current:
                 found.append(current)
-            current = {"name": line.split(maxsplit=1)[1], "phy": phy, "type": None, "ssid": None}
+
+            current = {
+                "name": line.split(maxsplit=1)[1],
+                "phy": phy,
+                "type": None,
+                "ssid": None,
+            }
+
         elif current and line.startswith("type "):
             current["type"] = line.split(maxsplit=1)[1]
+
         elif current and line.startswith("ssid "):
             current["ssid"] = line[5:].strip()
+
     if current:
         found.append(current)
-    return found
 
+    return found
 
 def _nm_devices() -> list[dict[str, str]]:
     result = _run(["nmcli", "--terse", "--escape", "yes", "--fields", "DEVICE,TYPE,STATE,CONNECTION", "device", "status"])
@@ -290,48 +312,98 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def create_virtual_ap(interface: str, confirmed: bool) -> dict[str, Any]:
-    """Create a separate AP virtual interface without touching the upstream link."""
+    """Create and verify a dedicated AP interface without touching upstream Wi-Fi."""
     if confirmed is not True:
         return {"success": False, "error": "Explicit administrator confirmation is required."}
+
     if not isinstance(interface, str) or not _IFACE.fullmatch(interface) or interface == "lo":
         return {"success": False, "error": "Invalid source Wi-Fi interface."}
-    if not shutil.which("iw"):
-        return {"success": False, "error": "iw is not installed."}
+
+    if not shutil.which("iw") or not shutil.which("ip"):
+        return {"success": False, "error": "Required iw or ip command is missing."}
 
     preflight = get_hotspot_capabilities()
     if not preflight.get("available") or not preflight.get("ap_mode_supported"):
-        return {"success": False, "error": "The driver does not currently report AP mode support."}
+        return {"success": False, "error": "AP mode is not supported or Wi-Fi tools are unavailable."}
 
-    source = next((item for item in preflight["interfaces"] if item["name"] == interface), None)
-    if not source or source.get("type") not in {"managed", "AP"}:
-        return {"success": False, "error": "Select an existing Wi-Fi interface reported by iw."}
-    if any(item["name"] == "keyland-ap" for item in preflight["interfaces"]):
-        return {"success": True, "created": False, "interface": "keyland-ap", "message": "The Keyland AP interface already exists."}
+    source = next(
+        (item for item in preflight["interfaces"] if item["name"] == interface),
+        None,
+    )
+    if not source or source.get("type") != "managed":
+        return {"success": False, "error": "Select an existing managed Wi-Fi interface."}
 
     active_wifi = (
         source.get("ssid") is not None
         or interface in preflight.get("upstream_wifi_interfaces", [])
         or interface in preflight.get("default_route_interfaces", [])
     )
+
     if active_wifi:
         combinations = preflight.get("interface_combinations") or {}
         if not combinations.get("ap_client_combination_mentioned"):
-            return {"success": False, "error": "The source Wi-Fi is active, but simultaneous AP + Client support is not confirmed by the driver. No changes were made."}
+            return {
+                "success": False,
+                "error": "Simultaneous AP + Client support is not confirmed. No changes made.",
+            }
 
-    result = _run(["iw", "dev", interface, "interface", "add", "keyland-ap", "type", "__ap"])
-    if not result["success"]:
-        return {"success": False, "error": "The driver refused to create a virtual AP interface. The active connection was left unchanged."}
+    interfaces = _wifi_interfaces()
+    existing = next(
+        (item for item in interfaces if item["name"] == "keyland-ap"),
+        None,
+    )
 
-    created = next((item for item in _wifi_interfaces() if item["name"] == "keyland-ap"), None)
-    if not created:
-        _run(["iw", "dev", "keyland-ap", "del"])
-        return {"success": False, "error": "The new AP interface could not be verified and was rolled back."}
+    created_now = False
+
+    if existing is None:
+        result = _run([
+            "iw", "dev", interface, "interface",
+            "add", "keyland-ap", "type", "__ap",
+        ])
+        if not result["success"]:
+            return {
+                "success": False,
+                "error": f"Could not create AP interface: {result.get('error') or result.get('output') or 'unknown error'}",
+            }
+        created_now = True
+    elif existing.get("type") != "AP":
+        down = _run(["ip", "link", "set", "keyland-ap", "down"])
+        if not down["success"]:
+            return {
+                "success": False,
+                "error": f"Could not safely prepare existing interface: {down.get('error')}",
+            }
+
+        mode = _run(["iw", "dev", "keyland-ap", "set", "type", "__ap"])
+        if not mode["success"]:
+            return {
+                "success": False,
+                "error": f"Could not switch existing interface to AP mode: {mode.get('error')}",
+            }
+
+    verified = next(
+        (item for item in _wifi_interfaces() if item["name"] == "keyland-ap"),
+        None,
+    )
+
+    if not verified or verified.get("type") != "AP":
+        if created_now:
+            _run(["iw", "dev", "keyland-ap", "del"])
+        return {
+            "success": False,
+            "error": "AP interface verification failed. Expected type AP.",
+        }
 
     return {
-        "success": True, "created": True, "interface": "keyland-ap",
-        "phy": created.get("phy"),
-        "message": "Separate AP interface created. Refresh capability detection before starting the hotspot.",
+        "success": True,
+        "created": created_now,
+        "interface": "keyland-ap",
+        "type": "AP",
+        "phy": verified.get("phy"),
+        "message": "Dedicated AP interface created and verified.",
     }
+
+
 
 def stop_hotspot(confirmed: bool) -> dict[str, Any]:
     if confirmed is not True:
