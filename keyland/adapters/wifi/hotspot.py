@@ -126,13 +126,17 @@ def get_hotspot_capabilities() -> dict[str, Any]:
     candidates = []
     upstream_wifi = [
         item for item in wifi
-        if item["name"] in defaults and item.get("type") == "managed"
+        if item.get("type") == "managed"
+        and (
+            item["name"] in defaults
+            or nm_by_name.get(item["name"], {}).get("state", "").lower() == "connected"
+        )
     ]
 
     for item in wifi:
         nm = nm_by_name.get(item["name"], {})
         is_wifi = nm.get("type") == "wifi"
-        is_disconnected = nm.get("state", "").lower() in {"disconnected", "unavailable"}
+        is_disconnected = nm.get("state", "").lower() == "disconnected"
         is_ap = item.get("type") == "AP"
         is_default = item["name"] in defaults
         same_phy_upstream = any(
@@ -304,7 +308,11 @@ def create_virtual_ap(interface: str, confirmed: bool) -> dict[str, Any]:
     if any(item["name"] == "keyland-ap" for item in preflight["interfaces"]):
         return {"success": True, "created": False, "interface": "keyland-ap", "message": "The Keyland AP interface already exists."}
 
-    active_wifi = source.get("ssid") is not None or interface in preflight.get("default_route_interfaces", [])
+    active_wifi = (
+        source.get("ssid") is not None
+        or interface in preflight.get("upstream_wifi_interfaces", [])
+        or interface in preflight.get("default_route_interfaces", [])
+    )
     if active_wifi:
         combinations = preflight.get("interface_combinations") or {}
         if not combinations.get("ap_client_combination_mentioned"):
