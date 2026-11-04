@@ -1803,8 +1803,8 @@ async function loadHotspotCapabilities() {
         wan.value = (element("hotspotMode").value === "repeater" ? wifiWan : simWan || wifiWan)?.interface || "";
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
-        start.disabled = !wan.value || status.active;
-        element("hotspotStopButton").disabled = !status.active;
+        start.disabled = !wan.value || status.configured;
+        element("hotspotStopButton").disabled = !status.configured;
         const lines = [
             "AP mode: " + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
             "AP interface: " + ((data.interfaces || []).filter(x => x.type === "AP").map(x => x.name).join(", ") || "none"),
