@@ -104,13 +104,15 @@ def set_dns(interface: str, servers: list[str], confirmed: bool) -> dict[str, An
         if not changed["success"]:
             return {"success": False, "error": "NetworkManager rejected the DNS profile change."}
         applied = _command(["nmcli", "device", "reapply", interface])
-        if not applied["success"]:
+        verified = _command(["nmcli", "-g", "ipv4.dns", "connection", "show", connection])
+        actual = [item.strip() for item in verified["output"].replace(";", ",").split(",") if item.strip()]
+        if not applied["success"] or not verified["success"] or actual != addresses:
             _command([
                 "nmcli", "connection", "modify", connection,
                 "ipv4.dns", old_dns,
                 "ipv4.ignore-auto-dns", old_ignore,
             ])
-            return {"success": False, "error": "DNS could not be applied live; the previous profile values were restored."}
+            return {"success": False, "error": "DNS could not be verified after apply; the previous profile values were restored."}
         return {
             "success": True, "interface": interface, "servers": addresses,
             "manager": "NetworkManager", "persistent": True,
@@ -148,12 +150,13 @@ def reset_dns(interface: str, confirmed: bool) -> dict[str, Any]:
         if not changed["success"]:
             return {"success": False, "error": "NetworkManager could not restore automatic DNS."}
         applied = _command(["nmcli", "device", "reapply", interface])
-        if not applied["success"]:
+        verified = _command(["nmcli", "-g", "ipv4.ignore-auto-dns", "connection", "show", connection])
+        if not applied["success"] or not verified["success"] or verified["output"].strip().lower() != "no":
             _command([
                 "nmcli", "connection", "modify", connection,
                 "ipv4.dns", old_dns, "ipv4.ignore-auto-dns", old_ignore,
             ])
-            return {"success": False, "error": "Automatic DNS could not be applied; previous profile values were restored."}
+            return {"success": False, "error": "Automatic DNS could not be verified; previous profile values were restored."}
         return {
             "success": True, "interface": interface,
             "manager": "NetworkManager", "persistent": True,
