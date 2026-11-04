@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyland Network</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #10141d;
+    color: #e8edf5;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    padding: 22px;
+    background: #171e2b;
+    border-bottom: 1px solid #30394a;
+}
+
+header h1 { margin: 0; font-size: 24px; }
+header p { color: #8d9bb0; }
+
+main {
+    max-width: 1250px;
+    margin: auto;
+    padding: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 15px;
+}
+
+.card {
+    background: #1a2230;
+    border: 1px solid #30394a;
+    border-radius: 12px;
+    padding: 18px;
+    overflow-wrap: anywhere;
+}
+
+.card h3 {
+    margin-top: 0;
+    color: #78aaff;
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: #b9c8dc;
+    font-size: 12px;
+    max-height: 420px;
+    overflow: auto;
+}
+
+.status { color: #50d69b; }
+.muted { color: #8d9bb0; font-size: 12px; }
+
+button {
+    background: #2869d8;
+    border: 0;
+    padding: 10px 16px;
+    color: white;
+    border-radius: 7px;
+    cursor: pointer;
+    margin: 4px 4px 14px 0;
+}
+
+button:disabled { opacity: .5; cursor: wait; }
+
+.metric {
+    font-size: 25px;
+    font-weight: bold;
+    margin: 8px 0;
+}
+
+.metric-label { color: #8d9bb0; font-size: 12px; }
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.bar {
+    height: 8px;
+    background: #30394a;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 7px;
+}
+
+.bar > div {
+    height: 100%;
+    background: #50d69b;
+    width: 0%;
+}
+
+footer {
+    color: #78869b;
+    text-align: center;
+    padding: 30px;
+}
+
+</style>
+</head>
+
+<body>
+<header>
+    <h1>KEYLAND NETWORK</h1>
+    <p>Universal Network Management Platform</p>
+    <span class="status">● System dashboard</span>
+    <span class="muted" id="connection">Connecting...</span>
+</header>
+
+<main>
+    <button id="refreshButton" onclick="loadData()">Refresh information</button>
+    <button id="scanButton" onclick="scanWifi()">Scan Wi-Fi networks</button>
+    <span class="muted" id="updated">Not updated yet</span>
+
+    <div class="grid">
+
+        <section class="card">
+            <h3>Device</h3>
+            <pre id="device">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>System Resources</h3>
+            <div class="metric-grid">
+                <div>
+                    <div class="metric" id="cpu">--%</div>
+                    <div class="metric-label">CPU usage</div>
+                    <div class="bar"><div id="cpuBar"></div></div>
+                </div>
+                <div>
+                    <div class="metric" id="ram">--%</div>
+                    <div class="metric-label">RAM usage</div>
+                    <div class="bar"><div id="ramBar"></div></div>
+                </div>
+                <div>
+                    <div class="metric" id="disk">--%</div>
+                    <div class="metric-label">Disk usage</div>
+                    <div class="bar"><div id="diskBar"></div></div>
+                </div>
+                <div>
+                    <div class="metric" id="cores">--</div>
+                    <div class="metric-label">Logical CPU cores</div>
+                </div>
+            </div>
+            <pre id="resources">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Network Traffic</h3>
+            <pre id="traffic">Waiting for first sample...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Capabilities</h3>
+            <pre id="capabilities">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Network Interfaces</h3>
+            <pre id="interfaces">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Routing Table</h3>
+            <pre id="routes">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Wi-Fi Connection</h3>
+            <pre id="wifi">Loading...</pre>
+        </section>
+
+        <section class="card">
+            <h3>Nearby Wi-Fi Networks</h3>
+            <pre id="wifiScan">Press Scan Wi-Fi networks</pre>
+        </section>
+
+        <section class="card">
+            <h3>Services / Tools</h3>
+            <pre id="services">Loading...</pre>
+        </section>
+
+    </div>
+</main>
+
+<footer>
+    KEYLAND NETWORK · VERSION 0.1.1
+</footer>
+
+<script>
+let loading = false;
+let scanLoading = false;
+
+async function fetchJSON(endpoint) {
+    const response = await fetch(endpoint, { cache: "no-store" });
+
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+    }
+
+    return response.json();
+}
+
+function showJSON(element, data) {
+    document.getElementById(element).textContent =
+        JSON.stringify(data, null, 2);
+}
+
+function setMetric(id, value, barId) {
+    const safe = Math.max(0, Math.min(100, Number(value) || 0));
+    document.getElementById(id).textContent = safe.toFixed(1) + "%";
+    document.getElementById(barId).style.width = safe + "%";
+}
+
+async function loadData() {
+    if (loading) return;
+    loading = true;
+
+    const button = document.getElementById("refreshButton");
+    button.disabled = true;
+    document.getElementById("connection").textContent = "Refreshing...";
+
+    const jobs = [
+        ["device", "/api/v1/device"],
+        ["capabilities", "/api/v1/capabilities"],
+        ["interfaces", "/api/v1/network/interfaces"],
+        ["routes", "/api/v1/network/routes"],
+        ["wifi", "/api/v1/wifi"],
+        ["services", "/api/v1/services"],
+        ["resources", "/api/v1/system/resources"],
+        ["traffic", "/api/v1/network/traffic"]
+    ];
+
+    try {
+        const results = await Promise.allSettled(
+            jobs.map(async ([element, url]) => {
+                const data = await fetchJSON(url);
+                showJSON(element, data);
+                return { element, data };
+            })
+        );
+
+        let failures = 0;
+
+        for (const result of results) {
+            if (result.status === "rejected") {
+                failures++;
+            }
+        }
+
+        const resourceResult = results[6];
+
+        if (resourceResult.status === "fulfilled") {
+            const data = resourceResult.value.data;
+            setMetric("cpu", data.cpu_percent, "cpuBar");
+            setMetric("ram", data.memory.percent, "ramBar");
+
+            if (data.disk) {
+                setMetric("disk", data.disk.percent, "diskBar");
+            }
+
+            document.getElementById("cores").textContent =
+                data.cpu_logical_cores ?? "--";
+        }
+
+        document.getElementById("connection").textContent =
+            failures === 0 ? "● Connected" : "● Partial data";
+
+        document.getElementById("updated").textContent =
+            "Updated: " + new Date().toLocaleTimeString();
+
+    } catch (error) {
+        document.getElementById("connection").textContent =
+            "Connection error: " + error.message;
+    } finally {
+        loading = false;
+        button.disabled = false;
+    }
+}
+
+async function scanWifi() {
+    if (scanLoading) return;
+
+    scanLoading = true;
+    const button = document.getElementById("scanButton");
+    button.disabled = true;
+    document.getElementById("wifiScan").textContent = "Scanning...";
+
+    try {
+        const data = await fetchJSON("/api/v1/wifi/scan");
+        showJSON("wifiScan", data);
+    } catch (error) {
+        document.getElementById("wifiScan").textContent =
+            "Scan error: " + error.message;
+    } finally {
+        scanLoading = false;
+        button.disabled = false;
+    }
+}
+
+loadData();
+setInterval(loadData, 2000);
+</script>
+</body>
+</html>
