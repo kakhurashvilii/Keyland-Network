@@ -1833,7 +1833,7 @@ async function startHotspot() {
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
     const ipv4Cidr = element("hotspotIpv4").value.trim();
     if (!upstream) { element("hotspotMessage").textContent = tr("აირჩიე ინტერნეტის წყარო.","Select an upstream interface."); return; }
-    if (!password || password.length < 8 || password.length > 63 || !/^[\\x20-\\x7E]+$/.test(password)) {
+    if (!password || password.length < 8 || password.length > 63 || !/^[\x20-\x7E]+$/.test(password)) {
         element("hotspotMessage").textContent = tr("WPA2 პაროლი უნდა იყოს 8–63 ინგლისური/ASCII სიმბოლო.","WPA2 password must be 8–63 ASCII characters."); return;
     }
     if (!window.confirm(tr("გაეშვება hostapd, DHCP და NAT. არჩეული WAN არ გადაირთვება. გავაგრძელოთ?","Start hostapd, DHCP and NAT? The selected WAN interface will not be reconfigured."))) return;
@@ -1891,6 +1891,13 @@ element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualA
 element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
 element("hotspotStartButton").addEventListener("click", startHotspot);
 element("hotspotStopButton").addEventListener("click", stopHotspot);
+element("hotspotMode").addEventListener("change", () => {
+    const options = Array.from(element("hotspotUpstream").options);
+    const preferred = options.find(o => element("hotspotMode").value === "repeater"
+        ? o.value.startsWith("wlan") || o.textContent.includes("(wifi)")
+        : o.textContent.includes("(cellular)"));
+    if (preferred) element("hotspotUpstream").value = preferred.value;
+});
 
 /* DNS MANAGEMENT */
 function renderDnsStatus(data) {
