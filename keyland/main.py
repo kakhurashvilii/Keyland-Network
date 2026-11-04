@@ -18,10 +18,11 @@ from keyland.network import (
     get_system_resources,
     get_traffic_history,
     get_internet_status,
+    get_network_diagnostics,
 )
 
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 ROOT = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
@@ -88,6 +89,10 @@ def traffic_history():
 @app.get("/api/v1/network/internet")
 def internet():
     return get_internet_status()
+
+@app.get("/api/v1/network/diagnostics")
+def network_diagnostics():
+    return get_network_diagnostics()
 
 
 @app.get("/api/v1/wifi/scan")

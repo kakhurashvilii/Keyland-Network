@@ -10,6 +10,7 @@ import time
 import psutil
 from collections import deque
 from datetime import datetime, timezone
+import re
 
 SYSTEM = platform.system().lower()
 
@@ -214,6 +215,178 @@ def get_internet_status():
         "connected": False,
         "target": None,
         "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+def get_default_gateway():
+    """Detect the default IPv4 gateway without changing routes."""
+
+    result = get_routes()
+
+    if not result.get("available"):
+        return {
+            "available": False,
+            "gateway": None,
+            "error": result.get("error", "Routing information unavailable"),
+        }
+
+    for route in result.get("routes", []):
+        if SYSTEM == "windows":
+            destination = route.get("DestinationPrefix")
+            gateway = route.get("NextHop")
+        else:
+            destination = route.get("dst", "default")
+            gateway = route.get("gateway")
+
+        if destination in ("0.0.0.0/0", "default") and gateway:
+            if gateway not in ("0.0.0.0", "::"):
+                return {
+                    "available": True,
+                    "gateway": gateway,
+                    "error": None,
+                }
+
+    return {
+        "available": False,
+        "gateway": None,
+        "error": "Default gateway not found",
+    }
+
+
+def ping_host(host, count=4):
+    """Measure latency and packet loss using the system ping command."""
+
+    if not shutil.which("ping"):
+        return {
+            "available": False,
+            "success": False,
+            "latency_ms": None,
+            "packet_loss_percent": None,
+            "error": "ping command not found",
+        }
+
+    if SYSTEM == "windows":
+        command = [
+            "ping", "-n", str(count), "-w", "1500", host
+        ]
+    else:
+        command = [
+            "ping", "-c", str(count), "-W", "2", host
+        ]
+
+    result = run_command(command, timeout=count * 3 + 3)
+    output = result["output"]
+
+    loss = None
+    latency = None
+
+    # Windows: (0% loss)
+    # Linux: 0% packet loss
+    loss_match = re.search(
+        r"\(([\d.]+)%\s*loss\)|([\d.]+)%\s*packet loss",
+        output,
+        re.IGNORECASE,
+    )
+
+    if loss_match:
+        loss = float(
+            loss_match.group(1) or loss_match.group(2)
+        )
+
+    # Windows: Average = 12ms
+    windows_latency = re.search(
+        r"Average\s*=\s*([\d.]+)\s*ms",
+        output,
+        re.IGNORECASE,
+    )
+
+    # Linux: min/avg/max/mdev = 1.0/2.0/3.0/0.5 ms
+    linux_latency = re.search(
+        r"=\s*[\d.]+/([\d.]+)/[\d.]+",
+        output,
+    )
+
+    if windows_latency:
+        latency = float(windows_latency.group(1))
+    elif linux_latency:
+        latency = float(linux_latency.group(1))
+
+    return {
+        "available": True,
+        "success": result["success"],
+        "latency_ms": latency,
+        "packet_loss_percent": loss,
+        "error": result["error"] or None,
+    }
+
+
+def test_dns():
+    """Check DNS resolution using the operating system resolver."""
+
+    hostname = "example.com"
+    started = time.monotonic()
+
+    try:
+        addresses = socket.getaddrinfo(
+            hostname,
+            443,
+            type=socket.SOCK_STREAM,
+        )
+
+        elapsed = (time.monotonic() - started) * 1000
+
+        resolved = sorted({
+            item[4][0] for item in addresses
+        })
+
+        return {
+            "available": True,
+            "success": True,
+            "hostname": hostname,
+            "latency_ms": round(elapsed, 2),
+            "addresses": resolved,
+            "error": None,
+        }
+
+    except socket.gaierror as exc:
+        elapsed = (time.monotonic() - started) * 1000
+
+        return {
+            "available": True,
+            "success": False,
+            "hostname": hostname,
+            "latency_ms": round(elapsed, 2),
+            "addresses": [],
+            "error": str(exc),
+        }
+
+
+def get_network_diagnostics():
+    """Run read-only network diagnostics."""
+
+    gateway = get_default_gateway()
+
+    gateway_ping = {
+        "available": False,
+        "success": False,
+        "latency_ms": None,
+        "packet_loss_percent": None,
+        "error": "Gateway unavailable",
+    }
+
+    if gateway["available"]:
+        gateway_ping = ping_host(
+            gateway["gateway"],
+            count=4,
+        )
+
+    dns = test_dns()
+
+    return {
+        "platform": SYSTEM,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "gateway": gateway,
+        "gateway_ping": gateway_ping,
+        "dns": dns,
     }
 
 def get_system_resources():

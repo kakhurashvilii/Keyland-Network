@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,7 +61,7 @@ pre {
 .status { color: #50d69b; }
 .muted { color: #8d9bb0; font-size: 12px; }
 
-button {
+button, select {
     background: #2869d8;
     border: 0;
     padding: 10px 16px;
@@ -72,7 +71,15 @@ button {
     margin: 4px 4px 14px 0;
 }
 
-button:disabled { opacity: .5; cursor: wait; }
+select option {
+    background: #1a2230;
+    color: white;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: wait;
+}
 
 .metric {
     font-size: 25px;
@@ -102,16 +109,63 @@ button:disabled { opacity: .5; cursor: wait; }
     width: 0%;
 }
 
+.internet-status {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 12px 0;
+}
+
+.online { color: #50d69b; }
+.offline { color: #ff7070; }
+.unknown { color: #8d9bb0; }
+
+.traffic-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.traffic-value {
+    font-size: 21px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.rx-color { color: #50d69b; }
+.tx-color { color: #78aaff; }
+
+.chart-container {
+    width: 100%;
+    height: 220px;
+    position: relative;
+}
+
+#trafficChart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #8d9bb0;
+}
+
 footer {
     color: #78869b;
     text-align: center;
     padding: 30px;
 }
-
 </style>
 </head>
 
 <body>
+
 <header>
     <h1>KEYLAND NETWORK</h1>
     <p>Universal Network Management Platform</p>
@@ -120,8 +174,15 @@ footer {
 </header>
 
 <main>
-    <button id="refreshButton" onclick="loadData()">Refresh information</button>
-    <button id="scanButton" onclick="scanWifi()">Scan Wi-Fi networks</button>
+
+    <button id="refreshButton" onclick="loadData()">
+        Refresh information
+    </button>
+
+    <button id="scanButton" onclick="scanWifi()">
+        Scan Wi-Fi networks
+    </button>
+
     <span class="muted" id="updated">Not updated yet</span>
 
     <div class="grid">
@@ -133,32 +194,72 @@ footer {
 
         <section class="card">
             <h3>System Resources</h3>
+
             <div class="metric-grid">
                 <div>
                     <div class="metric" id="cpu">--%</div>
                     <div class="metric-label">CPU usage</div>
                     <div class="bar"><div id="cpuBar"></div></div>
                 </div>
+
                 <div>
                     <div class="metric" id="ram">--%</div>
                     <div class="metric-label">RAM usage</div>
                     <div class="bar"><div id="ramBar"></div></div>
                 </div>
+
                 <div>
                     <div class="metric" id="disk">--%</div>
                     <div class="metric-label">Disk usage</div>
                     <div class="bar"><div id="diskBar"></div></div>
                 </div>
+
                 <div>
                     <div class="metric" id="cores">--</div>
                     <div class="metric-label">Logical CPU cores</div>
                 </div>
             </div>
+
             <pre id="resources">Loading...</pre>
         </section>
 
         <section class="card">
+            <h3>Internet Status</h3>
+            <div id="internetStatus" class="internet-status unknown">
+                Checking...
+            </div>
+            <pre id="internetDetails">Waiting for result...</pre>
+        </section>
+
+        <section class="card">
             <h3>Network Traffic</h3>
+
+            <div class="traffic-stats">
+                <div>
+                    <div class="metric-label">Download RX</div>
+                    <div class="traffic-value rx-color" id="totalRx">
+                        0 Mbps
+                    </div>
+                </div>
+
+                <div>
+                    <div class="metric-label">Upload TX</div>
+                    <div class="traffic-value tx-color" id="totalTx">
+                        0 Mbps
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="trafficChart"></canvas>
+            </div>
+
+            <div class="chart-legend">
+                <span class="rx-color">● RX Download</span>
+                <span class="tx-color">● TX Upload</span>
+                <span>Last 60 samples</span>
+            </div>
+
             <pre id="traffic">Waiting for first sample...</pre>
         </section>
 
@@ -169,6 +270,16 @@ footer {
 
         <section class="card">
             <h3>Network Interfaces</h3>
+
+            <label for="interfaceFilter" class="muted">
+                Interface filter:
+            </label>
+
+            <select id="interfaceFilter" onchange="loadInterfaces()">
+                <option value="all">All interfaces</option>
+                <option value="active">Active interfaces only</option>
+            </select>
+
             <pre id="interfaces">Loading...</pre>
         </section>
 
@@ -196,15 +307,18 @@ footer {
 </main>
 
 <footer>
-    KEYLAND NETWORK · VERSION 0.1.1
+    KEYLAND NETWORK · VERSION 0.1.2
 </footer>
 
 <script>
 let loading = false;
 let scanLoading = false;
+let interfaceLoading = false;
 
 async function fetchJSON(endpoint) {
-    const response = await fetch(endpoint, { cache: "no-store" });
+    const response = await fetch(endpoint, {
+        cache: "no-store"
+    });
 
     if (!response.ok) {
         throw new Error("HTTP " + response.status);
@@ -219,64 +333,280 @@ function showJSON(element, data) {
 }
 
 function setMetric(id, value, barId) {
-    const safe = Math.max(0, Math.min(100, Number(value) || 0));
-    document.getElementById(id).textContent = safe.toFixed(1) + "%";
-    document.getElementById(barId).style.width = safe + "%";
+    const safe = Math.max(
+        0,
+        Math.min(100, Number(value) || 0)
+    );
+
+    document.getElementById(id).textContent =
+        safe.toFixed(1) + "%";
+
+    document.getElementById(barId).style.width =
+        safe + "%";
+}
+
+async function loadInterfaces() {
+    if (interfaceLoading) return;
+
+    interfaceLoading = true;
+
+    const filter = document.getElementById(
+        "interfaceFilter"
+    ).value;
+
+    const endpoint = filter === "active"
+        ? "/api/v1/network/interfaces?active_only=true"
+        : "/api/v1/network/interfaces";
+
+    try {
+        const data = await fetchJSON(endpoint);
+        showJSON("interfaces", data);
+    } catch (error) {
+        document.getElementById("interfaces").textContent =
+            "Interface error: " + error.message;
+    } finally {
+        interfaceLoading = false;
+    }
+}
+
+function updateInternet(data) {
+    const element = document.getElementById(
+        "internetStatus"
+    );
+
+    if (data.connected === true) {
+        element.textContent = "● Internet connected";
+        element.className = "internet-status online";
+    } else {
+        element.textContent = "● Internet unavailable";
+        element.className = "internet-status offline";
+    }
+
+    showJSON("internetDetails", data);
+}
+
+function updateTraffic(data) {
+    document.getElementById("totalRx").textContent =
+        Number(data.total_rx_mbps || 0).toFixed(4) +
+        " Mbps";
+
+    document.getElementById("totalTx").textContent =
+        Number(data.total_tx_mbps || 0).toFixed(4) +
+        " Mbps";
+
+    showJSON("traffic", data);
+}
+
+function drawTrafficChart(samples) {
+    const canvas = document.getElementById(
+        "trafficChart"
+    );
+
+    const rect = canvas.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return;
+
+    const ratio = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(rect.width * ratio);
+    canvas.height = Math.round(rect.height * ratio);
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    const left = 48;
+    const right = 10;
+    const top = 12;
+    const bottom = 25;
+
+    const chartWidth = width - left - right;
+    const chartHeight = height - top - bottom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.font = "11px Arial";
+    ctx.fillStyle = "#8d9bb0";
+    ctx.strokeStyle = "#30394a";
+    ctx.lineWidth = 1;
+
+    const values = samples.flatMap(sample => [
+        Number(sample.rx_mbps) || 0,
+        Number(sample.tx_mbps) || 0
+    ]);
+
+    const maxValue = Math.max(0.1, ...values) * 1.2;
+
+    for (let i = 0; i <= 4; i++) {
+        const y = top + chartHeight * i / 4;
+        const label = (
+            maxValue * (1 - i / 4)
+        ).toFixed(3);
+
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(width - right, y);
+        ctx.stroke();
+
+        ctx.fillText(label, 2, y + 4);
+    }
+
+    if (!samples.length) {
+        ctx.fillStyle = "#8d9bb0";
+        ctx.fillText(
+            "Waiting for traffic samples...",
+            left + 10,
+            top + chartHeight / 2
+        );
+        return;
+    }
+
+    function drawLine(key, color) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+
+        samples.forEach((sample, index) => {
+            const x = samples.length === 1
+                ? left + chartWidth
+                : left + (
+                    index / (samples.length - 1)
+                ) * chartWidth;
+
+            const value = Number(sample[key]) || 0;
+
+            const y = top + chartHeight -
+                (value / maxValue) * chartHeight;
+
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    drawLine("rx_mbps", "#50d69b");
+    drawLine("tx_mbps", "#78aaff");
+
+    ctx.fillStyle = "#8d9bb0";
+    ctx.fillText("Oldest", left, height - 5);
+    ctx.fillText(
+        "Latest",
+        width - right - 35,
+        height - 5
+    );
+}
+
+async function loadTrafficHistory() {
+    const data = await fetchJSON(
+        "/api/v1/network/traffic/history"
+    );
+
+    drawTrafficChart(data.samples || []);
 }
 
 async function loadData() {
     if (loading) return;
+
     loading = true;
 
-    const button = document.getElementById("refreshButton");
+    const button = document.getElementById(
+        "refreshButton"
+    );
+
     button.disabled = true;
-    document.getElementById("connection").textContent = "Refreshing...";
+
+    document.getElementById("connection").textContent =
+        "Refreshing...";
 
     const jobs = [
         ["device", "/api/v1/device"],
         ["capabilities", "/api/v1/capabilities"],
-        ["interfaces", "/api/v1/network/interfaces"],
         ["routes", "/api/v1/network/routes"],
         ["wifi", "/api/v1/wifi"],
         ["services", "/api/v1/services"],
         ["resources", "/api/v1/system/resources"],
-        ["traffic", "/api/v1/network/traffic"]
+        ["traffic", "/api/v1/network/traffic"],
+        ["internet", "/api/v1/network/internet"]
     ];
 
     try {
         const results = await Promise.allSettled(
             jobs.map(async ([element, url]) => {
                 const data = await fetchJSON(url);
-                showJSON(element, data);
+
+                if (element === "traffic") {
+                    updateTraffic(data);
+                } else if (element === "internet") {
+                    updateInternet(data);
+                } else {
+                    showJSON(element, data);
+                }
+
                 return { element, data };
             })
         );
 
         let failures = 0;
 
+        const successful = {};
+
         for (const result of results) {
             if (result.status === "rejected") {
                 failures++;
+            } else {
+                successful[result.value.element] =
+                    result.value.data;
             }
         }
 
-        const resourceResult = results[6];
+        const data = successful.resources;
 
-        if (resourceResult.status === "fulfilled") {
-            const data = resourceResult.value.data;
-            setMetric("cpu", data.cpu_percent, "cpuBar");
-            setMetric("ram", data.memory.percent, "ramBar");
+        if (data) {
+            setMetric(
+                "cpu",
+                data.cpu_percent,
+                "cpuBar"
+            );
+
+            setMetric(
+                "ram",
+                data.memory.percent,
+                "ramBar"
+            );
 
             if (data.disk) {
-                setMetric("disk", data.disk.percent, "diskBar");
+                setMetric(
+                    "disk",
+                    data.disk.percent,
+                    "diskBar"
+                );
             }
 
             document.getElementById("cores").textContent =
                 data.cpu_logical_cores ?? "--";
         }
 
+        try {
+            await Promise.all([
+                loadInterfaces(),
+                loadTrafficHistory()
+            ]);
+        } catch (error) {
+            failures++;
+            console.error("Additional data error:", error);
+        }
+
         document.getElementById("connection").textContent =
-            failures === 0 ? "● Connected" : "● Partial data";
+            failures === 0
+                ? "● Connected"
+                : "● Partial data";
 
         document.getElementById("updated").textContent =
             "Updated: " + new Date().toLocaleTimeString();
@@ -294,13 +624,21 @@ async function scanWifi() {
     if (scanLoading) return;
 
     scanLoading = true;
+
     const button = document.getElementById("scanButton");
+
     button.disabled = true;
-    document.getElementById("wifiScan").textContent = "Scanning...";
+
+    document.getElementById("wifiScan").textContent =
+        "Scanning...";
 
     try {
-        const data = await fetchJSON("/api/v1/wifi/scan");
+        const data = await fetchJSON(
+            "/api/v1/wifi/scan"
+        );
+
         showJSON("wifiScan", data);
+
     } catch (error) {
         document.getElementById("wifiScan").textContent =
             "Scan error: " + error.message;
@@ -310,8 +648,14 @@ async function scanWifi() {
     }
 }
 
+window.addEventListener("resize", () => {
+    loadTrafficHistory().catch(console.error);
+});
+
 loadData();
+
 setInterval(loadData, 2000);
 </script>
+
 </body>
 </html>

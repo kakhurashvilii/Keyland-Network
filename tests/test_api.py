@@ -12,7 +12,7 @@ def test_health():
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "0.1.2"
+    assert response.json()["version"] == "0.1.3"
 
 def test_device():
     response = client.get("/api/v1/device")
@@ -118,3 +118,22 @@ def test_active_interfaces():
 
     for interface in data:
         assert interface["is_up"] is True
+
+
+
+def test_network_diagnostics():
+    response = client.get("/api/v1/network/diagnostics")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "platform" in data
+    assert "checked_at" in data
+    assert "gateway" in data
+    assert "gateway_ping" in data
+    assert "dns" in data
+
+    assert isinstance(data["gateway"]["available"], bool)
+    assert isinstance(data["gateway_ping"]["success"], bool)
+    assert isinstance(data["dns"]["success"], bool)
