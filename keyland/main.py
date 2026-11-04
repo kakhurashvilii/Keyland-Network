@@ -98,7 +98,10 @@ async def csrf_protection(request: Request, call_next):
 
 @app.get("/")
 def dashboard():
-    return FileResponse(ROOT / "web" / "index.html")
+    return FileResponse(
+        ROOT / "web" / "index.html",
+        headers={"Cache-Control": "no-store, max-age=0", "Pragma": "no-cache"},
+    )
 
 
 @app.get("/favicon.ico", include_in_schema=False)
