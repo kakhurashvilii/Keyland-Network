@@ -92,6 +92,18 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
     try: dns = [str(ipaddress.ip_address(x)) for x in dns]
     except (ValueError, TypeError): raise ValueError("Invalid DNS server.")
     if any(ipaddress.ip_address(x).version != 4 for x in dns): raise ValueError("Only IPv4 DNS servers are supported.")
+    addr_result = run(["ip", "-j", "-4", "addr", "show"])
+    if addr_result["ok"]:
+        try:
+            for link in json.loads(addr_result["out"]):
+                if link.get("ifname") in (ap, "lo"): continue
+                for info in link.get("addr_info", []):
+                    if info.get("family") == "inet":
+                        existing = ipaddress.ip_interface(str(info["local"]) + "/" + str(info["prefixlen"]))
+                        if addr.network.overlaps(existing.network):
+                            raise ValueError("AP subnet " + str(addr.network) + " overlaps with " + str(link.get("ifname")) + " (" + str(existing) + ").")
+        except (ValueError, KeyError, TypeError) as exc:
+            if isinstance(exc, ValueError) and str(exc).startswith("AP subnet"): raise
     if not all(shutil.which(x) for x in ("hostapd", "dnsmasq", "nft", "ip", "iw", "nmcli", "sysctl")):
         raise ValueError("Install hostapd, dnsmasq, nftables, iproute2, iw and NetworkManager.")
     if wan not in {x.get("dev") for x in defaults()}: raise ValueError("Selected upstream has no active default route.")
@@ -134,7 +146,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         hconf = ROOT / "hostapd.conf"
         hconf.write_text(f"interface={ap}\ndriver=nl80211\nssid={cfg['ssid']}\ncountry_code=GE\nhw_mode=g\nchannel={cfg['channel']}\nieee80211n=1\nwmm_enabled=1\nauth_algs=1\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase={cfg['password']}\n")
         os.chmod(hconf, 0o600)
-        hp = subprocess.Popen(["hostapd", str(hconf)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        with (ROOT / "hostapd.log").open("a") as hostapd_log:
+            hp = subprocess.Popen(["hostapd", str(hconf)], stdout=hostapd_log, stderr=subprocess.STDOUT, start_new_session=True)
         state["hostapd_pid"] = hp.pid
         time.sleep(2)
         if hp.poll() is not None: raise RuntimeError("hostapd exited during startup; inspect driver logs.")
