@@ -133,6 +133,9 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
     ap, wan = cfg["interface"], cfg["upstream_interface"]
     ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
     state = {**cfg, "previous_ip_forward": Path("/proc/sys/net/ipv4/ip_forward").read_text().strip()}
+    policy_routes_created = False
+    policy_rule_added = False
+    firewall_created = False
     try:
         # Only the dedicated AP is detached from NetworkManager; upstream is untouched.
         r = run(["nmcli", "device", "set", ap, "managed", "no"])
@@ -178,12 +181,15 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         if gateway:
             r = run(["ip", "route", "replace", str(gateway) + "/32", "dev", wan, "scope", "link", "table", table_id])
             if not r["ok"]: raise RuntimeError("Could not add selected WAN gateway route: " + str(r["err"]))
+            policy_routes_created = True
             r = run(["ip", "route", "replace", "default", "via", str(gateway), "dev", wan, "table", table_id])
         else:
             r = run(["ip", "route", "replace", "default", "dev", wan, "table", table_id])
+            if r["ok"]: policy_routes_created = True
         if not r["ok"]: raise RuntimeError("Could not add selected WAN default route: " + str(r["err"]))
         r = run(["ip", "rule", "add", "priority", "42002", "iif", ap, "lookup", table_id])
         if not r["ok"]: raise RuntimeError("Could not add AP policy-routing rule: " + str(r["err"]))
+        policy_rule_added = True
         state["policy_table"] = table_id
         state["policy_priority"] = "42002"
         state["policy_gateway"] = gateway
@@ -200,6 +206,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         if run(["nft", "list", "table", "inet", TABLE])["ok"]: raise RuntimeError("Keyland nftables table already exists; refusing to overwrite it.")
         r = run(["nft", "-f", "-"], stdin=rules)
         if not r["ok"]: raise RuntimeError("NAT rules failed: " + str(r["err"] or r["out"]))
+        firewall_created = True
         state["firewall_table"] = TABLE
         write_state({k: v for k, v in state.items() if k != "password"})
         return {"success": True, "active": True, "mode": cfg["mode"], "interface": ap,
@@ -207,9 +214,9 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
                 "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
     except Exception as exc:
-        run(["nft", "delete", "table", "inet", TABLE])
-        run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
-        run(["ip", "route", "flush", "table", "42002"])
+        if firewall_created: run(["nft", "delete", "table", "inet", TABLE])
+        if policy_rule_added: run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
+        if policy_routes_created: run(["ip", "route", "flush", "table", "42002"])
         for key in ("dnsmasq_pid", "hostapd_pid"):
             try: os.kill(int(state.get(key, 0)), signal.SIGTERM)
             except (OSError, ValueError, TypeError): pass
