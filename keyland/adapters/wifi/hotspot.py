@@ -324,7 +324,7 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
         result = _run([
             "nmcli", "connection", "add", "type", "wifi",
             "ifname", interface, "con-name", _PROFILE,
-            "ssid", ssid, *settings,
+            *settings,
         ])
 
     if not result["success"]:
