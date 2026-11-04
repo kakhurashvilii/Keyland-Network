@@ -285,11 +285,31 @@ def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
 
     preflight = get_hotspot_capabilities()
     if not preflight.get("available") or not preflight.get("safe_to_apply"):
-        return {"success": False, "error": "No safe, separate AP interface is ready. Review hotspot preflight.", "preflight": preflight}
+        detected = ", ".join(
+            f'{item.get("name")} ({item.get("type") or "unknown"})'
+            for item in preflight.get("interfaces", [])
+        ) or "no Wi-Fi interfaces detected"
+        reasons = "; ".join(
+            f'{item.get("name")}: {item.get("reason") or item.get("state") or "not eligible"}'
+            for item in preflight.get("ap_candidates", [])
+        )
+        detail = f"Detected: {detected}."
+        if reasons:
+            detail += f" Candidate status: {reasons}."
+        return {
+            "success": False,
+            "error": "No safe, separate AP interface is ready. " + detail,
+            "preflight": preflight,
+        }
 
     candidate = next((item for item in preflight["ap_candidates"] if item["name"] == interface and item["eligible"]), None)
     if not candidate:
-        return {"success": False, "error": "Selected interface is not an eligible, separate AP interface."}
+        return {"success": False, "error": f"Selected interface {interface} is not an eligible, separate AP interface. Refresh the capability check and choose a dedicated AP interface."}
+    if str(candidate.get("state") or "").lower() == "unmanaged":
+        managed = _run(["nmcli", "device", "set", interface, "managed", "yes"])
+        if not managed["success"]:
+            reason = managed.get("error") or managed.get("output") or "NetworkManager refused the request"
+            return {"success": False, "error": f"NetworkManager cannot manage the dedicated AP interface {interface}: {reason}"}
     if interface in _default_interfaces():
         return {"success": False, "error": "Refusing to modify the active default-route interface."}
     if not shutil.which("nmcli"):
