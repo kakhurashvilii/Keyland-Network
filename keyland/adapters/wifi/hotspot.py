@@ -104,6 +104,16 @@ def get_hotspot_capabilities() -> dict[str, Any]:
     devices = _nm_devices()
     defaults = _default_interfaces()
     nm_by_name = {item["name"]: item for item in devices}
+    wifi_names = {item["name"] for item in wifi}
+    upstream_sources = []
+    for name in sorted(defaults):
+        if name in wifi_names:
+            source_type = "wifi"
+        elif name.startswith(("rmnet", "qmap", "wwan", "ppp", "cellular")):
+            source_type = "cellular"
+        else:
+            source_type = "wired_or_other"
+        upstream_sources.append({"interface": name, "type": source_type})
     active_profiles = _run(["nmcli", "--terse", "--fields", "NAME,DEVICE", "connection", "show", "--active"])
     active_rows = [line.split(":", 1) for line in active_profiles["output"].splitlines()] if active_profiles["success"] else []
     hotspot_active_row = next((row for row in active_rows if len(row) == 2 and row[0] == _PROFILE), None)
@@ -154,6 +164,7 @@ def get_hotspot_capabilities() -> dict[str, Any]:
         "supported_modes": modes,
         "interface_combinations": combinations,
         "default_route_interfaces": sorted(defaults),
+        "upstream_sources": upstream_sources,
         "upstream_wifi_interfaces": [item["name"] for item in upstream_wifi],
         "interfaces": wifi,
         "ap_candidates": candidates,
