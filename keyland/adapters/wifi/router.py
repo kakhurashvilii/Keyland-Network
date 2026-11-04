@@ -63,6 +63,30 @@ def write_state(data: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
+def _clients(ap: str | None) -> list[dict[str, Any]]:
+    if not ap: return []
+    r = run(["iw", "dev", ap, "station", "dump"])
+    if not r["ok"]: return []
+    clients: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for raw in r["out"].splitlines():
+        line = raw.strip()
+        if line.startswith("Station "):
+            if current: clients.append(current)
+            current = {"mac": line.split()[1]}
+        elif current and ":" in line:
+            key, value = line.split(":", 1)
+            key = key.strip().lower().replace(" ", "_")
+            value = value.strip()
+            if key in ("signal", "signal_avg"):
+                current[key] = value
+            elif key in ("rx_bytes", "tx_bytes", "connected_time"):
+                try: current[key] = int(value.split()[0])
+                except (ValueError, IndexError): pass
+    if current: clients.append(current)
+    return clients
+
+
 def status() -> dict[str, Any]:
     state = read_state()
     alive = {}
@@ -73,7 +97,7 @@ def status() -> dict[str, Any]:
     return {"active": bool(state and all(alive.values())),
             "configuration": {k:v for k,v in (state or {}).items()
                               if k not in ("password", "hostapd_pid", "dnsmasq_pid")},
-            "processes": alive, "interfaces": interfaces(), "default_routes": defaults()}
+            "processes": alive, "interfaces": interfaces(), "default_routes": defaults(), "clients": _clients(state.get("interface") if state else None)}
 
 
 def _validate(p: dict[str, Any]) -> dict[str, Any]:
