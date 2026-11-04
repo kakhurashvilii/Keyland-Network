@@ -268,3 +268,11 @@ def test_hotspot_start_rejects_weak_password():
         },
     )
     assert response.status_code == 422
+
+
+def test_hotspot_virtual_interface_requires_confirmation():
+    response = client.post(
+        "/api/v1/wifi/hotspot/create-interface",
+        json={"interface": "wlan0", "confirmed": False},
+    )
+    assert response.status_code == 400
