@@ -413,6 +413,126 @@ button.danger { background:#7f2939; border-color:#a33c51; }
 #hotspotPreflight { max-height:240px; }
 @media(max-width:700px) { .hotspot-grid { grid-template-columns:1fr; } .hotspot-wide { grid-column:auto; } .header-actions { margin-left:auto; } }
 
+
+/* KEYLAND PROFESSIONAL INTERFACE */
+:root {
+    color-scheme: dark;
+    --bg:#0b1120; --header:#0f1728; --card:#111c30; --border:#26354d;
+    --text:#edf3fc; --muted:#8fa2bd; --blue:#3978ed; --blue-light:#8eb7ff;
+    --green:#39d6a0; --red:#ff6f7d; --orange:#f4b860;
+    --surface:#0e192b; --surface-soft:#16243a; --shadow:0 14px 38px rgba(0,0,0,.18);
+}
+html { scroll-behavior:smooth; scroll-padding-top:24px; }
+body { background:radial-gradient(ellipse at 80% -10%,rgba(43,91,160,.15),transparent 38%),var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; letter-spacing:.01em; }
+header { position:relative; z-index:5; padding:20px 30px; background:rgba(12,20,35,.94); border-bottom:1px solid var(--border); backdrop-filter:blur(16px); }
+header h1 { font-size:19px; letter-spacing:.13em; font-weight:800; }
+header p { margin:6px 0 10px; color:var(--muted); font-size:13px; }
+.header-status { gap:10px; } .header-actions { display:flex; align-items:center; gap:8px; }
+.app-layout { display:grid; grid-template-columns:238px minmax(0,1fr); gap:30px; max-width:1740px; margin:0 auto; padding:26px 30px 40px; align-items:start; }
+.primary-nav { position:sticky; top:22px; display:flex; flex-direction:column; gap:7px; min-height:calc(100vh - 44px); padding:17px 12px; border:1px solid var(--border); border-radius:18px; background:linear-gradient(180deg,rgba(19,31,51,.98),rgba(13,23,39,.98)); box-shadow:var(--shadow); }
+.nav-brand { display:flex; align-items:center; gap:11px; padding:8px 8px 22px; border-bottom:1px solid var(--border); margin-bottom:10px; }
+.brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:linear-gradient(145deg,#4c8cff,#2457c7); color:white; font-size:20px; font-weight:900; box-shadow:0 8px 20px rgba(48,112,232,.3); }
+.nav-brand strong { display:block; font-size:13px; letter-spacing:.13em; } .nav-brand small { display:block; margin-top:3px; color:var(--muted); font-size:9px; letter-spacing:.17em; }
+.nav-group-label { padding:13px 10px 5px; color:#7085a4; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.primary-nav a { display:flex; align-items:center; gap:12px; min-height:54px; padding:8px 10px; border:1px solid transparent; border-radius:11px; color:#b9c8dd; text-decoration:none; transition:background .18s,border-color .18s,color .18s,transform .18s; }
+.primary-nav a:hover,.primary-nav a:focus-visible { background:var(--surface-soft); border-color:#314967; color:white; transform:translateX(2px); outline:none; }
+.primary-nav a strong { display:block; font-size:12px; font-weight:700; } .primary-nav a small { display:block; margin-top:3px; color:#7f93af; font-size:10px; }
+.nav-index { display:grid; place-items:center; width:30px; height:30px; flex:0 0 30px; border-radius:9px; background:#1b2b43; color:#8eb7ff; font-size:10px; font-weight:800; }
+.nav-footer { display:flex; align-items:center; gap:8px; margin-top:auto; padding:14px 9px 4px; border-top:1px solid var(--border); color:#91a4bf; font-size:10px; }
+.nav-status-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(57,214,160,.1); }
+main { width:100%; max-width:none; margin:0; padding:0; min-width:0; }
+#dashboard > button { margin:0 8px 18px 0; } #updated { display:inline-block; margin:0 0 18px 4px; }
+.grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:17px; align-items:stretch; }
+.grid > .card { grid-column:span 6; min-width:0; padding:21px; border:1px solid var(--border); border-radius:16px; background:linear-gradient(155deg,rgba(20,34,56,.98),rgba(15,26,44,.98)); box-shadow:var(--shadow); transition:border-color .2s,transform .2s; }
+.grid > .card:hover { border-color:#3a5274; }
+.grid > .card[style*="grid-column: 1 / -1"],.grid > .hotspot-card { grid-column:1 / -1; }
+.section-heading { grid-column:1 / -1; display:flex; align-items:flex-end; justify-content:space-between; margin:18px 0 0; padding:15px 2px 2px; border-bottom:1px solid var(--border); scroll-margin-top:22px; }
+.section-heading h2 { margin:5px 0; color:#f0f5ff; font-size:21px; font-weight:750; letter-spacing:-.025em; }
+.section-heading p { margin:0 0 13px; color:var(--muted); font-size:12px; }
+.section-kicker { color:#76a8ff; font-size:9px; font-weight:800; letter-spacing:.18em; }
+.card h3 { margin:0 0 14px; color:#dce9fb; font-size:14px; font-weight:700; } .card p { line-height:1.65; }
+pre { padding:13px 14px; border:1px solid rgba(65,86,117,.45); border-radius:10px; background:rgba(7,14,26,.48); color:#b9c9df; font-size:11px; line-height:1.65; }
+button,select { min-height:39px; margin:4px 6px 8px 0; padding:9px 14px; border:1px solid transparent; border-radius:9px; background:linear-gradient(135deg,#3e83f4,#2d65d4); color:white; font-size:12px; font-weight:700; transition:filter .18s,transform .18s,border-color .18s; }
+button:hover { filter:brightness(1.12); transform:translateY(-1px); } button.secondary { border-color:#354b69; background:#1a2b44; color:#d8e6fa; }
+button.danger { border-color:rgba(255,111,125,.35); background:rgba(145,48,62,.22); color:#ff9ba5; }
+input,select,textarea { width:100%; min-height:41px; padding:10px 12px; border:1px solid #30435f; border-radius:9px; background:#0c1729; color:var(--text); font:inherit; font-size:12px; }
+label { display:block; margin:10px 0 7px; color:#b8c8df; font-size:11px; font-weight:650; }
+button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--blue-light); outline-offset:2px; }
+.metric { font-size:27px; letter-spacing:-.04em; } .metric-label,.muted { color:var(--muted); } .metric-grid { gap:18px; }
+.cellular-item { padding:15px; border:1px solid var(--border); border-radius:11px; background:rgba(8,17,31,.42); } .cellular-value { font-size:15px; }
+.hotspot-grid { gap:16px; } .hotspot-card { border-color:#34517a !important; background:linear-gradient(145deg,rgba(24,43,70,.98),rgba(15,27,46,.98)) !important; }
+.repeater-card { border-color:#314a68 !important; background:linear-gradient(145deg,rgba(18,31,50,.98),rgba(14,24,40,.98)) !important; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
+.login-overlay { background:radial-gradient(ellipse at 50% 0%,rgba(48,103,187,.2),transparent 45%),var(--bg); }
+.login-box { border-radius:18px; border-color:var(--border); background:#111e32; box-shadow:0 28px 90px rgba(0,0,0,.45); } .login-box input { margin-bottom:12px; }
+footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
+@media (max-width:1100px) { .app-layout { grid-template-columns:205px minmax(0,1fr); gap:20px; padding:20px; } .grid > .card { grid-column:1 / -1; } }
+@media (max-width:760px) {
+ header { padding:16px 18px; } .app-layout { display:block; padding:12px 14px 28px; }
+ .primary-nav { position:sticky; top:0; z-index:10; min-height:0; height:auto; margin-bottom:18px; padding:9px; border-radius:13px; flex-direction:row; overflow-x:auto; gap:5px; backdrop-filter:blur(14px); }
+ .nav-brand,.nav-group-label,.nav-footer { display:none; } .primary-nav a { flex:0 0 auto; min-height:42px; padding:7px 10px; }
+ .primary-nav a small { display:none; } .nav-index { width:24px; height:24px; flex-basis:24px; }
+ .grid { grid-template-columns:minmax(0,1fr); gap:12px; } .grid > .card { grid-column:1 / -1; padding:17px; }
+ .section-heading { margin-top:13px; } .section-heading h2 { font-size:18px; } .cellular-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .header-row { align-items:flex-start; }
+}
+@media (max-width:420px) { .cellular-grid,.metric-grid,.traffic-stats { grid-template-columns:1fr 1fr; gap:9px; } .header-status { gap:6px; } .section-heading p { font-size:11px; } }
+
+
+/* KEYLAND ROUTER CONSOLE — RouterOS density + OpenWrt clarity */
+:root{
+ --bg:#080e18;--header:#0d1725;--card:#101d2d;--border:#26384d;
+ --text:#eaf1f8;--muted:#8ea2b9;--blue:#2386d9;--blue-light:#70c4ff;
+ --green:#25c78a;--red:#f06470;--orange:#f0a43b;
+ --surface:#0b1624;--surface-soft:#17283b;--shadow:0 12px 34px rgba(0,0,0,.22);
+}
+body{background:linear-gradient(145deg,#0b1422 0%,#080e18 56%,#0d1928 100%);font-size:13px}
+header{padding:15px 28px;background:rgba(8,16,27,.96);border-bottom:1px solid #263b51}
+header h1{font-size:17px;letter-spacing:.16em}
+header p{font-size:11px;margin:3px 0 8px}
+.header-status{gap:8px}
+.header-status>*{padding:5px 9px;border:1px solid #263c54;border-radius:6px;background:#101e2e;font-size:10px}
+.app-layout{grid-template-columns:248px minmax(0,1fr);gap:22px;max-width:1840px;padding:20px 24px 36px}
+.primary-nav{top:16px;min-height:calc(100vh - 32px);padding:13px 10px;border-radius:12px;background:#0d1928;border:1px solid #293d53;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.nav-brand{padding:7px 8px 17px;margin-bottom:5px}
+.brand-mark{border-radius:8px;background:linear-gradient(145deg,#ed9d32,#c56d20);box-shadow:none}
+.nav-brand strong{letter-spacing:.17em}
+.nav-group-label{padding:12px 10px 4px;color:#718aa4;font-size:9px;letter-spacing:.16em}
+.primary-nav a{min-height:43px;padding:6px 8px;border-radius:7px;gap:10px}
+.primary-nav a:hover,.primary-nav a:focus-visible{transform:none;background:#172a3f;border-color:#2f5273}
+.nav-index{width:25px;height:25px;flex-basis:25px;border-radius:6px;background:#1a2c40;color:#83c9ff;font-size:9px}
+.primary-nav a strong{font-size:11px}.primary-nav a small{font-size:9px}
+.nav-footer{font-size:9px}
+main{min-width:0}
+#dashboard>#refreshButton{margin:0 7px 14px 0}
+.grid{gap:13px}
+.grid>.card{padding:18px;border-radius:11px;background:linear-gradient(145deg,#132237,#0e1a2a);border:1px solid #293e56;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+.grid>.card:hover{border-color:#42627f;transform:none}
+.section-heading{margin:15px 0 0;padding:12px 2px 4px;border-bottom:1px solid #263b51}
+.section-heading h2{font-size:19px;letter-spacing:-.02em}
+.section-heading p{font-size:11px}
+.section-kicker{color:#f0a94b;font-size:9px;letter-spacing:.2em}
+.card h3{font-size:13px;color:#c6ddf4}
+.metric{font-size:25px}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+pre{background:#091321;border:1px solid #263b50;border-radius:7px;font-size:10px}
+button,select{min-height:35px;padding:8px 12px;border-radius:7px;font-size:11px}
+button{background:linear-gradient(135deg,#248bd8,#1766ae)}
+button.secondary{background:#1a2d42;border-color:#35516d;color:#dceaf7}
+button.danger{background:#48222d;border-color:#85404c;color:#ffabb2}
+input,select,textarea{min-height:37px;border-radius:7px;background:#091625;border-color:#314a64;font-size:12px}
+label{font-size:10px;text-transform:uppercase;letter-spacing:.045em;color:#a9bfd4}
+.cellular-item{border-radius:8px;background:#0c1928}
+.hotspot-card{border-color:#42658a!important;background:linear-gradient(145deg,#172b43,#101d30)!important}
+.repeater-card{background:linear-gradient(145deg,#132337,#0e1928)!important}
+#hotspotPreflight{max-height:260px}
+.login-box{border-radius:12px}
+.login-logo{color:#f0a94b}
+footer{letter-spacing:.1em}
+@media(max-width:1100px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}}
+@media(max-width:760px){.app-layout{padding:10px}.primary-nav{border-radius:9px}.primary-nav a{min-height:39px}.nav-index{display:none}header{padding:13px 15px}}
+
 </style>
 </head>
 
@@ -482,14 +602,19 @@ button.danger { background:#7f2939; border-color:#a33c51; }
     </div>
 </header>
 
-<nav class="primary-nav" aria-label="ძირითადი განყოფილებები">
-    <a href="#device-title">მიმოხილვა</a>
-    <a href="#cellular-title">მობილური ქსელი</a>
-    <a href="#wifi-hardware-title">Wi-Fi და ადაპტერები</a>
-    <a href="#dns-title">DNS</a>
-    <a href="#hotspot-title">Hotspot</a>
-    <a href="#system-title">სისტემა</a>
-</nav>
+<div class="app-layout">
+<aside class="primary-nav" aria-label="ძირითადი განყოფილებები">
+    <div class="nav-brand"><span class="brand-mark">K</span><div><strong>KEYLAND</strong><small>NETWORK CONTROL</small></div></div>
+    <div class="nav-group-label">მართვა</div>
+    <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
+    <a href="#wireless-section"><span class="nav-index">02</span><span><strong>Wi-Fi ქსელი</strong><small>ადაპტერები და Hotspot</small></span></a>
+    <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>Wi-Fi გამეორება</small></span></a>
+    <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
+    <a href="#mobile-section"><span class="nav-index">05</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
+    <div class="nav-group-label">მოწყობილობა</div>
+    <a href="#system-section"><span class="nav-index">06</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
+    <div class="nav-footer"><span class="nav-status-dot"></span><span>ადმინისტრატორის პანელი</span></div>
+</aside>
 
 <!-- DASHBOARD -->
 
@@ -506,6 +631,7 @@ button.danger { background:#7f2939; border-color:#a33c51; }
     <span class="muted" id="updated">ჯერ არ განახლებულა</span>
 
     <div class="grid">
+        <div id="overview-section" class="section-heading"><div><span class="section-kicker">01 / OVERVIEW</span><h2>სისტემის მიმოხილვა</h2><p>მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა</p></div></div>
 
         <section class="card">
             <h3 id="device-title">მოწყობილობა</h3>
@@ -668,6 +794,8 @@ button.danger { background:#7f2939; border-color:#a33c51; }
             <pre id="interfaces">მოლოდინი...</pre>
         </section>
 
+        <div id="wireless-section" class="section-heading"><div><span class="section-kicker">02 / WIRELESS</span><h2>Wi-Fi ქსელი</h2><p>ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა</p></div></div>
+
         <section class="card">
             <h3 id="wifi-hardware-title">Wi-Fi ადაპტერის შესაძლებლობები</h3>
             <p class="muted">
@@ -676,13 +804,6 @@ button.danger { background:#7f2939; border-color:#a33c51; }
             <pre id="wifiCapabilities">Loading...</pre>
         </section>
 
-        <section class="card">
-            <h3>რეპიტერის რეჟიმის მზადყოფნა</h3>
-            <p class="muted">
-                Read-only inspection of AP + Client and forwarding readiness.
-            </p>
-            <pre id="repeaterStatus">Loading...</pre>
-        </section>
 
         <section class="card">
             <h3>მარშრუტიზაციის ცხრილი</h3>
@@ -700,22 +821,14 @@ button.danger { background:#7f2939; border-color:#a33c51; }
         </section>
 
         <section class="card">
-            <h3 id="dns-title">DNS-ის მართვა</h3>
-            <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
-            <label for="dnsInterface">ქსელის ინტერფეისი</label>
-            <input id="dnsInterface" type="text" maxlength="15" placeholder="მაგ. wlan0">
-            <label for="dnsServers">DNS სერვერები (მძიმით გამოყოფილი)</label>
-            <input id="dnsServers" type="text" placeholder="1.1.1.1, 8.8.8.8">
-            <p><button id="dnsApplyButton" type="button">DNS-ის გამოყენება</button>
-            <button id="dnsResetButton" type="button">ავტომატურზე დაბრუნება</button>
-            <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
-            <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
-            <p id="dnsMessage" class="muted" role="status"></p>
+            <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
+            <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
+            <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
         </section>
 
         <section class="card hotspot-card" style="grid-column: 1 / -1;">
-            <h3 id="hotspot-title">Wi-Fi Hotspot / Repeater</h3>
-            <p class="muted">შექმენი დაცული WPA2 hotspot ცალკე AP ინტერფეისზე. აქტიური Wi-Fi კავშირი არ გადაირთვება. Wi-Fi repeater იმუშავებს მხოლოდ მაშინ, თუ ჩიპსეტი ერთდროულად AP + Client რეჟიმს უჭერს მხარს.</p>
+            <h3 id="hotspot-title">Wi-Fi Hotspot</h3>
+            <p class="muted">შექმენი დაცული WPA2 hotspot ცალკე AP ინტერფეისზე. აქტიური Wi-Fi კავშირი არ გადაირთვება. </p>
             <div class="hotspot-grid">
                 <div>
                     <label for="hotspotInterface">AP ინტერფეისი</label>
@@ -732,6 +845,11 @@ button.danger { background:#7f2939; border-color:#a33c51; }
                 <div>
                     <label for="hotspotSecurity">უსაფრთხოება</label>
                     <select id="hotspotSecurity"><option value="wpa2-psk">WPA2-PSK (AES)</option></select>
+                </div>
+                <div>
+                    <label for="hotspotIpv4">Hotspot-ის IP მისამართი / ქსელი (CIDR)</label>
+                    <input id="hotspotIpv4" type="text" inputmode="text" value="192.168.88.1/24" placeholder="192.168.88.1/24" autocomplete="off" spellcheck="false">
+                    <p class="muted">მაგალითი: 192.168.88.1/24. ეს იქნება Hotspot-ის Gateway; DHCP/NAT-ს NetworkManager მართავს.</p>
                 </div>
                 <div class="hotspot-wide">
                     <label for="hotspotDns">DNS სერვერები (არასავალდებულო)</label>
@@ -753,11 +871,38 @@ button.danger { background:#7f2939; border-color:#a33c51; }
             <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
 
-        <section class="card">
-            <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
-            <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
-            <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
+        <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>არსებული Wi-Fi კავშირის გამეორება ცალკე AP ქსელით</p></div></div>
+
+        <section class="card repeater-card" style="grid-column:1 / -1;">
+            <h3>Repeater-ის მზადყოფნა</h3>
+            <p class="muted">აქ გამოჩნდება AP + Client რეჟიმის, არხის თავსებადობისა და ინტერნეტის გაზიარების შემოწმება. ძირითადი Wi-Fi კავშირი არ შეიცვლება.</p>
+            <pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre>
+            <p class="muted">Repeater-ის ჩართვა ჯერ არ არის გააქტიურებული: ჯერ საჭიროა უსაფრთხო მართვისა და გათიშვის/აღდგენის სრული მექანიზმის დასრულება.</p>
         </section>
+
+        <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
+
+        <section class="card">
+            <h3 id="dns-title">DNS-ის მართვა</h3>
+            <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
+            <label for="dnsInterface">ქსელის ინტერფეისი</label>
+            <input id="dnsInterface" type="text" maxlength="15" placeholder="მაგ. wlan0">
+            <label for="dnsServers">DNS სერვერები (მძიმით გამოყოფილი)</label>
+            <input id="dnsServers" type="text" placeholder="1.1.1.1, 8.8.8.8">
+            <p><button id="dnsApplyButton" type="button">DNS-ის გამოყენება</button>
+            <button id="dnsResetButton" type="button">ავტომატურზე დაბრუნება</button>
+            <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
+            <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
+            <p id="dnsMessage" class="muted" role="status"></p>
+        </section>
+
+        
+
+        
+
+        
+
+        
 
         <section class="card">
             <h3>WAN / LAN და DHCP</h3>
@@ -769,6 +914,8 @@ button.danger { background:#7f2939; border-color:#a33c51; }
             <p class="muted">მართვა ჩაირთვება მხოლოდ აქტიური firewall backend-ის (nftables ან iptables) აღმოჩენისა და წესების სარეზერვო ასლის შექმნის შემდეგ.</p>
         </section>
 
+        <div id="mobile-section" class="section-heading"><div><span class="section-kicker">05 / CELLULAR</span><h2>მობილური ქსელი</h2><p>SIM ბარათისა და მობილური მოდემის პარამეტრები</p></div></div>
+
         <section class="card">
             <h3>SIM / LTE / 5G პარამეტრები</h3>
             <p class="muted">მოდემის სტატუსი და სიგნალი უკვე იკითხება. APN-ისა და ქსელის რეჟიმის შეცვლა დაემატება ModemManager-ის მხარდაჭერის შემოწმებით და ცალკე დადასტურებით.</p>
@@ -778,6 +925,8 @@ button.danger { background:#7f2939; border-color:#a33c51; }
             <h3>ქსელთან დაკავშირებული მოწყობილობები</h3>
             <p class="muted">კლიენტების აღმოჩენა და IP/MAC-ის ჩვენება დაემატება. დაბლოკვა განხორციელდება მხოლოდ ადმინისტრატორის დადასტურებით.</p>
         </section>
+
+        <div id="system-section" class="section-heading"><div><span class="section-kicker">06 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
 
         <section class="card">
             <h3 id="system-title">სისტემა, ჟურნალები და აღდგენა</h3>
@@ -791,6 +940,7 @@ button.danger { background:#7f2939; border-color:#a33c51; }
 
     </div>
 </main>
+</div>
 
 <footer>
     KEYLAND NETWORK · VERSION 0.4.0
@@ -1586,6 +1736,7 @@ async function loadHotspotCapabilities() {
             tr("AP რეჟიმი: ","AP mode: ") + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
             tr("WAN წყარო: ","WAN source: ") + ((data.upstream_sources || []).map(item => item.interface + " (" + item.type + ")").join(", ") || tr("ნაგულისხმევი მარშრუტი ვერ მოიძებნა","No default route detected")),
             tr("ნაგულისხმევი მარშრუტი: ","Default route: ") + ((data.default_route_interfaces || []).join(", ") || "—"),
+            tr("აღმოჩენილი Wi-Fi ინტერფეისები:","Detected Wi-Fi interfaces:") + " " + ((data.interfaces || []).map(item => item.name + " (" + (item.type || "unknown") + ")").join(", ") || "—"),
             tr("ხელმისაწვდომი AP ინტერფეისები:","Eligible AP interfaces:"),
             ...((data.ap_candidates || []).map(item => item.name + " · " + (item.state || "unknown") + (item.eligible ? " · READY" : " · NOT READY"))),
             "",
@@ -1609,6 +1760,7 @@ async function startHotspot() {
     const ssid = element("hotspotSsid").value.trim();
     const password = element("hotspotPassword").value;
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
+    const ipv4Cidr = element("hotspotIpv4").value.trim();
     if (!interfaceName) {
         element("hotspotMessage").textContent = tr("აირჩიე ხელმისაწვდომი AP ინტერფეისი.","Select an eligible AP interface.");
         return;
@@ -1617,17 +1769,21 @@ async function startHotspot() {
         element("hotspotMessage").textContent = tr("პაროლი უნდა შეიცავდეს 8–63 სიმბოლოს.","Password must contain 8–63 characters.");
         return;
     }
-    if (!window.confirm(tr("Hotspot ჩაირთვება ცალკე ინტერფეისზე WPA2 დაცვით და NetworkManager shared DHCP/NAT რეჟიმით. გავაგრძელოთ?","Start WPA2 hotspot on the dedicated interface using NetworkManager shared DHCP/NAT?"))) return;
+    if (!/^\d{1,3}(?:\.\d{1,3}){3}\/(?:[8-9]|[12]\d|30)$/.test(ipv4Cidr)) {
+        element("hotspotMessage").textContent = tr("შეიყვანე სწორი IPv4/CIDR, მაგალითად 192.168.88.1/24.","Enter a valid IPv4/CIDR, e.g. 192.168.88.1/24.");
+        return;
+    }
+    if (!window.confirm(tr("Hotspot ჩაირთვება მითითებული IP-ით, WPA2 დაცვით და NetworkManager DHCP/NAT რეჟიმით. გავაგრძელოთ?","Start WPA2 hotspot using the selected IP and NetworkManager DHCP/NAT?"))) return;
     const button = element("hotspotStartButton");
     button.disabled = true;
     try {
         const response = await apiFetch(API + "/wifi/hotspot/start", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({interface:interfaceName,ssid,password,security:"wpa2-psk",dns_servers:dnsServers,confirmed:true})
+            body:JSON.stringify({interface:interfaceName,ssid,password,security:"wpa2-psk",dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,confirmed:true})
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
-        element("hotspotMessage").textContent = tr("Hotspot ჩაირთო: ","Hotspot started: ") + data.ssid + " · " + data.interface + " · WPA2";
+        element("hotspotMessage").textContent = tr("Hotspot ჩაირთო: ","Hotspot started: ") + data.ssid + " · " + data.interface + " · " + (data.ipv4_cidr || ipv4Cidr) + " · WPA2";
         await loadHotspotCapabilities();
     } catch(error) {
         element("hotspotMessage").textContent = tr("ჩართვა ვერ მოხერხდა: ","Could not start hotspot: ") + error.message;

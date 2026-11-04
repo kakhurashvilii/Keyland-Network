@@ -16,6 +16,7 @@ class HotspotRequest(BaseModel):
     password: str = Field(min_length=8, max_length=63)
     security: str = "wpa2-psk"
     dns_servers: list[str] = Field(default_factory=list, max_length=4)
+    ipv4_cidr: str = Field(default="192.168.88.1/24", min_length=9, max_length=18)
     confirmed: bool = False
 
 
