@@ -186,10 +186,12 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         time.sleep(2)
         if hp.poll() is not None: raise RuntimeError("hostapd exited during startup; inspect driver logs.")
         net = ipaddress.ip_network(cfg["network"])
-        hosts = list(net.hosts())
-        if len(hosts) < 8: raise RuntimeError("AP subnet is too small for DHCP.")
-        pool = [host for host in hosts if str(host) != cfg["gateway"]]
-        first, last = pool[0], pool[-1]
+        if net.num_addresses < 10: raise RuntimeError("AP subnet is too small for DHCP.")
+        first = net.network_address + 1
+        last = net.broadcast_address - 1
+        gateway_ip = ipaddress.ip_address(cfg["gateway"])
+        if first == gateway_ip: first += 1
+        if last == gateway_ip: last -= 1
         dconf = ROOT / "dnsmasq.conf"
         dconf.write_text(f"interface={ap}\nbind-interfaces\nexcept-interface=lo\ndhcp-range={first},{last},{net.netmask},12h\ndhcp-option=3,{cfg['gateway']}\ndhcp-option=6,{','.join(cfg['dns_servers'])}\nno-resolv\n" + "".join(f"server={x}\n" for x in cfg["dns_servers"]) + f"pid-file={ROOT / 'dnsmasq.pid'}\n")
         os.chmod(dconf, 0o600)
