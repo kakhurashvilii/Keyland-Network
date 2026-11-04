@@ -254,6 +254,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
         run(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_ip_forward"]])
         run(["nmcli", "device", "set", ap, "managed", "yes"])
+        for name in ("hostapd.conf", "dnsmasq.conf"):
+            (ROOT / name).unlink(missing_ok=True)
         return {"success": False, "error": str(exc), "rolled_back": True}
 
 
