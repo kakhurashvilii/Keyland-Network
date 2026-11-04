@@ -3,8 +3,8 @@
 This branch records the staged implementation scope for Keyland-Network.
 
 ## Management areas
-- DNS: inspect resolver configuration, set per-interface DNS and revert to automatic mode.
-- Wi-Fi: AP, client and repeater modes, SSID, password and channel, gated by detected adapter capabilities.
+- DNS: inspect resolver configuration, save per-interface IPv4/IPv6 DNS in NetworkManager profiles, use runtime systemd-resolved fallback, and revert to automatic mode.
+- Wi-Fi: inspect AP/client/repeater capability; configure a dedicated NetworkManager WPA2 hotspot profile with SSID, password, IPv4 DNS and shared DHCP/NAT when a safe AP interface is available. Concurrent AP + Client is gated by driver-reported PHY combinations.
 - Chipsets: enumerate adapters, PHYs, drivers, bands, channels and supported modes. Hardware chipsets cannot be replaced in software; driver changes are potentially disruptive.
 - WAN/LAN: IP addressing, gateway, DHCP and MTU.
 - Routing: inspect, add and remove routes with management-path protection.
@@ -26,11 +26,11 @@ This branch records the staged implementation scope for Keyland-Network.
 - Hide or mark unsupported controls instead of simulating success.
 
 ## Delivery sequence
-1. DNS inspection and reversible per-interface runtime DNS controls.
-2. Wi-Fi and chipset capability detection, then supported AP/client configuration.
+1. DNS inspection and per-interface DNS controls with manager-aware persistence and read-back verification.
+2. Wi-Fi and chipset capability detection, then guarded hotspot activation on a separate AP interface.
 3. WAN/LAN, routes and DHCP with connectivity rollback.
 4. Firewall/NAT and client access control.
 5. Modem configuration and system backup/restore.
 6. Automated tests on supported Linux backends and documentation.
 
-This is a scope and safety specification, not a claim that all controls have been implemented.
+This document tracks staged implementation. Hotspot activation requires NetworkManager and a dedicated eligible AP interface; it is not a claim that all router functions are complete. See ONEPLUS6T_ROUTER_MODE.md for device-specific limits.
