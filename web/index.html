@@ -471,6 +471,7 @@ button.danger { background:#7f2939; border-color:#a33c51; }
                 <span class="status">● სისტემის მართვის პანელი</span>
                 <span class="muted" id="connection"
                       aria-live="polite">სესიის შემოწმება...</span>
+                <span class="cellular-badge" id="serverVersion">API · --</span>
             </div>
         </div>
 
@@ -1014,10 +1015,20 @@ element("logoutButton").addEventListener("click", logout);
 
 /* SESSION CHECK */
 
+
+async function loadServerVersion() {
+    try {
+        const health = await fetchJSON(API + "/health");
+        element("serverVersion").textContent = "Keyland v" + (health.version || "—");
+    } catch (_) {
+        element("serverVersion").textContent = "API · offline";
+    }
+}
 async function initializeApp() {
     if (state.sessionCheckInProgress) return;
 
     state.sessionCheckInProgress = true;
+    loadServerVersion();
 
     try {
         const response = await fetch(API + "/auth/me", {
