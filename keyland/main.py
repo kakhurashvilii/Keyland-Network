@@ -45,6 +45,7 @@ from keyland.auth import (
 
 from keyland.schemas import TokenResponse
 from keyland.initialize import initialize
+from keyland.api.dns import router as dns_router
 
 
 VERSION = "0.4.0"
@@ -60,6 +61,8 @@ app = FastAPI(
     description="OpenWrt-style Network Management Platform",
     version=VERSION,
 )
+
+app.include_router(dns_router)
 
 
 @app.middleware("http")
