@@ -1540,8 +1540,14 @@ async function loadHotspotCapabilities() {
             select.add(new Option(item.name + " · " + (item.type || "Wi-Fi"), item.name));
         });
         start.disabled = !(data.safe_to_apply && select.options.length > 1);
+        element("hotspotStopButton").disabled = !data.hotspot_active;
+        if (data.hotspot_active && data.hotspot_active_interface) {
+            const activeOption = Array.from(select.options).find(option => option.value === data.hotspot_active_interface);
+            if (activeOption) select.value = data.hotspot_active_interface;
+        }
         const lines = [
             tr("მართვის სისტემა: ","Manager: ") + (data.manager || "—"),
+            tr("Hotspot მდგომარეობა: ","Hotspot status: ") + (data.hotspot_active ? tr("ჩართულია","ACTIVE") : tr("გამორთულია","STOPPED")),
             tr("AP რეჟიმი: ","AP mode: ") + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
             tr("ნაგულისხმევი მარშრუტი: ","Default route: ") + ((data.default_route_interfaces || []).join(", ") || "—"),
             tr("ხელმისაწვდომი AP ინტერფეისები:","Eligible AP interfaces:"),
