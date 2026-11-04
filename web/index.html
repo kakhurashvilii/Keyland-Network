@@ -738,7 +738,12 @@ button.danger { background:#7f2939; border-color:#a33c51; }
                     <p class="muted">DNS მიეთითება hotspot-ის NetworkManager პროფილში. კლიენტების DHCP/DNS/NAT მომსახურებას NetworkManager-ის shared რეჟიმი უზრუნველყოფს.</p>
                 </div>
             </div>
+            <div class="hotspot-wide">
+                <label for="hotspotSourceInterface">საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)</label>
+                <select id="hotspotSourceInterface"><option value="">ინტერფეისის არჩევა</option></select>
+            </div>
             <div class="hotspot-actions">
+                <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
                 <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
                 <button id="hotspotStartButton" type="button" disabled>Hotspot-ის ჩართვა</button>
                 <button id="hotspotStopButton" type="button" class="danger secondary">Hotspot-ის გამორთვა</button>
@@ -1492,6 +1497,9 @@ const translations = {
  "ქსელთან დაკავშირებული მოწყობილობები":"Connected devices",
  "სისტემა, ჟურნალები და აღდგენა":"System, logs & recovery",
  "შესაძლებლობების შემოწმება":"Check capabilities",
+ "ცალკე AP ინტერფეისის შექმნა":"Create dedicated AP interface",
+ "საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)":"Source Wi-Fi interface (to create virtual AP)",
+ "ინტერფეისის არჩევა":"Select interface",
  "Hotspot-ის ჩართვა":"Start hotspot",
  "Hotspot-ის გამორთვა":"Stop hotspot",
  "AP ინტერფეისი":"AP interface",
@@ -1536,6 +1544,10 @@ async function loadHotspotCapabilities() {
     try {
         const data = await fetchJSON(API + "/wifi/hotspot/capabilities");
         select.replaceChildren(new Option(tr("აირჩიე AP ინტერფეისი","Select an AP interface"), ""));
+        const sourceSelect = element("hotspotSourceInterface");
+        sourceSelect.replaceChildren(new Option(tr("ინტერფეისის არჩევა","Select interface"), ""));
+        (data.interfaces || []).forEach(item => sourceSelect.add(new Option(item.name + " · " + (item.type || "Wi-Fi"), item.name)));
+        element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).length > 0);
         (data.ap_candidates || []).filter(item => item.eligible).forEach(item => {
             select.add(new Option(item.name + " · " + (item.type || "Wi-Fi"), item.name));
         });
@@ -1613,6 +1625,30 @@ async function stopHotspot() {
         element("hotspotMessage").textContent = tr("გამორთვა ვერ მოხერხდა: ","Could not stop hotspot: ") + error.message;
     }
 }
+
+async function createVirtualApInterface() {
+    const interfaceName = element("hotspotSourceInterface").value;
+    if (!interfaceName) {
+        element("hotspotMessage").textContent = tr("აირჩიე საწყისი Wi-Fi ინტერფეისი.","Select the source Wi-Fi interface.");
+        return;
+    }
+    if (!window.confirm(tr("შეიქმნება ცალკე keyland-ap ინტერფეისი. აქტიური Wi-Fi კავშირი არ უნდა გაითიშოს, მაგრამ დრაივერის შეზღუდვის შემთხვევაში ოპერაცია შეიძლება უარყოფილი იყოს. გავაგრძელოთ?","Create a separate keyland-ap interface. The active Wi-Fi connection will not be intentionally disconnected; the driver may reject this if concurrency is unsupported. Continue?"))) return;
+    const button = element("hotspotCreateInterfaceButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/create-interface", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:interfaceName,confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = data.message || tr("AP ინტერფეისი შეიქმნა.","AP interface created.");
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent = tr("AP ინტერფეისის შექმნა ვერ მოხერხდა: ","Could not create AP interface: ") + error.message;
+    } finally { button.disabled = false; }
+}
+element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualApInterface);
 element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
 element("hotspotStartButton").addEventListener("click", startHotspot);
 element("hotspotStopButton").addEventListener("click", stopHotspot);
