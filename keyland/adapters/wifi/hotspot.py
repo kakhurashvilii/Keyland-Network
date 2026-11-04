@@ -94,6 +94,12 @@ def get_hotspot_capabilities() -> dict[str, Any]:
         return {
             "available": False, "manager": "NetworkManager",
             "missing_tools": missing, "interfaces": [],
+            "ap_candidates": [], "ap_mode_supported": False,
+            "supported_modes": [], "interface_combinations": {},
+            "default_route_interfaces": [], "upstream_wifi_interfaces": [],
+            "upstream_sources": [], "safe_to_apply": False,
+            "hotspot_profile": _PROFILE, "hotspot_active": False,
+            "hotspot_active_interface": None,
             "message": "Install the missing tools and ensure NetworkManager manages the Wi-Fi device.",
         }
 
