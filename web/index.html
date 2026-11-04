@@ -1009,6 +1009,34 @@ function showJSON(id, data) {
     target.textContent = JSON.stringify(data, null, 2);
 }
 
+function renderRepeaterStatus(data) {
+    const target = element("repeaterStatus");
+    if (!target) return;
+    const radio = data.radio || {};
+    const forwarding = data.forwarding || {};
+    const checks = forwarding.prerequisites || {};
+    const yesNo = value => value === true ? "დიახ" : value === false ? "არა" : "უცნობია";
+    const lines = [
+        "შემოწმების რეჟიმი: " + (data.read_only ? "მხოლოდ დიაგნოსტიკა" : "—"),
+        "მდგომარეობა: " + (data.assessment || data.error || "უცნობია"),
+        "AP + Client ერთდროულად: " + yesNo(radio.concurrent_ap_client_observed),
+        "ერთი PHY: " + yesNo(radio.shared_phy_observed),
+        "ერთი არხი: " + yesNo(radio.same_channel_observed),
+        "",
+        "ინტერნეტის გაზიარების წინაპირობები:",
+        "IP forwarding: " + yesNo(checks.ip_forward_enabled),
+        "Firewall (" + (forwarding.firewall_tool || "არ მოიძებნა") + "): " + yesNo(checks.firewall_tool_available),
+        "dnsmasq: " + yesNo(checks.dnsmasq_available),
+        "",
+        "AP ინტერფეისები: " + ((radio.access_points || []).map(item => item.name + " · " + (item.ssid || "SSID უცნობია") + (item.channel ? " · CH " + item.channel : "")).join(", ") || "აქტიური AP არ ჩანს"),
+        "Client ინტერფეისები: " + ((radio.clients || []).map(item => item.name + " · " + (item.ssid || "SSID უცნობია") + (item.channel ? " · CH " + item.channel : "")).join(", ") || "აქტიური Client არ ჩანს"),
+        "",
+        data.message || radio.note || "—"
+    ];
+    target.textContent = lines.join("\\n");
+}
+
+
 function setMetric(id, value, barId) {
     const safe = Math.max(0, Math.min(100, Number(value) || 0));
     element(id).textContent = safe.toFixed(1) + "%";
@@ -1570,6 +1598,9 @@ async function loadData() {
                     case "resources":
                         updateResources(data);
                         showJSON("resources", data);
+                        break;
+                    case "repeaterStatus":
+                        renderRepeaterStatus(data);
                         break;
 
                     default:
