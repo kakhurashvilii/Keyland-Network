@@ -21,4 +21,5 @@ jobs:
       - name: Run tests
         env:
           KEYLAND_JWT_SECRET: test-only-secret-key-never-use-in-production-123456
+          PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
