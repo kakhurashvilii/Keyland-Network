@@ -141,7 +141,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         net = ipaddress.ip_network(cfg["network"])
         hosts = list(net.hosts())
         if len(hosts) < 8: raise RuntimeError("AP subnet is too small for DHCP.")
-        first = hosts[1] if str(hosts[0]) == cfg["gateway"] else hosts[0]
+        pool = [host for host in hosts if str(host) != cfg["gateway"]]
+        first, last = pool[0], pool[-1]
         dconf = ROOT / "dnsmasq.conf"
         dconf.write_text(f"interface={ap}\nbind-interfaces\nexcept-interface=lo\ndhcp-range={first},{hosts[-1]},{net.netmask},12h\ndhcp-option=3,{cfg['gateway']}\ndhcp-option=6,{','.join(cfg['dns_servers'])}\nno-resolv\n" + "".join(f"server={x}\n" for x in cfg["dns_servers"]) + f"pid-file={ROOT / 'dnsmasq.pid'}\n")
         os.chmod(dconf, 0o600)
@@ -149,6 +150,30 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         state["dnsmasq_pid"] = dp.pid
         time.sleep(1)
         if dp.poll() is not None: raise RuntimeError("dnsmasq exited during startup.")
+        # Add an isolated policy-routing table so AP clients use the selected WAN
+        # without changing the phone's existing default routes.
+        table_id = "42002"
+        rules_now = run(["ip", "rule", "show"])
+        if not rules_now["ok"] or "42002:" in rules_now["out"]:
+            raise RuntimeError("Policy-routing priority 42002 is already in use.")
+        if run(["ip", "route", "show", "table", table_id])["out"]:
+            raise RuntimeError("Policy-routing table 42002 is already in use.")
+        selected_route = next((x for x in defaults() if x.get("dev") == wan), None)
+        if not selected_route:
+            raise RuntimeError("Selected WAN default route disappeared.")
+        gateway = selected_route.get("gateway")
+        if gateway:
+            r = run(["ip", "route", "replace", str(gateway) + "/32", "dev", wan, "scope", "link", "table", table_id])
+            if not r["ok"]: raise RuntimeError("Could not add selected WAN gateway route: " + str(r["err"]))
+            r = run(["ip", "route", "replace", "default", "via", str(gateway), "dev", wan, "table", table_id])
+        else:
+            r = run(["ip", "route", "replace", "default", "dev", wan, "table", table_id])
+        if not r["ok"]: raise RuntimeError("Could not add selected WAN default route: " + str(r["err"]))
+        r = run(["ip", "rule", "add", "priority", "42002", "iif", ap, "lookup", table_id])
+        if not r["ok"]: raise RuntimeError("Could not add AP policy-routing rule: " + str(r["err"]))
+        state["policy_table"] = table_id
+        state["policy_priority"] = "42002"
+        state["policy_gateway"] = gateway
         rules = f'''table inet {TABLE} {{
  chain forward {{ type filter hook forward priority filter; policy accept;
   iifname "{ap}" oifname "{wan}" accept;
@@ -170,6 +195,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
     except Exception as exc:
         run(["nft", "delete", "table", "inet", TABLE])
+        run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
+        run(["ip", "route", "flush", "table", "42002"])
         for key in ("dnsmasq_pid", "hostapd_pid"):
             try: os.kill(int(state.get(key, 0)), signal.SIGTERM)
             except (OSError, ValueError, TypeError): pass
@@ -184,6 +211,8 @@ def stop(confirmed: bool) -> dict[str, Any]:
     state = read_state()
     if not state: return {"success": False, "error": "Keyland router Wi-Fi is not active."}
     ap, errors = state["interface"], []
+    run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
+    run(["ip", "route", "flush", "table", "42002"])
     r = run(["nft", "delete", "table", "inet", TABLE])
     if not r["ok"] and "No such file" not in str(r["err"]): errors.append("Could not remove Keyland NAT table.")
     for key in ("dnsmasq_pid", "hostapd_pid"):
