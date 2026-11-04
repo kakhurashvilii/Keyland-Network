@@ -14,9 +14,10 @@ The dashboard can inspect Wi-Fi PHYs and NetworkManager devices, choose an eligi
 - WPA2-PSK password (8–63 characters)
 - IPv4 DNS servers (optional)
 - NetworkManager shared IPv4 mode (DHCP/NAT)
+- Optional creation of a `keyland-ap` virtual interface when the driver confirms AP mode and, for an active Wi-Fi upstream on the same PHY, concurrent AP + Client support
 - Start and stop of the dedicated `Keyland-Hotspot` profile
 
-The controller refuses to repurpose a default-route interface and refuses an AP interface already used by another connection. It does not create virtual interfaces, change drivers, or silently disconnect the active Wi-Fi link. If no separate AP interface exists, the UI reports that a hardware/driver preflight is required.
+The controller refuses to repurpose a default-route interface and refuses an AP interface already used by another connection. It never changes drivers or silently disconnects the active Wi-Fi link. Virtual AP creation is a separate confirmed operation and is attempted only after capability checks. If no separate AP interface exists, the UI reports that a hardware/driver preflight is required.
 
 ## DNS
 
