@@ -217,3 +217,28 @@ def test_admin_access():
     response = client.get("/api/v1/auth/admin-check")
     assert response.status_code == 200
     assert response.json()["role"] == "admin"
+
+
+def test_dns_status_requires_admin():
+    response = unauth_client.get("/api/v1/network/dns")
+    assert response.status_code == 401
+
+
+def test_dns_status_endpoint():
+    response = client.get("/api/v1/network/dns")
+    assert response.status_code == 200
+    data = response.json()
+    assert "available" in data
+    assert "persistent" in data
+
+
+def test_dns_apply_requires_explicit_confirmation():
+    response = client.post(
+        "/api/v1/network/dns",
+        json={
+            "interface": "wlan0",
+            "servers": ["1.1.1.1"],
+            "confirmed": False,
+        },
+    )
+    assert response.status_code == 400
