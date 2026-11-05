@@ -226,7 +226,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
             rp_filter = Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter"
             if rp_filter.exists():
                 state["previous_wan_rp_filter"] = rp_filter.read_text().strip()
-                rp_filter.write_text("2\\n")
+                rp_filter.write_text("2\n")
         run(["ip", "link", "set", ap, "down"])
         run(["ip", "addr", "flush", "dev", ap])
         if not run(["ip", "addr", "replace", cfg["ipv4_cidr"], "dev", ap])["ok"]: raise RuntimeError("Could not assign AP gateway IP.")
@@ -313,7 +313,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         run(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_ip_forward"]])
         if state.get("previous_wan_rp_filter") is not None:
             try:
-                (Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\\n")
+                (Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\n")
             except OSError:
                 pass
         run(["nmcli", "device", "set", ap, "managed", "yes"])
@@ -338,7 +338,7 @@ def stop(confirmed: bool) -> dict[str, Any]:
     run(["sysctl", "-w", "net.ipv4.ip_forward=" + state.get("previous_ip_forward", "0")])
     if state.get("previous_wan_rp_filter") is not None:
         try:
-            (Path("/proc/sys/net/ipv4/conf") / state["upstream_interface"] / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\\n")
+            (Path("/proc/sys/net/ipv4/conf") / state["upstream_interface"] / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\n")
         except OSError:
             errors.append("Could not restore the cellular WAN reverse-path filter setting.")
     if not run(["nmcli", "device", "set", ap, "managed", "yes"])["ok"]: errors.append("Could not restore NetworkManager management.")
