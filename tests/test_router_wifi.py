@@ -24,6 +24,8 @@ def patch_preflight(addr_output="[]", interfaces=None, routes=None):
     def fake_run(args, **kwargs):
         if args[:2] == ["iw", "list"]:
             return {"ok": True, "out": """
+        valid interface combinations:
+                 * #{ managed } <= 2, #{ AP } <= 1, total <= 3, #channels <= 2
         * 2412.0 MHz [1] (20.0 dBm)
         * 2437.0 MHz [6] (20.0 dBm)
         * 5180.0 MHz [36] (18.0 dBm)
@@ -37,7 +39,7 @@ def patch_preflight(addr_output="[]", interfaces=None, routes=None):
     return (
         patch.object(router, "run", side_effect=fake_run),
         patch.object(router, "interfaces", return_value=interfaces or [
-            {"name": "keyland-ap", "type": "AP", "phy": "phy#1", "channel": 6},
+            {"name": "keyland-ap", "type": "AP", "phy": "phy#0", "channel": 6},
             {"name": "wlan0", "type": "managed", "ssid": "DiagOnNet", "channel": 6, "phy": "phy#0"},
         ]),
         patch.object(router, "defaults", return_value=routes or [
