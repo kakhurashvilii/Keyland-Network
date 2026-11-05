@@ -860,63 +860,56 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <p class="muted">OpenWrt-ის მსგავსი AP მართვა: ცალკე AP ინტერფეისი, არჩეული WAN, DHCP, DNS და NAT. upstream ინტერფეისი არ გადაირთვება. </p>
             <div class="hotspot-grid">
                 <div>
-                    <label for="hotspotMode">რეჟიმი</label>
-                    <select id="hotspotMode"><option value="hotspot">Hotspot · SIM / LTE ან არჩეული WAN</option><option value="repeater">Wi-Fi Repeater · არსებული Wi-Fi</option></select>
-                </div>
-                <div>
                     <label for="hotspotUpstream">ინტერნეტის წყარო (WAN)</label>
-                    <select id="hotspotUpstream"><option value="">ჯერ შეამოწმე ქსელი</option></select>
+                    <select id="hotspotUpstream"><option value="">ქსელის შემოწმება...</option></select>
                 </div>
                 <div>
                     <label for="hotspotInterface">AP ინტერფეისი</label>
                     <select id="hotspotInterface" aria-describedby="hotspotPreflight"><option value="keyland-ap">keyland-ap</option></select>
                 </div>
                 <div>
-                    <label for="hotspotSsid">Hotspot-ის სახელი (SSID)</label>
+                    <label for="hotspotSsid">Hotspot-ის სახელი</label>
                     <input id="hotspotSsid" type="text" maxlength="32" value="Keyland-Hotspot" autocomplete="off">
                 </div>
                 <div>
-                    <label for="hotspotPassword">პაროლი (8–63 სიმბოლო)</label>
+                    <label for="hotspotPassword">პაროლი (8–63 ASCII სიმბოლო)</label>
                     <input id="hotspotPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="შეიყვანე ძლიერი პაროლი">
                 </div>
-                <div>
-                    <label for="hotspotSecurity">უსაფრთხოება</label>
-                    <select id="hotspotSecurity"><option value="wpa2-psk">WPA2-PSK (AES)</option></select>
-                </div>
-                <div>
-                    <label for="hotspotBand">სიხშირის დიაპაზონი</label>
-                    <select id="hotspotBand">
-                        <option value="2.4">2.4 GHz</option>
-                        <option value="5">5 GHz</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="hotspotChannel">Wi-Fi არხი</label>
-                    <select id="hotspotChannel"></select>
-                    <p class="muted">5 GHz: საწყისად ხელმისაწვდომია არხები 36, 40, 44 და 48.</p>
-                </div>
-                <div>
-                    <label for="hotspotIpv4">Hotspot-ის IP მისამართი / ქსელი (CIDR)</label>
-                    <input id="hotspotIpv4" type="text" inputmode="text" value="192.168.88.1/24" placeholder="192.168.88.1/24" autocomplete="off" spellcheck="false">
-                    <p class="muted">მაგალითი: 192.168.88.1/24. ეს იქნება Gateway; DHCP-ს dnsmasq, NAT-ს კი nftables მართავს.</p>
-                </div>
-                <div class="hotspot-wide">
-                    <label for="hotspotDns">DNS სერვერები (არასავალდებულო)</label>
-                    <input id="hotspotDns" type="text" placeholder="1.1.1.1, 8.8.8.8">
-                    <p class="muted">DNS კლიენტებს DHCP-ით მიეწოდება; DNS მოთხოვნები არჩეულ სერვერებზე გადაიგზავნება.</p>
-                </div>
-            </div>
-            <div class="hotspot-wide">
-                <label for="hotspotSourceInterface">საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)</label>
-                <select id="hotspotSourceInterface"><option value="">ინტერფეისის არჩევა</option></select>
             </div>
             <div class="hotspot-actions">
-                <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
-                <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
                 <button id="hotspotStartButton" type="button" disabled>Hotspot-ის ჩართვა</button>
-                <button id="hotspotStopButton" type="button" class="danger secondary">Hotspot-ის გამორთვა</button>
+                <button id="hotspotStopButton" type="button" class="danger secondary" disabled>გამორთვა</button>
             </div>
-            <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+            <details class="hotspot-wide">
+                <summary>დამატებითი პარამეტრები და დიაგნოსტიკა</summary>
+                <div class="hotspot-grid">
+                    <div>
+                        <label for="hotspotBand">სიხშირე</label>
+                        <select id="hotspotBand"><option value="2.4">2.4 GHz</option><option value="5">5 GHz</option></select>
+                    </div>
+                    <div>
+                        <label for="hotspotChannel">Wi-Fi არხი</label>
+                        <select id="hotspotChannel"></select>
+                    </div>
+                    <div>
+                        <label for="hotspotIpv4">Hotspot Gateway / CIDR</label>
+                        <input id="hotspotIpv4" type="text" value="192.168.88.1/24" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="hotspotDns">DNS სერვერები</label>
+                        <input id="hotspotDns" type="text" placeholder="1.1.1.1, 8.8.8.8">
+                    </div>
+                    <div class="hotspot-wide">
+                        <label for="hotspotSourceInterface">საწყისი Wi-Fi ინტერფეისი (AP-ის შესაქმნელად)</label>
+                        <select id="hotspotSourceInterface"><option value="">აირჩიე Wi-Fi ინტერფეისი</option></select>
+                    </div>
+                </div>
+                <div class="hotspot-actions">
+                    <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
+                    <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
+                </div>
+                <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+            </details>
             <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
 
@@ -1812,7 +1805,16 @@ async function loadHotspotCapabilities() {
         });
         const wifiWan = (data.upstream_sources || []).find(x => x.type === "wifi");
         const simWan = (data.upstream_sources || []).find(x => x.type === "cellular");
-        wan.value = (element("hotspotMode").value === "repeater" ? wifiWan : simWan || wifiWan)?.interface || "";
+        wan.value = (simWan || wifiWan)?.interface || "";
+        const station = (data.interfaces || []).find(x => x.type === "managed" && x.ssid && Number(x.channel));
+        const stationChannel = Number(station?.channel || 6);
+        const stationBand = stationChannel >= 36 ? "5" : "2.4";
+        element("hotspotBand").value = stationBand;
+        updateHotspotChannels();
+        if ((stationBand === "2.4" && stationChannel >= 1 && stationChannel <= 11) ||
+            (stationBand === "5" && [36,40,44,48].includes(stationChannel))) {
+            element("hotspotChannel").value = String(stationChannel);
+        }
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
         start.disabled = !wan.value || status.configured;
@@ -1843,7 +1845,6 @@ async function loadHotspotCapabilities() {
 async function startHotspot() {
     const interfaceName = element("hotspotInterface").value || "keyland-ap";
     const upstream = element("hotspotUpstream").value;
-    const mode = element("hotspotMode").value;
     const ssid = element("hotspotSsid").value.trim();
     const password = element("hotspotPassword").value;
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
@@ -1859,7 +1860,7 @@ async function startHotspot() {
     try {
         const response = await apiFetch(API + "/wifi/hotspot/router/start", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({mode,interface:interfaceName,upstream_interface:upstream,ssid,password,dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,band,channel,confirmed:true})
+            body:JSON.stringify({mode:"hotspot",interface:interfaceName,upstream_interface:upstream,ssid,password,dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,band,channel,confirmed:true})
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
@@ -1920,17 +1921,10 @@ function updateHotspotChannels() {
         option.textContent = String(channel);
         return option;
     }));
-    select.value = String(channels.includes(previous) ? previous : (band === "5" ? 36 : 1));
+    select.value = String(channels.includes(previous) ? previous : (band === "5" ? 36 : 6));
 }
 element("hotspotBand").addEventListener("change", updateHotspotChannels);
 updateHotspotChannels();
-element("hotspotMode").addEventListener("change", () => {
-    const options = Array.from(element("hotspotUpstream").options);
-    const preferred = options.find(o => element("hotspotMode").value === "repeater"
-        ? o.textContent.toLowerCase().includes("wifi")
-        : o.textContent.toLowerCase().includes("cellular"));
-    if (preferred) element("hotspotUpstream").value = preferred.value;
-});
 
 /* DNS MANAGEMENT */
 function renderDnsStatus(data) {
