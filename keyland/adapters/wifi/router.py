@@ -149,11 +149,41 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
         combinations = parse_interface_combinations(iw_list["out"]) if iw_list["ok"] else {}
         if not combinations.get("ap_client_combination_mentioned"):
             raise ValueError("The Wi-Fi driver does not confirm simultaneous AP + Client operation on this PHY.")
-    # Shared PHY must remain on the station's channel.
-    channel = (station or {}).get("channel") or apdev.get("channel") or 6
+    # Validate requested AP band/channel against the current regulatory database.
+    band = p.get("band", "2.4")
+    if band not in ("2.4", "5"):
+        raise ValueError("Wi-Fi band must be 2.4 or 5 GHz.")
+    try:
+        requested_channel = int(p.get("channel") or (36 if band == "5" else 1))
+    except (TypeError, ValueError):
+        raise ValueError("Invalid Wi-Fi channel.")
+    if (band == "2.4" and requested_channel not in range(1, 12)) or (band == "5" and requested_channel not in (36, 40, 44, 48)):
+        raise ValueError("Choose a supported non-DFS channel for the selected band.")
+    phy_info = run(["iw", "list"], timeout=20)
+    if not phy_info["ok"]:
+        raise ValueError("Could not read supported Wi-Fi channels.")
+    available = set()
+    for raw in phy_info["out"].splitlines():
+        match = re.search(r"\*\s+\d+\s+MHz\s+\[(\d+)\](.*)", raw)
+        if not match:
+            continue
+        channel_number, flags = int(match.group(1)), match.group(2).lower()
+        if "disabled" in flags or "no ir" in flags or "radar detection" in flags:
+            continue
+        available.add(channel_number)
+    if requested_channel not in available:
+        raise ValueError(f"Channel {requested_channel} is not currently permitted for AP operation.")
+    station_channel = (station or {}).get("channel")
+    if mode == "repeater" and station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
+        raise ValueError("Repeater AP must use the connected Wi-Fi channel.")
+    if station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
+        multi = any(re.search(r"#\s*channels\s*<=\s*2", item) for item in combinations.get("details", []))
+        if not multi:
+            raise ValueError("This Wi-Fi driver requires AP and Wi-Fi Client to use the same channel.")
     return {"mode": mode, "interface": ap, "upstream_interface": wan, "ssid": ssid,
             "password": password, "ipv4_cidr": str(addr), "gateway": str(addr.ip),
-            "network": str(addr.network), "dns_servers": dns, "channel": channel}
+            "network": str(addr.network), "dns_servers": dns, "band": band,
+            "channel": requested_channel}
 
 
 def start(p: dict[str, Any]) -> dict[str, Any]:
@@ -178,7 +208,9 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         if not run(["ip", "addr", "replace", cfg["ipv4_cidr"], "dev", ap])["ok"]: raise RuntimeError("Could not assign AP gateway IP.")
         if not run(["ip", "link", "set", ap, "up"])["ok"]: raise RuntimeError("Could not bring AP interface up.")
         hconf = ROOT / "hostapd.conf"
-        hconf.write_text(f"interface={ap}\ndriver=nl80211\nssid={cfg['ssid']}\ncountry_code=GE\nhw_mode=g\nchannel={cfg['channel']}\nieee80211n=1\nwmm_enabled=1\nauth_algs=1\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase={cfg['password']}\n")
+        hw_mode = "g" if cfg["band"] == "2.4" else "a"
+        band_features = "ieee80211n=1\n" if cfg["band"] == "2.4" else "ieee80211n=1\nieee80211ac=1\nvht_oper_chwidth=0\n"
+        hconf.write_text(f"interface={ap}\ndriver=nl80211\nssid={cfg['ssid']}\ncountry_code=GE\nhw_mode={hw_mode}\nchannel={cfg['channel']}\n{band_features}wmm_enabled=1\nauth_algs=1\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase={cfg['password']}\n")
         os.chmod(hconf, 0o600)
         with (ROOT / "hostapd.log").open("a") as hostapd_log:
             hp = subprocess.Popen(["hostapd", str(hconf)], stdout=hostapd_log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -244,7 +276,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         write_state({k: v for k, v in state.items() if k != "password"})
         return {"success": True, "active": True, "mode": cfg["mode"], "interface": ap,
                 "upstream_interface": wan, "ssid": cfg["ssid"], "ipv4_cidr": cfg["ipv4_cidr"],
-                "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
+                "band": cfg["band"], "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
     except Exception as exc:
         if firewall_created: run(["nft", "delete", "table", "inet", TABLE])
