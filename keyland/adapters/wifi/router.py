@@ -566,6 +566,7 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
         commands = [
             ["tc", "qdisc", "add", "dev", ap, "root", "handle", "1:", "htb", "default", "999"],
             ["tc", "class", "add", "dev", ap, "parent", "1:", "classid", "1:1", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
+            ["tc", "class", "add", "dev", ap, "parent", "1:1", "classid", "1:999", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
         ]
         for command in commands:
             result = run(command)
