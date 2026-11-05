@@ -1652,6 +1652,7 @@ async function loadData() {
         ["wifiCapabilities", API + "/wifi/capabilities"],
         ["repeaterStatus", API + "/wifi/repeater/status"],
         ["hotspotStatus", API + "/wifi/hotspot/router/status"],
+        ["hotspotClients", API + "/wifi/hotspot/router/clients"],
         ["services", API + "/services"],
         ["resources", API + "/system/resources"],
         ["traffic", API + "/network/traffic"],
@@ -1684,7 +1685,7 @@ async function loadData() {
                         renderRepeaterStatus(data);
                         break;
 
-                    case "hotspotStatus":
+                    case "hotspotClients":
                         renderHotspotClients(data);
                         break;
 
