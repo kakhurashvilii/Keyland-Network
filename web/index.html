@@ -608,6 +608,12 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 .client-device-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .client-device-actions button{flex:1 1 90px;min-height:32px;margin:0;padding:6px 8px;font-size:10px}
 
+
+/* Collapsible technical diagnostics */
+.diagnostic-details{margin-top:10px;border:1px solid #263b50;border-radius:8px;background:rgba(7,14,26,.22);padding:8px 10px}
+.diagnostic-details>summary{cursor:pointer;color:#91b9e8;font-size:11px;font-weight:650;user-select:none}
+.diagnostic-details[open]>summary{margin-bottom:8px}
+.diagnostic-details pre{margin:0;max-height:260px}
 </style>
 </head>
 
@@ -710,7 +716,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 
         <section class="card">
             <h3 id="device-title">მოწყობილობა</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="device">მოლოდინი...</pre>
+        </details>
         </section>
 
         <section class="card">
@@ -741,7 +749,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
                 </div>
             </div>
 
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="resources">მოლოდინი...</pre>
+        </details>
         </section>
 
         <section class="card">
@@ -749,7 +759,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <div id="internetStatus" class="internet-status unknown">
                 მოწმდება...
             </div>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="internetDetails">შედეგის მოლოდინი...</pre>
+        </details>
         </section>
 
         <!-- CELLULAR / SIM / LTE -->
@@ -814,10 +826,14 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 
             <div class="cellular-interfaces">
                 <div class="metric-label">CELLULAR INTERFACES / IP ADDRESSES</div>
-                <pre id="cellularInterfaces">მოლოდინი...</pre>
+                <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="cellularInterfaces">მოლოდინი...</pre>
+        </details>
             </div>
 
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="cellularDetails">Waiting for cellular modem...</pre>
+        </details>
         </section>
 
         <section class="card">
@@ -849,12 +865,16 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
                 <span>ბოლო 60 ჩანაწერი</span>
             </div>
 
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="traffic">Waiting for first sample...</pre>
+        </details>
         </section>
 
         <section class="card">
             <h3>მოწყობილობის შესაძლებლობები</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="capabilities">მოლოდინი...</pre>
+        </details>
         </section>
 
         <section class="card">
@@ -866,7 +886,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
                 <option value="all">ყველა ინტერფეისი</option>
                 <option value="active">მხოლოდ აქტიური</option>
             </select>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="interfaces">მოლოდინი...</pre>
+        </details>
         </section>
 
         <div id="wireless-section" class="section-heading"><div><span class="section-kicker">02 / WIRELESS</span><h2>Wi-Fi ქსელი</h2><p>ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა</p></div></div>
@@ -876,18 +898,24 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <p class="muted">
                 Supported Wi-Fi modes, bands, channels and interfaces.
             </p>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="wifiCapabilities">Loading...</pre>
+        </details>
         </section>
 
 
         <section class="card">
             <h3>მარშრუტიზაციის ცხრილი</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="routes">მოლოდინი...</pre>
+        </details>
         </section>
 
         <section class="card">
             <h3>Wi-Fi კავშირი</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="wifi">მოლოდინი...</pre>
+        </details>
         </section>
 
         <section class="card">
@@ -898,7 +926,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
         <section class="card">
             <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
             <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
+        </details>
         </section>
 
         <section class="card hotspot-card" style="grid-column: 1 / -1;">
@@ -961,7 +991,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
                     <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
                     <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
                 </div>
-                <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+                <details class="diagnostic-details"><summary>შესაძლებლობების დეტალური ანგარიში</summary>
+            <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+        </details>
             </details>
             <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
@@ -983,12 +1015,10 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
         <section class="card repeater-card" style="grid-column:1 / -1;">
             <h3>Repeater-ის მზადყოფნა</h3>
             <p class="muted">აქ გამოჩნდება AP + Client რეჟიმის, არხის თავსებადობისა და ინტერნეტის გაზიარების შემოწმება. ძირითადი Wi-Fi კავშირი არ შეიცვლება.</p>
+            <details class="diagnostic-details"><summary>Repeater-ის დიაგნოსტიკა</summary>
             <pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre>
-            <div class="repeater-scan-toolbar">
-                <div><strong>ახლომდებარე ქსელები</strong><p class="muted">დაასკანერე ხელმისაწვდომი Wi-Fi ქსელები და შეამოწმე სიგნალი. ეს არ ცვლის მიმდინარე კავშირს.</p></div>
-                <button id="repeaterScanButton" type="button" class="secondary">ქსელების ძებნა</button>
-            </div>
-            <div id="repeaterScanResults" class="wifi-results" aria-live="polite"><p class="muted">ჯერ არ შესრულებულა სკანირება.</p></div>
+        </details>
+            <p class="muted">ახლომდებარე Wi-Fi ქსელების სკანირება ხელმისაწვდომია Wi-Fi ქსელის განყოფილებაში — განმეორებითი სკანირების ბლოკი აქ აღარ არის.</p>
             <p class="muted">Repeater რეჟიმში WAN-ად აირჩიე დაკავშირებული Wi-Fi client ინტერფეისი. AP და client ერთ PHY-ზე ერთ არხზე იმუშავებენ; თუ დრაივერი ერთდროულ მუშაობას ვერ უზრუნველყოფს, გაშვება უარყოფილი იქნება.</p>
         </section>
 
@@ -1004,7 +1034,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <p><button id="dnsApplyButton" type="button">DNS-ის გამოყენება</button>
             <button id="dnsResetButton" type="button">ავტომატურზე დაბრუნება</button>
             <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
+            <details class="diagnostic-details"><summary>DNS-ის დეტალური მდგომარეობა</summary>
             <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
+        </details>
             <p id="dnsMessage" class="muted" role="status"></p>
         </section>
 
@@ -1029,13 +1061,8 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
         <div id="mobile-section" class="section-heading"><div><span class="section-kicker">05 / CELLULAR</span><h2>მობილური ქსელი</h2><p>SIM ბარათისა და მობილური მოდემის პარამეტრები</p></div></div>
 
         <section class="card">
-            <h3>SIM / LTE / 5G პარამეტრები</h3>
-            <p class="muted">მოდემის სტატუსი და სიგნალი უკვე იკითხება. APN-ისა და ქსელის რეჟიმის შეცვლა დაემატება ModemManager-ის მხარდაჭერის შემოწმებით და ცალკე დადასტურებით.</p>
-        </section>
-
-        <section class="card">
-            <h3>ქსელთან დაკავშირებული მოწყობილობები</h3>
-            <p class="muted">კლიენტების აღმოჩენა და IP/MAC-ის ჩვენება დაემატება. დაბლოკვა განხორციელდება მხოლოდ ადმინისტრატორის დადასტურებით.</p>
+            <h3>მობილური ქსელის მართვა</h3>
+            <p class="muted">ამჟამად ხელმისაწვდომია SIM-ის, ოპერატორის, LTE რეგისტრაციისა და სიგნალის მხოლოდ წაკითხვადი მონიტორინგი — ეს მონაცემები ჩანს მიმოხილვის განყოფილებაში. APN-ისა და ქსელის რეჟიმის შეცვლა ჯერ არ არის ჩართული.</p>
         </section>
 
         <div id="system-section" class="section-heading"><div><span class="section-kicker">06 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
@@ -1047,7 +1074,9 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 
         <section class="card">
             <h3>Services / Tools</h3>
+            <details class="diagnostic-details"><summary>სერვისებისა და ხელსაწყოების ტექნიკური მონაცემები</summary>
             <pre id="services">მოლოდინი...</pre>
+        </details>
         </section>
 
     </div>
@@ -1055,7 +1084,7 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 </div>
 
 <footer>
-    KEYLAND NETWORK · VERSION 0.4.0
+    KEYLAND NETWORK · LOCAL ADMIN CONSOLE
 </footer>
 
 <script>
@@ -2428,8 +2457,7 @@ async function scanWifi(targetId = "wifiScan") {
         const data = await fetchJSON(API + "/wifi/scan");
         if (state.authenticated) {
             renderWifiScan(targetId, data);
-            if (targetId !== "wifiScan") renderWifiScan("wifiScan", data);
-            else renderWifiScan("repeaterScanResults", data);
+
         }
     } catch (error) {
         if (state.authenticated && target) target.textContent = "სკანირების შეცდომა: " + error.message;
@@ -2443,7 +2471,7 @@ async function scanWifi(targetId = "wifiScan") {
 
 element("refreshButton").addEventListener("click", loadData);
 element("scanButton").addEventListener("click", scanWifi);
-element("repeaterScanButton").addEventListener("click", () => scanWifi("repeaterScanResults"));
+
 
 element("interfaceFilter").addEventListener(
     "change",
