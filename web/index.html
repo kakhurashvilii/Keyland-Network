@@ -1930,6 +1930,12 @@ function renderHotspotClients(status) {
         const rate = document.createElement("div");
         rate.className = "client-rate";
         rate.textContent = "↓ " + formatRate(downloadMbps) + " · ↑ " + formatRate(uploadMbps) + " · " + duration;
+        if (client.speed_limit) {
+            const policy = document.createElement("div");
+            policy.className = "muted";
+            policy.textContent = "ლიმიტი: ↓ " + client.speed_limit.download_mbps + " Mbps · ↑ " + client.speed_limit.upload_mbps + " Mbps";
+            rate.append(document.createElement("br"), policy);
+        }
 
         const actions = document.createElement("div");
         actions.className = "client-device-actions";
