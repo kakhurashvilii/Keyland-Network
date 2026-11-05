@@ -562,6 +562,48 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 @media(max-width:1050px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}.primary-nav{top:12px}}
 @media(max-width:760px){.app-layout{display:block;padding:10px}.primary-nav{position:relative;top:auto;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:14px;padding:9px}.nav-brand,.nav-group-label,.nav-footer{grid-column:1/-1}.primary-nav a{min-height:40px;font-size:10px}.nav-index{width:23px;height:23px;flex-basis:23px}main#dashboard{padding:0}#dashboard>.grid{grid-template-columns:1fr;gap:11px}.wifi-results-grid{grid-template-columns:1fr}.repeater-scan-toolbar{align-items:flex-start;flex-direction:column}.repeater-scan-toolbar button{width:100%}}
 
+
+/* Mobile-first compact router console */
+@media (max-width:760px) {
+ body{font-size:12px;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+ header{padding:10px 12px} header h1{font-size:14px} header p{display:none}
+ .header-row{align-items:center;gap:8px}.header-status{gap:5px}.header-status>*{padding:3px 6px;font-size:9px}
+ .header-actions{gap:5px}.header-actions button{min-height:32px;padding:6px 8px;margin:0;font-size:10px}
+ .app-layout{display:block;padding:8px 9px 16px}
+ .primary-nav{position:fixed;inset:auto 0 0;z-index:1000;display:flex;flex-direction:row;gap:2px;width:100%;min-height:0;height:calc(58px + env(safe-area-inset-bottom));margin:0;padding:5px 4px calc(5px + env(safe-area-inset-bottom));overflow-x:auto;overflow-y:hidden;border:0;border-top:1px solid #2a4058;border-radius:0;background:rgba(7,15,26,.97);box-shadow:0 -8px 24px rgba(0,0,0,.3);backdrop-filter:blur(18px);scrollbar-width:none}
+ .primary-nav::-webkit-scrollbar{display:none}.nav-brand,.nav-group-label,.nav-footer{display:none!important}
+ .primary-nav a{flex:1 0 56px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;min-width:56px;min-height:46px;padding:4px 3px;border:0;border-radius:8px;background:transparent;text-align:center}
+ .primary-nav a strong{font-size:9px;line-height:1.2;white-space:nowrap}.primary-nav a small,.nav-index{display:none}
+ main#dashboard{min-width:0;padding:0}
+ #dashboard>#refreshButton,#dashboard>#scanButton{min-height:35px;margin:0 4px 8px 0;padding:7px 9px;font-size:10px}
+ #dashboard>#updated{display:block;margin:0 0 8px;font-size:9px}
+ #dashboard>.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+ #dashboard>.grid>.section-heading{margin:9px 0 0;padding:9px 2px 3px}
+ .section-heading h2{font-size:16px}.section-heading p{margin-bottom:6px;font-size:10px}
+ #dashboard>.grid>.card{padding:12px;border-radius:10px}
+ .card h3{margin-bottom:9px;font-size:12px}.metric{font-size:21px}
+ .metric-grid,.traffic-stats{gap:8px}.cellular-grid{gap:7px;margin-top:9px}.cellular-item{padding:9px}.cellular-value{font-size:13px}
+ pre{max-height:180px;padding:9px;font-size:9px;line-height:1.45}
+ button,select{min-height:35px;padding:7px 9px;font-size:10px}
+ input,select,textarea{min-height:37px;padding:8px 9px;font-size:12px}
+ label{margin:7px 0 5px;font-size:9px}.hotspot-grid{gap:8px}.hotspot-actions{gap:5px}
+ .hotspot-actions button{flex:1 1 130px}.repeater-scan-toolbar{padding:9px}
+ .wifi-results-grid{grid-template-columns:1fr}.chart-container{height:160px}
+ footer{padding:12px;font-size:9px}
+}
+@media(max-width:380px){.primary-nav a{flex-basis:51px;min-width:51px}.primary-nav a strong{font-size:8px}.header-status .status{display:none}}
+.client-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
+.client-device{min-width:0;padding:12px;border:1px solid #2b425d;border-radius:9px;background:#0b1726}
+.client-device-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.client-device-head strong{min-width:0;overflow-wrap:anywhere;font-size:11px}
+.client-signal{color:var(--green);white-space:nowrap;font-size:10px}
+.client-traffic{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.client-traffic div{padding:7px;border-radius:7px;background:#122238}
+.client-traffic small{display:block;color:var(--muted);font-size:9px}
+.client-traffic b{display:block;margin-top:3px;font-size:12px}
+.client-rate{margin-top:7px;color:#9fcaff;font-size:10px}
+.client-empty{padding:12px;border:1px dashed #344a64;border-radius:8px;color:var(--muted);font-size:11px}
+
 </style>
 </head>
 
@@ -920,6 +962,18 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
         </section>
 
+        <section class="card" id="hotspotClientsCard" style="grid-column:1 / -1;">
+            <div class="cellular-heading">
+                <h3>Hotspot-ის დაკავშირებული მოწყობილობები</h3>
+                <span class="cellular-badge" id="hotspotClientCount">0 მოწყობილობა</span>
+            </div>
+            <p class="muted">RX — მოწყობილობის ატვირთვა; TX — ჩამოტვირთვა. სიჩქარე ითვლება ბოლო ორ გაზომვას შორის.</p>
+            <div id="hotspotClients" class="client-list" aria-live="polite">
+                <div class="client-empty">Hotspot ჯერ არ არის ჩართული ან მოწყობილობები არ არის დაკავშირებული.</div>
+            </div>
+            <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. სიჩქარის შეზღუდვა და დაბლოკვა ცალკე, დაცულ მართვის API-ს მოითხოვს.</p>
+        </section>
+
         <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>არსებული Wi-Fi კავშირის გამეორება ცალკე AP ქსელით</p></div></div>
 
         <section class="card repeater-card" style="grid-column:1 / -1;">
@@ -1013,6 +1067,8 @@ const state = {
     pollingTimer: null,
     sessionCheckInProgress: false
 };
+
+const hotspotClientSamples = new Map();
 
 const API = "/api/v1";
 
@@ -1591,6 +1647,7 @@ async function loadData() {
         ["wifi", API + "/wifi"],
         ["wifiCapabilities", API + "/wifi/capabilities"],
         ["repeaterStatus", API + "/wifi/repeater/status"],
+        ["hotspotStatus", API + "/wifi/hotspot/router/status"],
         ["services", API + "/services"],
         ["resources", API + "/system/resources"],
         ["traffic", API + "/network/traffic"],
@@ -1621,6 +1678,10 @@ async function loadData() {
                         break;
                     case "repeaterStatus":
                         renderRepeaterStatus(data);
+                        break;
+
+                    case "hotspotStatus":
+                        renderHotspotClients(data);
                         break;
 
                     default:
@@ -1792,6 +1853,84 @@ function tr(ka, en) { return uiLanguage === "en" ? en : ka; }
 document.getElementById("languageToggle").addEventListener("click", () => applyLanguage(uiLanguage === "en" ? "ka" : "en"));
 applyLanguage(uiLanguage);
 
+
+function formatRate(mbps) {
+    if (!Number.isFinite(mbps) || mbps < 0.01) return "< 0.01 Mbps";
+    return mbps >= 100 ? mbps.toFixed(0) + " Mbps" : mbps.toFixed(2) + " Mbps";
+}
+
+function renderHotspotClients(status) {
+    const list = element("hotspotClients");
+    const count = element("hotspotClientCount");
+    if (!list || !count) return;
+
+    const clients = Array.isArray(status?.clients) ? status.clients : [];
+    count.textContent = clients.length + " მოწყობილობა";
+
+    if (!status?.active || clients.length === 0) {
+        list.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "client-empty";
+        empty.textContent = "Hotspot გამორთულია ან დაკავშირებული მოწყობილობები არ არის.";
+        list.append(empty);
+        hotspotClientSamples.clear();
+        return;
+    }
+
+    const now = Date.now();
+    const cards = clients.map(client => {
+        const mac = String(client.mac || "unknown");
+        const rx = Number(client.rx_bytes) || 0;
+        const tx = Number(client.tx_bytes) || 0;
+        const previous = hotspotClientSamples.get(mac);
+        const elapsed = previous ? Math.max(0.1, (now - previous.at) / 1000) : 0;
+        const uploadMbps = previous && rx >= previous.rx ? ((rx - previous.rx) * 8 / elapsed) / 1000000 : 0;
+        const downloadMbps = previous && tx >= previous.tx ? ((tx - previous.tx) * 8 / elapsed) / 1000000 : 0;
+        hotspotClientSamples.set(mac, {rx, tx, at: now});
+
+        const signal = String(client.signal || client.signal_avg || "—");
+        const connected = Number(client.connected_time) || 0;
+        const duration = connected >= 3600
+            ? Math.floor(connected / 3600) + "სთ " + Math.floor((connected % 3600) / 60) + "წთ"
+            : Math.floor(connected / 60) + "წთ";
+
+        const card = document.createElement("article");
+        card.className = "client-device";
+        const head = document.createElement("div");
+        head.className = "client-device-head";
+        const macLabel = document.createElement("strong");
+        macLabel.textContent = mac;
+        const signalLabel = document.createElement("span");
+        signalLabel.className = "client-signal";
+        signalLabel.textContent = signal;
+        head.append(macLabel, signalLabel);
+
+        const traffic = document.createElement("div");
+        traffic.className = "client-traffic";
+        const download = document.createElement("div");
+        const downloadLabel = document.createElement("small");
+        downloadLabel.textContent = "ჩამოტვირთული";
+        const downloadValue = document.createElement("b");
+        downloadValue.textContent = formatBytes(tx);
+        download.append(downloadLabel, downloadValue);
+        const upload = document.createElement("div");
+        const uploadLabel = document.createElement("small");
+        uploadLabel.textContent = "ატვირთული";
+        const uploadValue = document.createElement("b");
+        uploadValue.textContent = formatBytes(rx);
+        upload.append(uploadLabel, uploadValue);
+        traffic.append(download, upload);
+
+        const rate = document.createElement("div");
+        rate.className = "client-rate";
+        rate.textContent = "↓ " + formatRate(downloadMbps) + " · ↑ " + formatRate(uploadMbps) + " · " + duration;
+        card.append(head, traffic, rate);
+        return card;
+    });
+
+    list.replaceChildren(...cards);
+}
+
 /* Hotspot preflight and guarded controls */
 async function loadHotspotCapabilities() {
     const output = element("hotspotPreflight");
@@ -1869,6 +2008,7 @@ source.value = (data.interfaces || []).some(
         }
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
+        renderHotspotClients(status);
         start.disabled = !wan.value || status.configured;
         element("hotspotStopButton").disabled = !status.configured;
         const lines = [
