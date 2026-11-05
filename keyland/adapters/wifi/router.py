@@ -487,7 +487,6 @@ def client_block(mac: str, blocked: bool) -> dict[str, Any]:
         ["nft", "add", "table", "inet", table],
         ["nft", "add", "set", "inet", table, "blocked_macs", "{", "type", "ether_addr", ";", "}"],
         ["nft", "add", "chain", "inet", table, "forward", "{", "type", "filter", "hook", "forward", "priority", "-10", ";", "policy", "accept", ";", "}"],
-        ["nft", "add", "rule", "inet", table, "forward", "iifname", ap, "ether", "saddr", "@blocked_macs", "drop"],
     ]
     if blocked:
         # Existing table/set/chain are expected on repeat requests. Ignore only
@@ -496,6 +495,11 @@ def client_block(mac: str, blocked: bool) -> dict[str, Any]:
             result = run(command)
             if not result["ok"] and "File exists" not in str(result["err"]):
                 return {"success": False, "error": "Could not prepare isolated client firewall: " + str(result["err"] or result["out"])}
+        chain = run(["nft", "list", "chain", "inet", table, "forward"])
+        if not chain["ok"] or "@blocked_macs" not in chain["out"]:
+            result = run(["nft", "add", "rule", "inet", table, "forward", "iifname", ap, "ether", "saddr", "@blocked_macs", "drop"])
+            if not result["ok"]:
+                return {"success": False, "error": "Could not add isolated client firewall rule: " + str(result["err"] or result["out"])}
         result = run(["nft", "add", "element", "inet", table, "blocked_macs", "{", mac, "}"])
         if not result["ok"] and "File exists" not in str(result["err"]):
             return {"success": False, "error": "Could not block client: " + str(result["err"] or result["out"])}
