@@ -604,6 +604,10 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 .client-rate{margin-top:7px;color:#9fcaff;font-size:10px}
 .client-empty{padding:12px;border:1px dashed #344a64;border-radius:8px;color:var(--muted);font-size:11px}
 
+
+.client-device-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.client-device-actions button{flex:1 1 90px;min-height:32px;margin:0;padding:6px 8px;font-size:10px}
+
 </style>
 </head>
 
@@ -1863,7 +1867,6 @@ function renderHotspotClients(status) {
     const list = element("hotspotClients");
     const count = element("hotspotClientCount");
     if (!list || !count) return;
-
     const clients = Array.isArray(status?.clients) ? status.clients : [];
     count.textContent = clients.length + " მოწყობილობა";
 
@@ -1888,22 +1891,20 @@ function renderHotspotClients(status) {
         const downloadMbps = previous && tx >= previous.tx ? ((tx - previous.tx) * 8 / elapsed) / 1000000 : 0;
         hotspotClientSamples.set(mac, {rx, tx, at: now});
 
-        const signal = String(client.signal || client.signal_avg || "—");
-        const connected = Number(client.connected_time) || 0;
-        const duration = connected >= 3600
-            ? Math.floor(connected / 3600) + "სთ " + Math.floor((connected % 3600) / 60) + "წთ"
-            : Math.floor(connected / 60) + "წთ";
-
         const card = document.createElement("article");
         card.className = "client-device";
         const head = document.createElement("div");
         head.className = "client-device-head";
-        const macLabel = document.createElement("strong");
-        macLabel.textContent = mac;
-        const signalLabel = document.createElement("span");
-        signalLabel.className = "client-signal";
-        signalLabel.textContent = signal;
-        head.append(macLabel, signalLabel);
+        const identity = document.createElement("strong");
+        identity.textContent = client.hostname || client.ip || mac;
+        const signal = document.createElement("span");
+        signal.className = "client-signal";
+        signal.textContent = String(client.signal || client.signal_avg || "—");
+        head.append(identity, signal);
+
+        const meta = document.createElement("div");
+        meta.className = "muted";
+        meta.textContent = mac + (client.ip ? " · " + client.ip : "");
 
         const traffic = document.createElement("div");
         traffic.className = "client-traffic";
@@ -1921,14 +1922,76 @@ function renderHotspotClients(status) {
         upload.append(uploadLabel, uploadValue);
         traffic.append(download, upload);
 
+        const connected = Number(client.connected_time) || 0;
+        const duration = connected >= 3600
+            ? Math.floor(connected / 3600) + "სთ " + Math.floor((connected % 3600) / 60) + "წთ"
+            : Math.floor(connected / 60) + "წთ";
         const rate = document.createElement("div");
         rate.className = "client-rate";
         rate.textContent = "↓ " + formatRate(downloadMbps) + " · ↑ " + formatRate(uploadMbps) + " · " + duration;
-        card.append(head, traffic, rate);
+
+        const actions = document.createElement("div");
+        actions.className = "client-device-actions";
+        const block = document.createElement("button");
+        block.className = client.blocked ? "secondary" : "danger";
+        block.textContent = client.blocked ? "განბლოკვა" : "დაბლოკვა";
+        block.addEventListener("click", () => manageHotspotClient(
+            client, client.blocked ? "unblock" : "block"
+        ));
+        const limit = document.createElement("button");
+        limit.className = "secondary";
+        limit.textContent = "სიჩქარის ლიმიტი";
+        limit.addEventListener("click", () => manageHotspotClient(client, "limit"));
+        actions.append(block, limit);
+        card.append(head, meta, traffic, rate, actions);
         return card;
     });
-
     list.replaceChildren(...cards);
+}
+
+async function manageHotspotClient(client, action) {
+    const mac = String(client.mac || "");
+    if (!mac) return;
+    let endpoint = "";
+    let payload = {mac, confirmed: true};
+
+    if (action === "block" || action === "unblock") {
+        const verb = action === "block" ? "დაბლოკო" : "განბლოკო";
+        if (!window.confirm(mac + " — ნამდვილად გსურს მოწყობილობის " + verb + "?")) return;
+        endpoint = API + "/wifi/hotspot/router/clients/" + action;
+    } else {
+        const download = window.prompt("ჩამოტვირთვის მაქსიმალური სიჩქარე Mbps-ში:", "10");
+        if (download === null) return;
+        const upload = window.prompt("ატვირთვის მაქსიმალური სიჩქარე Mbps-ში:", "5");
+        if (upload === null) return;
+        const down = Number(download), up = Number(upload);
+        if (!Number.isInteger(down) || !Number.isInteger(up) || down < 1 || up < 1 || down > 1000 || up > 1000) {
+            window.alert("მიუთითე მთელი რიცხვი 1-დან 1000 Mbps-მდე.");
+            return;
+        }
+        if (!window.confirm(mac + " — ჩამოტვირთვა " + down + " Mbps, ატვირთვა " + up + " Mbps. გამოიყენო?")) return;
+        endpoint = API + "/wifi/hotspot/router/clients/limit";
+        payload.download_mbps = down;
+        payload.upload_mbps = up;
+    }
+
+    try {
+        const response = await apiFetch(endpoint, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = data.blocked === true
+            ? "მოწყობილობა დაიბლოკა: " + mac
+            : data.blocked === false
+                ? "მოწყობილობა განიბლოკა: " + mac
+                : "სიჩქარის ლიმიტი დაყენებულია: " + mac;
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("hotspotMessage").textContent = "მოქმედება ვერ შესრულდა: " + error.message;
+    }
 }
 
 /* Hotspot preflight and guarded controls */
@@ -2008,7 +2071,8 @@ source.value = (data.interfaces || []).some(
         }
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
-        renderHotspotClients(status);
+        const clientData = await fetchJSON(API + "/wifi/hotspot/router/clients").catch(() => ({active:false,clients:[]}));
+        renderHotspotClients(clientData);
         start.disabled = !wan.value || status.configured;
         element("hotspotStopButton").disabled = !status.configured;
         const lines = [
