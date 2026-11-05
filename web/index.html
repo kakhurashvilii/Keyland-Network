@@ -884,6 +884,18 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
                     <select id="hotspotSecurity"><option value="wpa2-psk">WPA2-PSK (AES)</option></select>
                 </div>
                 <div>
+                    <label for="hotspotBand">სიხშირის დიაპაზონი</label>
+                    <select id="hotspotBand">
+                        <option value="2.4">2.4 GHz</option>
+                        <option value="5">5 GHz</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="hotspotChannel">Wi-Fi არხი</label>
+                    <select id="hotspotChannel"></select>
+                    <p class="muted">5 GHz: საწყისად ხელმისაწვდომია არხები 36, 40, 44 და 48.</p>
+                </div>
+                <div>
                     <label for="hotspotIpv4">Hotspot-ის IP მისამართი / ქსელი (CIDR)</label>
                     <input id="hotspotIpv4" type="text" inputmode="text" value="192.168.88.1/24" placeholder="192.168.88.1/24" autocomplete="off" spellcheck="false">
                     <p class="muted">მაგალითი: 192.168.88.1/24. ეს იქნება Gateway; DHCP-ს dnsmasq, NAT-ს კი nftables მართავს.</p>
@@ -1836,6 +1848,8 @@ async function startHotspot() {
     const password = element("hotspotPassword").value;
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
     const ipv4Cidr = element("hotspotIpv4").value.trim();
+    const band = element("hotspotBand").value;
+    const channel = Number(element("hotspotChannel").value);
     if (!upstream) { element("hotspotMessage").textContent = tr("აირჩიე ინტერნეტის წყარო.","Select an upstream interface."); return; }
     if (!password || password.length < 8 || password.length > 63 || !/^[\x20-\x7E]+$/.test(password)) {
         element("hotspotMessage").textContent = tr("WPA2 პაროლი უნდა იყოს 8–63 ინგლისური/ASCII სიმბოლო.","WPA2 password must be 8–63 ASCII characters."); return;
@@ -1845,7 +1859,7 @@ async function startHotspot() {
     try {
         const response = await apiFetch(API + "/wifi/hotspot/router/start", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({mode,interface:interfaceName,upstream_interface:upstream,ssid,password,dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,confirmed:true})
+            body:JSON.stringify({mode,interface:interfaceName,upstream_interface:upstream,ssid,password,dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,band,channel,confirmed:true})
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
@@ -1895,6 +1909,21 @@ element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualA
 element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
 element("hotspotStartButton").addEventListener("click", startHotspot);
 element("hotspotStopButton").addEventListener("click", stopHotspot);
+function updateHotspotChannels() {
+    const band = element("hotspotBand").value;
+    const channels = band === "5" ? [36, 40, 44, 48] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const select = element("hotspotChannel");
+    const previous = Number(select.value);
+    select.replaceChildren(...channels.map(channel => {
+        const option = document.createElement("option");
+        option.value = String(channel);
+        option.textContent = String(channel);
+        return option;
+    }));
+    select.value = String(channels.includes(previous) ? previous : (band === "5" ? 36 : 1));
+}
+element("hotspotBand").addEventListener("change", updateHotspotChannels);
+updateHotspotChannels();
 element("hotspotMode").addEventListener("change", () => {
     const options = Array.from(element("hotspotUpstream").options);
     const preferred = options.find(o => element("hotspotMode").value === "repeater"
