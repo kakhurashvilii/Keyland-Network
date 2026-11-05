@@ -63,6 +63,8 @@ class RouterWifiRequest(BaseModel):
     mode: str = "hotspot"
     interface: str = Field(default="keyland-ap", min_length=1, max_length=15)
     upstream_interface: str = Field(min_length=1, max_length=15)
+    band: str = "2.4"
+    channel: int | None = Field(default=None, ge=1, le=165)
     ssid: str = Field(min_length=1, max_length=32)
     password: str = Field(min_length=8, max_length=63)
     dns_servers: list[str] = Field(default_factory=list, max_length=4)
