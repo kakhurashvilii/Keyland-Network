@@ -56,16 +56,29 @@ def run_readonly(command: list[str], timeout: int = 15) -> dict[str, Any]:
 def parse_linux_interfaces(output: str) -> list[dict[str, Any]]:
     interfaces = []
     current = None
+    phy = None
 
     for raw in output.splitlines():
         line = raw.strip()
 
-        if line.startswith("Interface "):
+        if line.startswith("phy#"):
+            if current:
+                interfaces.append(current)
+                current = None
+            phy = line
+
+        elif line.startswith("Unnamed/non-netdev interface"):
+            if current:
+                interfaces.append(current)
+                current = None
+
+        elif line.startswith("Interface "):
             if current:
                 interfaces.append(current)
 
             current = {
                 "name": line.split(maxsplit=1)[1],
+                "phy": phy,
                 "type": None,
                 "phy": None,
                 "ssid": None,
