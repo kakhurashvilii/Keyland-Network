@@ -4,3 +4,11 @@ __pycache__/
 .pytest_cache/
 data/
 .env
+
+.env.local
+*.pyc
+__pycache__/
+*.bak
+*.before-*
+*.patch
+web/*.backup-*

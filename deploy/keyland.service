@@ -1,0 +1,23 @@
+[Unit]
+Description=Keyland Network router panel and engine
+After=NetworkManager.service ModemManager.service network-online.target
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/keyland
+EnvironmentFile=/etc/keyland/keyland.env
+ExecStart=/opt/keyland/.venv/bin/uvicorn keyland.main:app --host ${KEYLAND_HOST} --port ${KEYLAND_PORT}
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=25
+RuntimeDirectory=keyland
+RuntimeDirectoryMode=0700
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

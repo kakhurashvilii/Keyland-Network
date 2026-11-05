@@ -166,13 +166,9 @@ def parse_channels(output: str) -> tuple[list[dict], list[str]]:
     return channels, sorted(bands)
 
 
-def parse_interface_combinations(output: str) -> dict[str, Any]:
-    """
-    Preserve driver-reported valid interface combinations.
 
-    AP and managed support individually does not prove
-    simultaneous AP + Client operation.
-    """
+def parse_interface_combinations(output: str) -> dict[str, Any]:
+    """Parse valid wireless interface combinations reported by iw."""
 
     lines = output.splitlines()
     combinations = []
@@ -188,34 +184,62 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
         if in_section:
             if not line:
                 continue
-
             if line.endswith(":") and not line.startswith("#"):
                 in_section = False
                 continue
-
             combinations.append(line)
 
-    # Each valid-combination entry can contain a set of interface types,
-    # e.g. "#{ AP, P2P-client, P2P-GO }". Match AP as a member of that
-    # set, not only as the sole member. Require managed in the same entry.
-    ap_client_mentioned = any(
-        re.search(r"#\s*\{[^}]*\bAP\b[^}]*\}", item)
-        and re.search(r"#\s*\{[^}]*\bmanaged\b[^}]*\}", item)
-        for item in combinations
-    )
+    groups = []
+    current = ""
+
+    for line in combinations:
+        if line.startswith("*"):
+            if current:
+                groups.append(current)
+            current = line
+        elif current:
+            current += " " + line
+
+    if current:
+        groups.append(current)
+
+    compatible = []
+
+    for group in groups:
+        limits = {}
+
+        for match in re.finditer(
+            r"#\s*\{([^}]*)\}\s*<=\s*(\d+)",
+            group
+        ):
+            modes = [item.strip() for item in match.group(1).split(",")]
+            limit = int(match.group(2))
+
+            for mode in modes:
+                limits[mode] = max(limits.get(mode, 0), limit)
+
+        if limits.get("managed", 0) >= 1 and limits.get("AP", 0) >= 1:
+            compatible.append(group)
+
+    channel_limits = []
+    for group in compatible:
+        match = re.search(r"#channels\s*<=\s*(\d+)", group)
+        if match:
+            channel_limits.append(int(match.group(1)))
 
     return {
         "reported": bool(combinations),
-        "ap_client_combination_mentioned": ap_client_mentioned,
+        "ap_client_combination_mentioned": bool(compatible),
         "details": combinations,
+        "compatible_combinations": compatible,
+        "max_channels_for_ap_client": max(channel_limits, default=None),
         "simultaneous_ap_client": (
-            "driver_reports_combination"
-            if ap_client_mentioned
-            else "unknown"
+            "driver_reports_combination" if compatible else "unknown"
         ),
         "note": (
-            "The driver-reported combination must be checked together "
-            "with interface limits, PHY assignment and actual testing."
+            "Driver-reported AP + managed concurrency is not a runtime "
+            "guarantee. PHY assignment, channel limits, firmware and "
+            "actual testing must also be considered."
         ),
     }
 

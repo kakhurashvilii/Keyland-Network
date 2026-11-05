@@ -860,6 +860,13 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
             <p class="muted">OpenWrt-ის მსგავსი AP მართვა: ცალკე AP ინტერფეისი, არჩეული WAN, DHCP, DNS და NAT. upstream ინტერფეისი არ გადაირთვება. </p>
             <div class="hotspot-grid">
                 <div>
+                    <label for="hotspotMode">როუტერის რეჟიმი</label>
+                    <select id="hotspotMode">
+                        <option value="hotspot">SIM Mobile Hotspot</option>
+                        <option value="repeater">Wi-Fi Repeater</option>
+                    </select>
+                </div>
+                <div>
                     <label for="hotspotUpstream">ინტერნეტის წყარო (WAN)</label>
                     <select id="hotspotUpstream"><option value="">ქსელის შემოწმება...</option></select>
                 </div>
@@ -1794,6 +1801,25 @@ async function loadHotspotCapabilities() {
     start.disabled = true;
     try {
         const data = await fetchJSON(API + "/wifi/hotspot/capabilities");
+const source = element("hotspotSourceInterface");
+const previousSource = source.value;
+source.replaceChildren(new Option(
+    tr("აირჩიე საწყისი Wi-Fi ინტერფეისი", "Select source Wi-Fi interface"), ""
+));
+(data.interfaces || []).filter(item => item.type === "managed").forEach(item => {
+    source.add(new Option(
+        item.name + (item.ssid ? " · connected" : " · managed"),
+        item.name
+    ));
+});
+source.value = (data.interfaces || []).some(
+    item => item.name === previousSource && item.type === "managed"
+) ? previousSource : (
+    (data.interfaces || []).some(
+        item => item.name === "wlan0" && item.type === "managed"
+    ) ? "wlan0" : ""
+);
+
         select.replaceChildren(new Option("keyland-ap · dedicated AP", "keyland-ap"));
         (data.ap_candidates || []).filter(item => item.type === "AP" && item.name !== "wlan0").forEach(item => {
             if (item.name !== "keyland-ap") select.add(new Option(item.name + " · AP", item.name));
@@ -1803,17 +1829,43 @@ async function loadHotspotCapabilities() {
         (data.upstream_sources || []).forEach(item => {
             wan.add(new Option(item.interface + " · " + item.type, item.interface));
         });
-        const wifiWan = (data.upstream_sources || []).find(x => x.type === "wifi");
-        const simWan = (data.upstream_sources || []).find(x => x.type === "cellular");
-        wan.value = (simWan || wifiWan)?.interface || "";
-        const station = (data.interfaces || []).find(x => x.type === "managed" && x.ssid && Number(x.channel));
+        const selectedMode = element("hotspotMode")?.value || "hotspot";
+        const selectedSource = (data.interfaces || []).find(
+            x => x.name === source.value && x.type === "managed"
+        );
+
+        const wifiWan = (data.upstream_sources || []).find(
+            x => x.type === "wifi" && x.interface === source.value
+        );
+        const simWan = (data.upstream_sources || []).find(
+            x => x.type === "cellular" && x.interface === "qmapmux0.0"
+        ) || (data.upstream_sources || []).find(x => x.type === "cellular");
+
+        const preferredWan = selectedMode === "repeater" ? wifiWan : simWan;
+        wan.value = preferredWan?.interface || "";
+
+        const station = selectedMode === "repeater"
+            ? (selectedSource?.ssid ? selectedSource : null)
+            : (data.interfaces || []).find(
+                x => x.type === "managed" && x.ssid && Number(x.channel)
+            );
+
         const stationChannel = Number(station?.channel || 6);
         const stationBand = stationChannel >= 36 ? "5" : "2.4";
+
         element("hotspotBand").value = stationBand;
         updateHotspotChannels();
+
         if ((stationBand === "2.4" && stationChannel >= 1 && stationChannel <= 11) ||
             (stationBand === "5" && [36,40,44,48].includes(stationChannel))) {
             element("hotspotChannel").value = String(stationChannel);
+        }
+
+        if (selectedMode === "repeater" && !wifiWan) {
+            element("hotspotMessage").textContent = tr(
+                "არჩეული Wi-Fi ინტერფეისი დაკავშირებული არ არის.",
+                "The selected Wi-Fi interface is not connected."
+            );
         }
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
@@ -1843,31 +1895,91 @@ async function loadHotspotCapabilities() {
     }
 }
 async function startHotspot() {
+    const mode = element("hotspotMode").value;
     const interfaceName = element("hotspotInterface").value || "keyland-ap";
     const upstream = element("hotspotUpstream").value;
+    const sourceInterface = element("hotspotSourceInterface").value || "wlan0";
     const ssid = element("hotspotSsid").value.trim();
     const password = element("hotspotPassword").value;
     const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
     const ipv4Cidr = element("hotspotIpv4").value.trim();
     const band = element("hotspotBand").value;
     const channel = Number(element("hotspotChannel").value);
-    if (!upstream) { element("hotspotMessage").textContent = tr("აირჩიე ინტერნეტის წყარო.","Select an upstream interface."); return; }
-    if (!password || password.length < 8 || password.length > 63 || !/^[\x20-\x7E]+$/.test(password)) {
-        element("hotspotMessage").textContent = tr("WPA2 პაროლი უნდა იყოს 8–63 ინგლისური/ASCII სიმბოლო.","WPA2 password must be 8–63 ASCII characters."); return;
+
+    if (!upstream) {
+        element("hotspotMessage").textContent = tr("აირჩიე ინტერნეტის წყარო.","Select an upstream interface.");
+        return;
     }
-    if (!window.confirm(tr("გაეშვება hostapd, DHCP და NAT. არჩეული WAN არ გადაირთვება. გავაგრძელოთ?","Start hostapd, DHCP and NAT? The selected WAN interface will not be reconfigured."))) return;
-    const button = element("hotspotStartButton"); button.disabled = true;
+
+    if (mode === "repeater" && upstream !== sourceInterface) {
+        element("hotspotMessage").textContent = tr(
+            "Repeater რეჟიმში WAN უნდა იყოს საწყისი Wi-Fi ინტერფეისი.",
+            "In repeater mode, WAN must be the source Wi-Fi interface."
+        );
+        return;
+    }
+
+    if (!password || password.length < 8 || password.length > 63 || !/^[\x20-\x7E]+$/.test(password)) {
+        element("hotspotMessage").textContent = tr("WPA2 პაროლი უნდა იყოს 8–63 ინგლისური/ASCII სიმბოლო.","WPA2 password must be 8–63 ASCII characters.");
+        return;
+    }
+
+    if (!window.confirm(tr(
+        "ჯერ მომზადდება ცალკე AP ინტერფეისი, შემდეგ გაეშვება DHCP და NAT. არსებული WAN კავშირი არ გადაირთვება. გავაგრძელოთ?",
+        "The dedicated AP interface will be prepared, then DHCP and NAT will start. The existing WAN connection will not be switched. Continue?"
+    ))) return;
+
+    const button = element("hotspotStartButton");
+    button.disabled = true;
+
     try {
-        const response = await apiFetch(API + "/wifi/hotspot/router/start", {
-            method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({mode:"hotspot",interface:interfaceName,upstream_interface:upstream,ssid,password,dns_servers:dnsServers,ipv4_cidr:ipv4Cidr,band,channel,confirmed:true})
+        // Prepare AP on every start, including after stop or rollback.
+        const prepareResponse = await apiFetch(API + "/wifi/hotspot/create-interface", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                interface: sourceInterface,
+                ap_interface: interfaceName,
+                confirmed: true
+            })
         });
+
+        const prepared = await prepareResponse.json().catch(() => ({}));
+        if (!prepareResponse.ok || prepared.success === false) {
+            throw new Error(prepared.detail || prepared.error || "AP interface preparation failed.");
+        }
+
+        const response = await apiFetch(API + "/wifi/hotspot/router/start", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                mode,
+                interface: interfaceName,
+                upstream_interface: upstream,
+                ssid,
+                password,
+                dns_servers: dnsServers,
+                ipv4_cidr: ipv4Cidr,
+                band,
+                channel,
+                confirmed: true
+            })
+        });
+
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
-        element("hotspotMessage").textContent = tr("როუტერი ჩაირთო: ","Router started: ") + data.ssid + " · WAN " + data.upstream_interface + " · " + data.ipv4_cidr;
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+
+        element("hotspotMessage").textContent =
+            tr("როუტერი ჩაირთო: ", "Router started: ") +
+            data.ssid + " · WAN " + data.upstream_interface + " · " + data.ipv4_cidr;
+
         await loadHotspotCapabilities();
-    } catch(error) { element("hotspotMessage").textContent = tr("ჩართვა ვერ მოხერხდა: ","Start failed: ") + error.message; }
-    finally { button.disabled = false; }
+    } catch(error) {
+        element("hotspotMessage").textContent =
+            tr("ჩართვა ვერ მოხერხდა: ", "Start failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
 }
 async function stopHotspot() {
     if (!window.confirm(tr("გამორთო Keyland Router Wi-Fi?","Stop Keyland Router Wi-Fi?"))) return;
@@ -1896,7 +2008,7 @@ async function createVirtualApInterface() {
     try {
         const response = await apiFetch(API + "/wifi/hotspot/create-interface", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({interface:interfaceName,confirmed:true})
+            body:JSON.stringify({interface:interfaceName,ap_interface:"keyland-ap",confirmed:true})
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
@@ -1906,6 +2018,22 @@ async function createVirtualApInterface() {
         element("hotspotMessage").textContent = tr("AP ინტერფეისის შექმნა ვერ მოხერხდა: ","Could not create AP interface: ") + error.message;
     } finally { button.disabled = false; }
 }
+element("hotspotMode").addEventListener("change", async () => {
+    const mode = element("hotspotMode").value;
+
+    element("hotspotMessage").textContent = mode === "repeater"
+        ? tr(
+            "მოწმდება არჩეული Wi-Fi კავშირი და მისი არხი...",
+            "Checking the selected Wi-Fi connection and channel..."
+        )
+        : tr(
+            "მოწმდება SIM ინტერნეტ კავშირი...",
+            "Checking the SIM internet connection..."
+        );
+
+    await loadHotspotCapabilities();
+});
+
 element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualApInterface);
 element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
 element("hotspotStartButton").addEventListener("click", startHotspot);

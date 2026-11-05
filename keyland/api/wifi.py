@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from keyland.auth import require_admin
-from keyland.adapters.wifi.router import start as start_router_wifi, stop as stop_router_wifi, status as router_wifi_status
+import json
+import subprocess
 from keyland.adapters.wifi.hotspot import (
-    get_hotspot_capabilities, start_hotspot, stop_hotspot, create_virtual_ap,
+    get_hotspot_capabilities, start_hotspot, stop_hotspot,
 )
 
 router = APIRouter(prefix="/api/v1/wifi/hotspot", tags=["Wi-Fi Hotspot"])
@@ -48,14 +49,19 @@ def hotspot_stop(payload: StopRequest, user: dict = Depends(require_admin)):
 
 class VirtualApRequest(BaseModel):
     interface: str = Field(min_length=1, max_length=15)
+    ap_interface: str = Field(default="keyland-ap", min_length=1, max_length=15)
     confirmed: bool = False
 
 
 @router.post("/create-interface")
 def hotspot_create_interface(payload: VirtualApRequest, user: dict = Depends(require_admin)):
-    result = create_virtual_ap(payload.interface, payload.confirmed)
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result["error"])
+    result = _call_router_helper("prepare", {
+        "interface": payload.interface,
+        "ap_interface": payload.ap_interface,
+        "confirmed": payload.confirmed,
+    })
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "AP preparation failed"))
     return result
 
 
@@ -72,22 +78,50 @@ class RouterWifiRequest(BaseModel):
     confirmed: bool = False
 
 
+def _call_router_helper(action: str, payload: dict | None = None) -> dict:
+    request = {"action": action, "payload": payload or {}}
+
+    try:
+        proc = subprocess.run(
+            ["sudo", "-n", "/usr/local/sbin/keyland-routerctl"],
+            input=json.dumps(request),
+            capture_output=True,
+            text=True,
+            timeout=45,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=503, detail="Router helper timed out.")
+    except OSError:
+        raise HTTPException(status_code=503, detail="Router helper could not be started.")
+
+    try:
+        result = json.loads(proc.stdout)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=503, detail="Router helper returned invalid data.")
+
+    if not isinstance(result, dict):
+        raise HTTPException(status_code=503, detail="Router helper returned an invalid response.")
+
+    return result
+
+
 @router.get("/router/status")
 def router_wifi_get_status(user: dict = Depends(require_admin)):
-    return router_wifi_status()
+    return _call_router_helper("status")
 
 
 @router.post("/router/start")
 def router_wifi_start(payload: RouterWifiRequest, user: dict = Depends(require_admin)):
-    result = start_router_wifi(payload.model_dump())
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result["error"])
+    result = _call_router_helper("start", payload.model_dump())
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Router start failed."))
     return result
 
 
 @router.post("/router/stop")
 def router_wifi_stop(payload: StopRequest, user: dict = Depends(require_admin)):
-    result = stop_router_wifi(payload.confirmed)
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result["error"])
+    result = _call_router_helper("stop", {"confirmed": payload.confirmed})
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Router stop failed."))
     return result

@@ -107,6 +107,123 @@ def status() -> dict[str, Any]:
             "processes": alive, "interfaces": interfaces(), "default_routes": defaults(), "clients": _clients(state.get("interface") if state else None)}
 
 
+
+def prepare_ap(p: dict[str, Any]) -> dict[str, Any]:
+    """Prepare a dedicated AP interface without modifying the source Wi-Fi."""
+    if p.get("confirmed") is not True:
+        return {"success": False, "error": "Explicit administrator confirmation is required."}
+
+    source_name = p.get("interface", "wlan0")
+    ap_name = p.get("ap_interface", "keyland-ap")
+
+    if (
+        not isinstance(source_name, str)
+        or not IFACE.fullmatch(source_name)
+        or source_name == "lo"
+        or not isinstance(ap_name, str)
+        or not IFACE.fullmatch(ap_name)
+        or ap_name == "lo"
+        or source_name == ap_name
+    ):
+        return {"success": False, "error": "Invalid source or AP interface name."}
+
+    if read_state():
+        return {"success": False, "error": "Stop the active router before preparing its AP interface."}
+
+    devs = interfaces()
+    source = next((x for x in devs if x["name"] == source_name), None)
+    ap = next((x for x in devs if x["name"] == ap_name), None)
+
+    if not source or source.get("type") != "managed":
+        return {"success": False, "error": "Source must be an existing managed Wi-Fi interface."}
+
+    if ap and ap_name in {x.get("dev") for x in defaults()}:
+        return {"success": False, "error": "Refusing to modify an AP interface used by a default route."}
+
+    if ap and ap.get("ssid"):
+        return {"success": False, "error": "The dedicated AP interface is connected to a Wi-Fi network."}
+
+    if ap and ap.get("phy") != source.get("phy"):
+        return {"success": False, "error": "The existing AP interface belongs to a different PHY."}
+
+    iw_info = run(["iw", "list"], timeout=20)
+    if not iw_info["ok"]:
+        return {"success": False, "error": "Could not inspect Wi-Fi driver capabilities."}
+
+    if not re.search(r"^\s*\*\s+AP\s*$", iw_info["out"], re.MULTILINE):
+        return {"success": False, "error": "The Wi-Fi driver does not report AP mode support."}
+
+    source_active = bool(
+        source.get("ssid")
+        or source_name in {x.get("dev") for x in defaults()}
+    )
+
+    if source_active:
+        combinations = parse_interface_combinations(iw_info["out"])
+        if not combinations.get("ap_client_combination_mentioned"):
+            return {
+                "success": False,
+                "error": "Simultaneous AP + Client support is not confirmed. No changes made.",
+            }
+
+    created = False
+
+    if not ap:
+        result = run([
+            "iw", "dev", source_name, "interface",
+            "add", ap_name, "type", "__ap",
+        ])
+        if not result["ok"]:
+            return {
+                "success": False,
+                "error": "Could not create dedicated AP interface: " + str(result["err"] or result["out"]),
+            }
+        created = True
+
+    # Remember whether NetworkManager previously managed this AP interface.
+    nm_state = run([
+        "nmcli", "-g", "GENERAL.NM-MANAGED", "device", "show", ap_name
+    ])
+    was_managed = nm_state["ok"] and nm_state["out"].strip().lower() == "yes"
+
+    def fail(message: str) -> dict[str, Any]:
+        if was_managed:
+            run(["nmcli", "device", "set", ap_name, "managed", "yes"])
+        if created:
+            run(["iw", "dev", ap_name, "del"])
+        return {"success": False, "error": message}
+
+    result = run(["nmcli", "device", "set", ap_name, "managed", "no"])
+    if not result["ok"]:
+        return fail("Could not detach dedicated AP from NetworkManager: " + str(result["err"] or result["out"]))
+
+    current = next((x for x in interfaces() if x["name"] == ap_name), None)
+    if not current:
+        return fail("AP interface disappeared during preparation.")
+
+    if current.get("type") != "AP":
+        result = run(["ip", "link", "set", ap_name, "down"])
+        if not result["ok"]:
+            return fail("Could not bring dedicated AP interface down.")
+
+        result = run(["iw", "dev", ap_name, "set", "type", "__ap"])
+        if not result["ok"]:
+            return fail("Could not switch dedicated interface to AP mode: " + str(result["err"] or result["out"]))
+
+    verified = next((x for x in interfaces() if x["name"] == ap_name), None)
+    if not verified or verified.get("type") != "AP":
+        return fail("AP verification failed; expected interface type AP.")
+
+    return {
+        "success": True,
+        "created": created,
+        "interface": ap_name,
+        "type": "AP",
+        "phy": verified.get("phy"),
+        "message": "Dedicated AP interface is ready.",
+    }
+
+
 def _validate(p: dict[str, Any]) -> dict[str, Any]:
     mode, ap, wan = p.get("mode", "hotspot"), p.get("interface", "keyland-ap"), p.get("upstream_interface")
     if mode not in ("hotspot", "repeater"): raise ValueError("Mode must be hotspot or repeater.")
@@ -172,24 +289,42 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
         requested_channel = int(p.get("channel") or default_channel)
     except (TypeError, ValueError):
         raise ValueError("Invalid Wi-Fi channel.")
-    if (band == "2.4" and requested_channel not in range(1, 12)) or (band == "5" and requested_channel not in (36, 40, 44, 48)):
-        raise ValueError("Choose a supported non-DFS channel for the selected band.")
+    if (
+        mode == "repeater"
+        and station
+        and station.get("phy") == apdev.get("phy")
+        and station_channel != requested_channel
+    ):
+        raise ValueError("Repeater AP must use the connected Wi-Fi channel.")
     phy_info = run(["iw", "list"], timeout=20)
     if not phy_info["ok"]:
         raise ValueError("Could not read supported Wi-Fi channels.")
-    available = set()
+    available_by_band = {"2.4": set(), "5": set()}
     for raw in phy_info["out"].splitlines():
-        match = re.search(r"\*\s+\d+(?:\.\d+)?\s+MHz\s+\[(\d+)\]\s+\((.*)\)", raw)
+        match = re.search(
+            r"\*\s+(\d+(?:\.\d+)?)\s+MHz\s+\[(\d+)\]\s+\((.*)\)",
+            raw,
+        )
         if not match:
             continue
-        channel_number, flags = int(match.group(1)), match.group(2).lower()
-        if "disabled" in flags or "no ir" in flags or "radar detection" in flags:
+
+        frequency = float(match.group(1))
+        channel_number = int(match.group(2))
+        flags = match.group(3).lower()
+
+        if any(flag in flags for flag in ("disabled", "no ir", "radar detection")):
             continue
-        available.add(channel_number)
-    if mode == "repeater" and station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
-        raise ValueError("Repeater AP must use the connected Wi-Fi channel.")
-    if requested_channel not in available:
-        raise ValueError(f"Channel {requested_channel} is not currently permitted for AP operation.")
+
+        if 2400 <= frequency < 2500:
+            available_by_band["2.4"].add(channel_number)
+        elif 4900 <= frequency < 5925:
+            available_by_band["5"].add(channel_number)
+
+    if requested_channel not in available_by_band[band]:
+        raise ValueError(
+            f"Choose a supported non-DFS channel. Channel {requested_channel} "
+            f"is not currently permitted for AP operation in the {band} GHz band."
+        )
     if station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
         multi = any(re.search(r"#\s*channels\s*<=\s*2", item) for item in combinations.get("details", []))
         if not multi:

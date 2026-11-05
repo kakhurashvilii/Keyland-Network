@@ -104,3 +104,90 @@ def test_repeater_must_follow_upstream_channel():
     with patches[0], patches[1], patches[2], patches[3]:
         with pytest.raises(ValueError, match="Repeater AP must use"):
             router._validate(base_payload(mode="repeater", upstream_interface="wlan0", band="5", channel=36))
+
+
+def test_prepare_ap_converts_only_dedicated_interface():
+    initial = [
+        {"name": "wlan0", "type": "managed", "phy": "phy#0",
+         "ssid": "DiagOnNet", "channel": 11},
+        {"name": "keyland-ap", "type": "managed", "phy": "phy#0",
+         "ssid": None, "channel": None},
+    ]
+
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append(args)
+        if args[:2] == ["iw", "list"]:
+            return {
+                "ok": True,
+                "out": """
+Supported interface modes:
+        * managed
+        * AP
+valid interface combinations:
+        * #{ managed } <= 2, #{ AP } <= 1, total <= 3, #channels <= 2
+""",
+                "err": None,
+            }
+        return {"ok": True, "out": "", "err": None}
+
+    states = [
+        initial,
+        [
+            {"name": "wlan0", "type": "managed", "phy": "phy#0",
+             "ssid": "DiagOnNet", "channel": 11},
+            {"name": "keyland-ap", "type": "managed", "phy": "phy#0",
+             "ssid": None, "channel": None},
+        ],
+        [
+            {"name": "wlan0", "type": "managed", "phy": "phy#0",
+             "ssid": "DiagOnNet", "channel": 11},
+            {"name": "keyland-ap", "type": "AP", "phy": "phy#0",
+             "ssid": None, "channel": None},
+        ],
+    ]
+
+    with (
+        patch.object(router, "interfaces", side_effect=lambda: states.pop(0)),
+        patch.object(router, "defaults", return_value=[
+            {"dev": "wlan0", "gateway": "10.0.0.1"}
+        ]),
+        patch.object(router, "run", side_effect=fake_run),
+        patch.object(router, "read_state", return_value=None),
+    ):
+        result = router.prepare_ap({
+            "interface": "wlan0",
+            "ap_interface": "keyland-ap",
+            "confirmed": True,
+        })
+
+    assert result["success"] is True
+    assert result["type"] == "AP"
+    assert ["iw", "dev", "keyland-ap", "set", "type", "__ap"] in calls
+    assert not any(
+        "wlan0" in command and (
+            "set" in command or "down" in command or "del" in command
+        )
+        for command in calls
+    )
+
+
+def test_prepare_ap_requires_confirmation():
+    result = router.prepare_ap({
+        "interface": "wlan0",
+        "ap_interface": "keyland-ap",
+        "confirmed": False,
+    })
+    assert result["success"] is False
+    assert "confirmation" in result["error"].lower()
+
+
+def test_prepare_ap_rejects_source_equal_to_ap():
+    result = router.prepare_ap({
+        "interface": "wlan0",
+        "ap_interface": "wlan0",
+        "confirmed": True,
+    })
+    assert result["success"] is False
+    assert "Invalid" in result["error"]
