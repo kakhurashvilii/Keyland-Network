@@ -525,13 +525,21 @@ def client_status() -> dict[str, Any]:
     except OSError:
         pass
     blocked: set[str] = set()
+    traffic_file = ROOT / "client-traffic.json"
+    try:
+        traffic_state = json.loads(traffic_file.read_text())
+        limits = traffic_state.get("limits", {}) if traffic_state.get("interface") == state.get("interface") else {}
+    except (OSError, ValueError, TypeError):
+        limits = {}
     listed = run(["nft", "list", "set", "inet", "keyland_client_control", "blocked_macs"])
     if listed["ok"]:
         blocked = set(re.findall(r"(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", listed["out"].lower()))
     for client in clients:
         lease = lease_by_mac.get(str(client.get("mac", "")).lower(), {})
         client.update(lease)
-        client["blocked"] = str(client.get("mac", "")).lower() in blocked
+        client_mac = str(client.get("mac", "")).lower()
+        client["blocked"] = client_mac in blocked
+        client["speed_limit"] = limits.get(client_mac)
     return {"active": bool(status().get("active")), "interface": state.get("interface"), "clients": clients}
 
 
