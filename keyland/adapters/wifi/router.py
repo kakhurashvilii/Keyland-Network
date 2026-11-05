@@ -585,7 +585,6 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
         return {"success": False, "error": "AP already has a non-Keyland traffic-control qdisc; refusing to replace it."}
 
     created_root = False
-    created_ingress = False
     if not root_exists:
         commands = [
             ["tc", "qdisc", "add", "dev", ap, "root", "handle", "1:", "htb", "default", "999"],
@@ -600,7 +599,7 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
         created_root = True
     # A stable class ID derived from the MAC avoids shell interpolation and
     # permits independent client entries. Hash collisions are checked below.
-    class_id = 100 + (int(mac.replace(":", ""), 16) % 60000)
+    class_id = 1000 + (int(mac.replace(":", ""), 16) % 59000)
     classes = run(["tc", "class", "show", "dev", ap])
     if classes["ok"]:
         occupied = re.findall(r"class htb 1:(\d+)", classes["out"])
@@ -623,8 +622,6 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
                 run(["tc", "qdisc", "del", "dev", ap, "root"])
                 run(["tc", "qdisc", "del", "dev", ap, "ingress"])
             return {"success": False, "error": "Traffic shaping command failed: " + str(result["err"] or result["out"]), "partial": True}
-        if command[2:5] == ["qdisc", "replace", "dev"]:
-            created_ingress = not ingress_exists
     owner_state = owner_state if isinstance(owner_state, dict) else {"interface": ap, "limits": {}}
     owner_state.setdefault("limits", {})[mac] = {
         "download_mbps": download_mbps,
