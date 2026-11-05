@@ -195,11 +195,13 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
 
             combinations.append(line)
 
-    combined_text = " ".join(combinations)
-
-    ap_client_mentioned = (
-        bool(re.search(r"#\s*\{\s*AP\s*\}", combined_text))
-        and bool(re.search(r"#\s*\{\s*managed\s*\}", combined_text))
+    # Each valid-combination entry can contain a set of interface types,
+    # e.g. "#{ AP, P2P-client, P2P-GO }". Match AP as a member of that
+    # set, not only as the sole member. Require managed in the same entry.
+    ap_client_mentioned = any(
+        re.search(r"#\\s*\\{[^}]*\\bAP\\b[^}]*\\}", item)
+        and re.search(r"#\\s*\\{[^}]*\\bmanaged\\b[^}]*\\}", item)
+        for item in combinations
     )
 
     return {
