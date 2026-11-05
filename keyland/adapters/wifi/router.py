@@ -153,8 +153,10 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
     band = p.get("band", "2.4")
     if band not in ("2.4", "5"):
         raise ValueError("Wi-Fi band must be 2.4 or 5 GHz.")
+    station_channel = (station or {}).get("channel")
+    default_channel = 36 if band == "5" else (station_channel if station_channel in range(1, 12) else 1)
     try:
-        requested_channel = int(p.get("channel") or (36 if band == "5" else 1))
+        requested_channel = int(p.get("channel") or default_channel)
     except (TypeError, ValueError):
         raise ValueError("Invalid Wi-Fi channel.")
     if (band == "2.4" and requested_channel not in range(1, 12)) or (band == "5" and requested_channel not in (36, 40, 44, 48)):
@@ -173,7 +175,6 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
         available.add(channel_number)
     if requested_channel not in available:
         raise ValueError(f"Channel {requested_channel} is not currently permitted for AP operation.")
-    station_channel = (station or {}).get("channel")
     if mode == "repeater" and station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
         raise ValueError("Repeater AP must use the connected Wi-Fi channel.")
     if station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
