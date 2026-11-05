@@ -75,6 +75,7 @@ async def csrf_protection(request: Request, call_next):
     # a matching CSRF cookie and header.
     if (
         request.method in unsafe_methods
+        and request.url.path != "/api/v1/auth/login"
         and request.cookies.get(ACCESS_COOKIE_NAME)
     ):
         csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
