@@ -7,7 +7,14 @@ import os
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(os.environ.get("KEYLAND_HOME", "/opt/keyland"))
+configured_root = os.environ.get("KEYLAND_HOME")
+if configured_root:
+    PROJECT_ROOT = Path(configured_root)
+elif Path("/opt/keyland").is_dir():
+    PROJECT_ROOT = Path("/opt/keyland")
+else:
+    # Support manual installs that keep the router package under /usr/local/lib.
+    PROJECT_ROOT = Path("/usr/local/lib/keyland-router")
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
