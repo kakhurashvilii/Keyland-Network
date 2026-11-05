@@ -95,7 +95,7 @@ def test_validate_accepts_5ghz_non_dfs_channel():
 def test_validate_rejects_disabled_or_dfs_5ghz_channel():
     patches = patch_preflight()
     with patches[0], patches[1], patches[2], patches[3]:
-        with pytest.raises(ValueError, match="not currently permitted"):
+        with pytest.raises(ValueError, match="supported non-DFS channel"):
             router._validate(base_payload(band="5", channel=52))
 
 
