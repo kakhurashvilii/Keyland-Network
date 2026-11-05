@@ -457,11 +457,201 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         return {"success": False, "error": str(exc), "rolled_back": True}
 
 
+
+def _valid_mac(value: str) -> str:
+    mac = value.strip().lower()
+    if not re.fullmatch(r"(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", mac):
+        raise ValueError("A valid client MAC address is required.")
+    if mac == "ff:ff:ff:ff:ff:ff" or mac.startswith(("01:", "33:33:")):
+        raise ValueError("Multicast/broadcast MAC addresses cannot be managed.")
+    return mac
+
+
+def client_block(mac: str, blocked: bool) -> dict[str, Any]:
+    """Block/unblock one station MAC in the isolated Keyland AP forward path."""
+    state = read_state()
+    if not state or not status().get("active"):
+        return {"success": False, "error": "Keyland hotspot is not active."}
+    try:
+        mac = _valid_mac(mac)
+    except ValueError as exc:
+        return {"success": False, "error": str(exc)}
+
+    ap = state["interface"]
+    clients = {x.get("mac", "").lower() for x in _clients(ap)}
+    if mac not in clients:
+        return {"success": False, "error": "Client is not currently connected to this hotspot."}
+
+    table = "keyland_client_control"
+    setup = [
+        ["nft", "add", "table", "inet", table],
+        ["nft", "add", "set", "inet", table, "blocked_macs", "{", "type", "ether_addr", ";", "}"],
+        ["nft", "add", "chain", "inet", table, "forward", "{", "type", "filter", "hook", "forward", "priority", "-10", ";", "policy", "accept", ";", "}"],
+    ]
+    if blocked:
+        # Existing table/set/chain are expected on repeat requests. Ignore only
+        # "already exists" errors; never replace or flush another firewall table.
+        for command in setup:
+            result = run(command)
+            if not result["ok"] and "File exists" not in str(result["err"]):
+                return {"success": False, "error": "Could not prepare isolated client firewall: " + str(result["err"] or result["out"])}
+        chain = run(["nft", "list", "chain", "inet", table, "forward"])
+        if not chain["ok"] or "@blocked_macs" not in chain["out"]:
+            result = run(["nft", "add", "rule", "inet", table, "forward", "iifname", ap, "ether", "saddr", "@blocked_macs", "drop"])
+            if not result["ok"]:
+                return {"success": False, "error": "Could not add isolated client firewall rule: " + str(result["err"] or result["out"])}
+        result = run(["nft", "add", "element", "inet", table, "blocked_macs", "{", mac, "}"])
+        if not result["ok"] and "File exists" not in str(result["err"]):
+            return {"success": False, "error": "Could not block client: " + str(result["err"] or result["out"])}
+    else:
+        result = run(["nft", "delete", "element", "inet", table, "blocked_macs", "{", mac, "}"])
+        if not result["ok"]:
+            return {"success": False, "error": "Client is not blocked or firewall rule is unavailable."}
+    return {"success": True, "mac": mac, "blocked": blocked}
+
+
+def client_status() -> dict[str, Any]:
+    state = read_state()
+    if not state:
+        return {"active": False, "clients": []}
+    clients = _clients(state.get("interface"))
+    # dnsmasq lease format: expiry MAC IPv4 hostname client-id
+    leases = Path("/var/lib/misc/dnsmasq.leases")
+    lease_by_mac: dict[str, dict[str, Any]] = {}
+    try:
+        for line in leases.read_text(errors="replace").splitlines():
+            fields = line.split()
+            if len(fields) >= 4:
+                lease_by_mac[fields[1].lower()] = {
+                    "ip": fields[2],
+                    "hostname": fields[3] if fields[3] != "*" else None,
+                }
+    except OSError:
+        pass
+    blocked: set[str] = set()
+    traffic_file = ROOT / "client-traffic.json"
+    try:
+        traffic_state = json.loads(traffic_file.read_text())
+        limits = traffic_state.get("limits", {}) if traffic_state.get("interface") == state.get("interface") else {}
+    except (OSError, ValueError, TypeError):
+        limits = {}
+    listed = run(["nft", "list", "set", "inet", "keyland_client_control", "blocked_macs"])
+    if listed["ok"]:
+        blocked = set(re.findall(r"(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", listed["out"].lower()))
+    for client in clients:
+        lease = lease_by_mac.get(str(client.get("mac", "")).lower(), {})
+        client.update(lease)
+        client_mac = str(client.get("mac", "")).lower()
+        client["blocked"] = client_mac in blocked
+        client["speed_limit"] = limits.get(client_mac)
+    return {"active": bool(status().get("active")), "interface": state.get("interface"), "clients": clients}
+
+
+def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, Any]:
+    """Apply per-station shaping on the dedicated AP interface using tc flower."""
+    state = read_state()
+    if not state or not status().get("active"):
+        return {"success": False, "error": "Keyland hotspot is not active."}
+    try:
+        mac = _valid_mac(mac)
+    except ValueError as exc:
+        return {"success": False, "error": str(exc)}
+    clients = {x.get("mac", "").lower() for x in _clients(state["interface"])}
+    if mac not in clients:
+        return {"success": False, "error": "Client is not currently connected to this hotspot."}
+    if not (1 <= download_mbps <= 1000 and 1 <= upload_mbps <= 1000):
+        return {"success": False, "error": "Speed limits must be between 1 and 1000 Mbps."}
+    if not shutil.which("tc"):
+        return {"success": False, "error": "The tc utility is required for per-device speed limits."}
+
+    ap = state["interface"]
+    # Keep the qdisc namespace exclusive to Keyland; never overwrite an
+    # existing non-Keyland qdisc or alter the WAN/upstream interface.
+    current = run(["tc", "qdisc", "show", "dev", ap])
+    if not current["ok"]:
+        return {"success": False, "error": "Could not inspect AP traffic-control state."}
+    root_exists = any(line.startswith("qdisc htb 1:") for line in current["out"].splitlines())
+    ingress_exists = any(" ingress " in (" " + line + " ") for line in current["out"].splitlines())
+    owner_file = ROOT / "client-traffic.json"
+    try:
+        owner_state = json.loads(owner_file.read_text())
+    except (OSError, ValueError):
+        owner_state = None
+    if root_exists and (not owner_state or owner_state.get("interface") != ap):
+        return {"success": False, "error": "AP has an unowned HTB qdisc; refusing to change traffic control."}
+    if ingress_exists and (not owner_state or owner_state.get("interface") != ap):
+        return {"success": False, "error": "AP has an unowned ingress qdisc; refusing to replace it."}
+    if current["out"].strip() and not root_exists and not any(line.startswith("qdisc noqueue") for line in current["out"].splitlines()):
+        return {"success": False, "error": "AP already has a non-Keyland traffic-control qdisc; refusing to replace it."}
+
+    created_root = False
+    if not root_exists:
+        commands = [
+            ["tc", "qdisc", "add", "dev", ap, "root", "handle", "1:", "htb", "default", "999"],
+            ["tc", "class", "add", "dev", ap, "parent", "1:", "classid", "1:1", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
+            ["tc", "class", "add", "dev", ap, "parent", "1:1", "classid", "1:999", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
+        ]
+        for index, command in enumerate(commands):
+            result = run(command)
+            if not result["ok"]:
+                run(["tc", "qdisc", "del", "dev", ap, "root"])
+                return {"success": False, "error": "Could not initialize isolated AP shaping: " + str(result["err"] or result["out"])}
+        created_root = True
+    # A stable class ID derived from the MAC avoids shell interpolation and
+    # permits independent client entries. Hash collisions are checked below.
+    class_id = 1000 + (int(mac.replace(":", ""), 16) % 59000)
+    classes = run(["tc", "class", "show", "dev", ap])
+    if classes["ok"]:
+        occupied = re.findall(r"class htb 1:(\d+)", classes["out"])
+        if str(class_id) in occupied:
+            # Existing class is replaced only if its matching MAC filter exists.
+            filters = run(["tc", "filter", "show", "dev", ap, "parent", "1:"])
+            if not filters["ok"] or mac not in filters["out"].lower():
+                return {"success": False, "error": "Traffic-control class ID collision; no change made."}
+
+    commands = [
+        ["tc", "class", "replace", "dev", ap, "parent", "1:1", "classid", f"1:{class_id}", "htb", "rate", f"{download_mbps}mbit", "ceil", f"{download_mbps}mbit"],
+        ["tc", "filter", "replace", "dev", ap, "protocol", "all", "parent", "1:", "prio", str(class_id), "flower", "dst_mac", mac, "classid", f"1:{class_id}"],
+        ["tc", "qdisc", "replace", "dev", ap, "handle", "ffff:", "ingress"],
+        ["tc", "filter", "replace", "dev", ap, "parent", "ffff:", "protocol", "all", "prio", str(class_id), "flower", "src_mac", mac, "action", "police", "rate", f"{upload_mbps}mbit", "burst", "256k", "drop"],
+    ]
+    for command in commands:
+        result = run(command)
+        if not result["ok"]:
+            if created_root:
+                run(["tc", "qdisc", "del", "dev", ap, "root"])
+                run(["tc", "qdisc", "del", "dev", ap, "ingress"])
+            return {"success": False, "error": "Traffic shaping command failed: " + str(result["err"] or result["out"]), "partial": True}
+    owner_state = owner_state if isinstance(owner_state, dict) else {"interface": ap, "limits": {}}
+    owner_state.setdefault("limits", {})[mac] = {
+        "download_mbps": download_mbps,
+        "upload_mbps": upload_mbps,
+    }
+    owner_state["interface"] = ap
+    ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    owner_file.write_text(json.dumps(owner_state))
+    os.chmod(owner_file, 0o600)
+    return {"success": True, "mac": mac, "download_mbps": download_mbps, "upload_mbps": upload_mbps, "interface": ap}
+
 def stop(confirmed: bool) -> dict[str, Any]:
     if confirmed is not True: return {"success": False, "error": "Explicit administrator confirmation is required."}
     state = read_state()
     if not state: return {"success": False, "error": "Keyland router Wi-Fi is not active."}
     ap, errors = state["interface"], []
+    traffic_state_file = ROOT / "client-traffic.json"
+    try:
+        traffic_state = json.loads(traffic_state_file.read_text())
+    except (OSError, ValueError):
+        traffic_state = None
+    if isinstance(traffic_state, dict) and traffic_state.get("interface") == ap:
+        qdiscs = run(["tc", "qdisc", "show", "dev", ap])
+        if qdiscs["ok"]:
+            if any(line.startswith("qdisc htb 1:") for line in qdiscs["out"].splitlines()):
+                run(["tc", "qdisc", "del", "dev", ap, "root"])
+            if any(" ingress " in (" " + line + " ") for line in qdiscs["out"].splitlines()):
+                run(["tc", "qdisc", "del", "dev", ap, "ingress"])
+        traffic_state_file.unlink(missing_ok=True)
+    run(["nft", "delete", "table", "inet", "keyland_client_control"])
     run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
     run(["ip", "route", "flush", "table", "42002"])
     r = run(["nft", "delete", "table", "inet", TABLE])

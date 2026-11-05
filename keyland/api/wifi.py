@@ -125,3 +125,54 @@ def router_wifi_stop(payload: StopRequest, user: dict = Depends(require_admin)):
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Router stop failed."))
     return result
+
+
+class ClientActionRequest(BaseModel):
+    mac: str = Field(min_length=17, max_length=17)
+    confirmed: bool = False
+
+
+class ClientLimitRequest(BaseModel):
+    mac: str = Field(min_length=17, max_length=17)
+    download_mbps: int = Field(ge=1, le=1000)
+    upload_mbps: int = Field(ge=1, le=1000)
+    confirmed: bool = False
+
+
+@router.get("/router/clients")
+def router_wifi_clients(user: dict = Depends(require_admin)):
+    return _call_router_helper("clients")
+
+
+@router.post("/router/clients/block")
+def router_wifi_client_block(payload: ClientActionRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("client_block", {"mac": payload.mac, "blocked": True})
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Client block failed."))
+    return result
+
+
+@router.post("/router/clients/unblock")
+def router_wifi_client_unblock(payload: ClientActionRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("client_block", {"mac": payload.mac, "blocked": False})
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Client unblock failed."))
+    return result
+
+
+@router.post("/router/clients/limit")
+def router_wifi_client_limit(payload: ClientLimitRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("client_limit", {
+        "mac": payload.mac,
+        "download_mbps": payload.download_mbps,
+        "upload_mbps": payload.upload_mbps,
+    })
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Client speed limit failed."))
+    return result
