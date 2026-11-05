@@ -559,20 +559,33 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
     if not current["ok"]:
         return {"success": False, "error": "Could not inspect AP traffic-control state."}
     root_exists = any(line.startswith("qdisc htb 1:") for line in current["out"].splitlines())
+    ingress_exists = any(" ingress " in (" " + line + " ") for line in current["out"].splitlines())
+    owner_file = ROOT / "client-traffic.json"
+    try:
+        owner_state = json.loads(owner_file.read_text())
+    except (OSError, ValueError):
+        owner_state = None
+    if root_exists and (not owner_state or owner_state.get("interface") != ap):
+        return {"success": False, "error": "AP has an unowned HTB qdisc; refusing to change traffic control."}
+    if ingress_exists and (not owner_state or owner_state.get("interface") != ap):
+        return {"success": False, "error": "AP has an unowned ingress qdisc; refusing to replace it."}
     if current["out"].strip() and not root_exists and not any(line.startswith("qdisc noqueue") for line in current["out"].splitlines()):
         return {"success": False, "error": "AP already has a non-Keyland traffic-control qdisc; refusing to replace it."}
 
+    created_root = False
+    created_ingress = False
     if not root_exists:
         commands = [
             ["tc", "qdisc", "add", "dev", ap, "root", "handle", "1:", "htb", "default", "999"],
             ["tc", "class", "add", "dev", ap, "parent", "1:", "classid", "1:1", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
             ["tc", "class", "add", "dev", ap, "parent", "1:1", "classid", "1:999", "htb", "rate", "1000mbit", "ceil", "1000mbit"],
         ]
-        for command in commands:
+        for index, command in enumerate(commands):
             result = run(command)
             if not result["ok"]:
                 run(["tc", "qdisc", "del", "dev", ap, "root"])
                 return {"success": False, "error": "Could not initialize isolated AP shaping: " + str(result["err"] or result["out"])}
+        created_root = True
     # A stable class ID derived from the MAC avoids shell interpolation and
     # permits independent client entries. Hash collisions are checked below.
     class_id = 100 + (int(mac.replace(":", ""), 16) % 60000)
@@ -594,7 +607,21 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
     for command in commands:
         result = run(command)
         if not result["ok"]:
+            if created_root:
+                run(["tc", "qdisc", "del", "dev", ap, "root"])
+                run(["tc", "qdisc", "del", "dev", ap, "ingress"])
             return {"success": False, "error": "Traffic shaping command failed: " + str(result["err"] or result["out"]), "partial": True}
+        if command[2:5] == ["qdisc", "replace", "dev"]:
+            created_ingress = not ingress_exists
+    owner_state = owner_state if isinstance(owner_state, dict) else {"interface": ap, "limits": {}}
+    owner_state.setdefault("limits", {})[mac] = {
+        "download_mbps": download_mbps,
+        "upload_mbps": upload_mbps,
+    }
+    owner_state["interface"] = ap
+    ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    owner_file.write_text(json.dumps(owner_state))
+    os.chmod(owner_file, 0o600)
     return {"success": True, "mac": mac, "download_mbps": download_mbps, "upload_mbps": upload_mbps, "interface": ap}
 
 def stop(confirmed: bool) -> dict[str, Any]:
@@ -602,6 +629,20 @@ def stop(confirmed: bool) -> dict[str, Any]:
     state = read_state()
     if not state: return {"success": False, "error": "Keyland router Wi-Fi is not active."}
     ap, errors = state["interface"], []
+    traffic_state_file = ROOT / "client-traffic.json"
+    try:
+        traffic_state = json.loads(traffic_state_file.read_text())
+    except (OSError, ValueError):
+        traffic_state = None
+    if isinstance(traffic_state, dict) and traffic_state.get("interface") == ap:
+        qdiscs = run(["tc", "qdisc", "show", "dev", ap])
+        if qdiscs["ok"]:
+            if any(line.startswith("qdisc htb 1:") for line in qdiscs["out"].splitlines()):
+                run(["tc", "qdisc", "del", "dev", ap, "root"])
+            if any(" ingress " in (" " + line + " ") for line in qdiscs["out"].splitlines()):
+                run(["tc", "qdisc", "del", "dev", ap, "ingress"])
+        traffic_state_file.unlink(missing_ok=True)
+    run(["nft", "delete", "table", "inet", "keyland_client_control"])
     run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
     run(["ip", "route", "flush", "table", "42002"])
     r = run(["nft", "delete", "table", "inet", TABLE])
