@@ -2,7 +2,7 @@ from keyland.adapters.wifi.hotspot import _validate, start_hotspot
 
 
 def test_hotspot_config_validation_accepts_wpa2():
-    interface, ssid, dns, password = _validate({
+    interface, ssid, dns, password, ipv4_cidr = _validate({
         "interface": "ap0",
         "ssid": "Keyland-Home",
         "password": "StrongPassphrase123",
@@ -13,6 +13,7 @@ def test_hotspot_config_validation_accepts_wpa2():
     assert ssid == "Keyland-Home"
     assert dns == ["1.1.1.1", "8.8.8.8"]
     assert password == "StrongPassphrase123"
+    assert ipv4_cidr == "192.168.88.1/24"
 
 
 def test_hotspot_config_rejects_invalid_dns():
