@@ -173,17 +173,17 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Could not read supported Wi-Fi channels.")
     available = set()
     for raw in phy_info["out"].splitlines():
-        match = re.search(r"\*\s+\d+\s+MHz\s+\[(\d+)\](.*)", raw)
+        match = re.search(r"\*\s+\d+(?:\.\d+)?\s+MHz\s+\[(\d+)\]\s+\((.*)\)", raw)
         if not match:
             continue
         channel_number, flags = int(match.group(1)), match.group(2).lower()
         if "disabled" in flags or "no ir" in flags or "radar detection" in flags:
             continue
         available.add(channel_number)
-    if requested_channel not in available:
-        raise ValueError(f"Channel {requested_channel} is not currently permitted for AP operation.")
     if mode == "repeater" and station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
         raise ValueError("Repeater AP must use the connected Wi-Fi channel.")
+    if requested_channel not in available:
+        raise ValueError(f"Channel {requested_channel} is not currently permitted for AP operation.")
     if station and station.get("phy") == apdev.get("phy") and station_channel != requested_channel:
         multi = any(re.search(r"#\s*channels\s*<=\s*2", item) for item in combinations.get("details", []))
         if not multi:
