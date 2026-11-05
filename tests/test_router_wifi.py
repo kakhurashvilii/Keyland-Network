@@ -25,7 +25,7 @@ def patch_preflight(addr_output="[]", interfaces=None, routes=None):
         if args[:2] == ["iw", "list"]:
             return {"ok": True, "out": """
         valid interface combinations:
-                 * #{ managed } <= 2, #{ AP } <= 1, total <= 3, #channels <= 2
+                 * #{ managed } <= 2, #{ AP, P2P-client, P2P-GO } <= 2, total <= 4, #channels <= 2
         * 2412.0 MHz [1] (20.0 dBm)
         * 2437.0 MHz [6] (20.0 dBm)
         * 5180.0 MHz [36] (18.0 dBm)

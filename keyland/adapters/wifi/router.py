@@ -149,9 +149,15 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("Repeater mode requires a connected Wi-Fi client upstream.")
     if mode == "repeater" and wan.startswith(("rmnet", "qmap", "wwan", "ppp")):
         raise ValueError("Select Hotspot mode for cellular/SIM upstream.")
-    # The driver must explicitly report AP + managed concurrency on a shared PHY.
-    station = next((x for x in devs if x["type"] == "managed" and x.get("ssid")), None)
-    if station and station.get("phy") == apdev.get("phy"):
+    # Only a connected station on the AP's own PHY constrains AP/client
+    # concurrency. A station on another radio does not share this limit.
+    station = next((
+        x for x in devs
+        if x["type"] == "managed" and x.get("ssid")
+        and x.get("phy") == apdev.get("phy")
+    ), None)
+    combinations = {}
+    if station:
         iw_list = run(["iw", "list"], timeout=20)
         combinations = parse_interface_combinations(iw_list["out"]) if iw_list["ok"] else {}
         if not combinations.get("ap_client_combination_mentioned"):
@@ -201,7 +207,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
     except ValueError as exc: return {"success": False, "error": str(exc)}
     ap, wan = cfg["interface"], cfg["upstream_interface"]
     ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
-    state = {**cfg, "previous_ip_forward": Path("/proc/sys/net/ipv4/ip_forward").read_text().strip()}
+    state = {**cfg, "previous_ip_forward": Path("/proc/sys/net/ipv4/ip_forward").read_text().strip(),
+             "previous_wan_rp_filter": None}
     policy_routes_created = False
     policy_rule_added = False
     firewall_created = False
@@ -211,6 +218,15 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         if not r["ok"]: raise RuntimeError("Could not detach AP from NetworkManager: " + str(r["err"] or r["out"]))
         r = run(["sysctl", "-w", "net.ipv4.ip_forward=1"])
         if not r["ok"]: raise RuntimeError("Could not enable IPv4 forwarding.")
+        # Cellular links can receive replies on qmapmux while the phone's
+        # main default route remains wlan0. Strict reverse-path filtering
+        # would drop those valid asymmetric replies. Use loose mode only on
+        # the selected cellular WAN and restore its exact previous value.
+        if wan.startswith(("rmnet", "qmap", "wwan", "ppp")):
+            rp_filter = Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter"
+            if rp_filter.exists():
+                state["previous_wan_rp_filter"] = rp_filter.read_text().strip()
+                rp_filter.write_text("2\n")
         run(["ip", "link", "set", ap, "down"])
         run(["ip", "addr", "flush", "dev", ap])
         if not run(["ip", "addr", "replace", cfg["ipv4_cidr"], "dev", ap])["ok"]: raise RuntimeError("Could not assign AP gateway IP.")
@@ -295,6 +311,11 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
             except (OSError, ValueError, TypeError): pass
         run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
         run(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_ip_forward"]])
+        if state.get("previous_wan_rp_filter") is not None:
+            try:
+                (Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\n")
+            except OSError:
+                pass
         run(["nmcli", "device", "set", ap, "managed", "yes"])
         for name in ("hostapd.conf", "dnsmasq.conf"):
             (ROOT / name).unlink(missing_ok=True)
@@ -315,6 +336,11 @@ def stop(confirmed: bool) -> dict[str, Any]:
         except (OSError, KeyError, ValueError, TypeError): pass
     run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
     run(["sysctl", "-w", "net.ipv4.ip_forward=" + state.get("previous_ip_forward", "0")])
+    if state.get("previous_wan_rp_filter") is not None:
+        try:
+            (Path("/proc/sys/net/ipv4/conf") / state["upstream_interface"] / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\n")
+        except OSError:
+            errors.append("Could not restore the cellular WAN reverse-path filter setting.")
     if not run(["nmcli", "device", "set", ap, "managed", "yes"])["ok"]: errors.append("Could not restore NetworkManager management.")
     if not errors:
         STATE.unlink(missing_ok=True)
