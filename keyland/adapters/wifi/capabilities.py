@@ -199,8 +199,8 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
     # e.g. "#{ AP, P2P-client, P2P-GO }". Match AP as a member of that
     # set, not only as the sole member. Require managed in the same entry.
     ap_client_mentioned = any(
-        re.search(r"#\\s*\\{[^}]*\\bAP\\b[^}]*\\}", item)
-        and re.search(r"#\\s*\\{[^}]*\\bmanaged\\b[^}]*\\}", item)
+        re.search(r"#\s*\{[^}]*\bAP\b[^}]*\}", item)
+        and re.search(r"#\s*\{[^}]*\bmanaged\b[^}]*\}", item)
         for item in combinations
     )
 
