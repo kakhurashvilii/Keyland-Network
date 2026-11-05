@@ -80,7 +80,6 @@ def parse_linux_interfaces(output: str) -> list[dict[str, Any]]:
                 "name": line.split(maxsplit=1)[1],
                 "phy": phy,
                 "type": None,
-                "phy": None,
                 "ssid": None,
                 "channel": None,
                 "frequency_mhz": None,
