@@ -22,6 +22,9 @@ rsync -a --delete --exclude '.venv' --exclude 'data' --exclude '__pycache__' \
       --exclude '.pytest_cache' "$SRC/" "$DEST/"
 mkdir -p "$DEST/data"; chmod 700 "$DEST/data"
 
+# Install the narrowly scoped privileged router helper used by the API.
+install -m 0750 "$DEST/deploy/keyland-routerctl" /usr/local/sbin/keyland-routerctl
+
 echo "[3/6] Python environment"
 python3 -m venv "$DEST/.venv"
 "$DEST/.venv/bin/pip" install -q --upgrade pip
