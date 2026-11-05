@@ -29,7 +29,14 @@ def interfaces() -> list[dict[str, Any]]:
     for raw in r["out"].splitlines():
         line = raw.strip()
         if line.startswith("phy#"):
+            if cur:
+                out.append(cur)
+                cur = None
             phy = line
+        elif line.startswith("Unnamed/non-netdev interface"):
+            if cur:
+                out.append(cur)
+                cur = None
         elif line.startswith("Interface "):
             if cur: out.append(cur)
             cur = {"name": line.split(maxsplit=1)[1], "phy": phy,
