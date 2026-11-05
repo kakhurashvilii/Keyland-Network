@@ -440,19 +440,39 @@ def create_virtual_ap(interface: str, confirmed: bool) -> dict[str, Any]:
                 "error": f"Could not create AP interface: {result.get('error') or result.get('output') or 'unknown error'}",
             }
         created_now = True
-    elif existing.get("type") != "AP":
+
+    # Some drivers create the virtual interface as "managed" even when
+    # "__ap" was requested. Always inspect the newly-created interface and
+    # explicitly switch it to AP mode when necessary.
+    current = next(
+        (item for item in _wifi_interfaces() if item["name"] == "keyland-ap"),
+        None,
+    )
+    if not current:
+        if created_now:
+            _run(["iw", "dev", "keyland-ap", "del"])
+        return {
+            "success": False,
+            "error": "The AP interface was not visible after creation.",
+        }
+
+    if current.get("type") != "AP":
         down = _run(["ip", "link", "set", "keyland-ap", "down"])
         if not down["success"]:
+            if created_now:
+                _run(["iw", "dev", "keyland-ap", "del"])
             return {
                 "success": False,
-                "error": f"Could not safely prepare existing interface: {down.get('error')}",
+                "error": f"Could not safely prepare AP interface: {down.get('error')}",
             }
 
         mode = _run(["iw", "dev", "keyland-ap", "set", "type", "__ap"])
         if not mode["success"]:
+            if created_now:
+                _run(["iw", "dev", "keyland-ap", "del"])
             return {
                 "success": False,
-                "error": f"Could not switch existing interface to AP mode: {mode.get('error')}",
+                "error": f"Could not switch interface to AP mode: {mode.get('error')}",
             }
 
     verified = next(
