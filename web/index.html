@@ -2443,22 +2443,18 @@ function renderWifiScan(targetId, data) {
     target.appendChild(footer);
 }
 
-async function scanWifi(targetId = "wifiScan") {
+async function scanWifi() {
     if (!state.authenticated || state.scanLoading) return;
     state.scanLoading = true;
 
-    const buttonId = targetId === "repeaterScanResults" ? "repeaterScanButton" : "scanButton";
-    const button = element(buttonId);
+    const button = element("scanButton");
     if (button) button.disabled = true;
-    const target = element(targetId);
+    const target = element("wifiScan");
     if (target) target.textContent = "Wi-Fi ქსელების ძიება მიმდინარეობს...";
 
     try {
         const data = await fetchJSON(API + "/wifi/scan");
-        if (state.authenticated) {
-            renderWifiScan(targetId, data);
-
-        }
+        if (state.authenticated) renderWifiScan("wifiScan", data);
     } catch (error) {
         if (state.authenticated && target) target.textContent = "სკანირების შეცდომა: " + error.message;
     } finally {
