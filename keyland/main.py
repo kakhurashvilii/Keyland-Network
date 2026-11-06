@@ -49,7 +49,7 @@ from keyland.api.dns import router as dns_router
 from keyland.api.wifi import router as wifi_hotspot_router
 
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
