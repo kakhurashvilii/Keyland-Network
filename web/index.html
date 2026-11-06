@@ -2070,7 +2070,7 @@ async function renderWifiLive(data) {
     const target = element("wifiLiveStatus");
     if (!target) return;
     const links = Array.isArray(data.connections) ? data.connections : [];
-    const active = links.find(item => item.connected && item.frequency_mhz);
+    const active = links.find(item => item.connected && item.type === "AP" && item.frequency_mhz) || links.find(item => item.connected && item.frequency_mhz);
     if (!active) {
         target.textContent = "Wi-Fi · კავშირი არ არის";
         target.title = "აქტიური Wi-Fi სიხშირე ამჟამად მიუწვდომელია";
