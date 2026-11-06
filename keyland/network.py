@@ -588,7 +588,7 @@ def get_wifi():
                             except ValueError:
                                 pass
                         elif value.startswith("signal:"):
-                            match = re.search(r"-?\\d+", value)
+                            match = re.search(r"-?\d+", value)
                             if match:
                                 item["signal_dbm"] = int(match.group())
                         elif value.startswith("tx bitrate:"):
@@ -601,7 +601,7 @@ def get_wifi():
                     value = line.strip()
                     if value.startswith("type "):
                         item["type"] = value.split(maxsplit=1)[1]
-                    match = re.search(r"channel\\s+(\\d+)\\s+\\((\\d+)\\s+MHz\\)", value)
+                    match = re.search(r"channel\s+(\d+)\s+\((\d+)\s+MHz\)", value)
                     if match and not item.get("frequency_mhz"):
                         item["channel"] = int(match.group(1))
                         item["frequency_mhz"] = int(match.group(2))
