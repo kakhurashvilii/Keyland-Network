@@ -89,6 +89,7 @@ If the selected WAN or Wi-Fi device is not ready, the restore attempt waits for 
 
 Authenticated API:
 - GET `/api/v1/wifi/hotspot/router/autostart`
-- POST `/api/v1/wifi/hotspot/router/autostart/disable` with `{"confirmed": true}`
+- POST `/api/v1/wifi/hotspot/router/autostart/enable` with `{"confirmed": true}` while Router Wi-Fi is active.
+- POST `/api/v1/wifi/hotspot/router/autostart/disable` with `{"confirmed": true}`; the running AP stays online.
 
 The feature does not enable public Internet exposure. Continue to access the GUI through the AP LAN or a separately secured ZeroTier/Tailscale path.
