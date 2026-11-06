@@ -984,26 +984,9 @@ html,body{max-width:100%;overflow-x:hidden}
         </details>
         </section>
 
-        <section class="card">
-            <h3>მოწყობილობის შესაძლებლობები</h3>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="capabilities">მოლოდინი...</pre>
-        </details>
-        </section>
+        
 
-        <section class="card">
-            <h3>ქსელის ინტერფეისები</h3>
-            <label for="interfaceFilter" class="muted">
-                ინტერფეისის ფილტრი:
-            </label>
-            <select id="interfaceFilter">
-                <option value="all">ყველა ინტერფეისი</option>
-                <option value="active">მხოლოდ აქტიური</option>
-            </select>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="interfaces">მოლოდინი...</pre>
-        </details>
-        </section>
+        
 
         <div id="wireless-section" class="section-heading"><div><span class="section-kicker">02 / WIRELESS</span><h2>Wi-Fi ქსელი</h2><p>ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა</p></div></div>
 
@@ -1018,12 +1001,7 @@ html,body{max-width:100%;overflow-x:hidden}
         </section>
 
 
-        <section class="card">
-            <h3>მარშრუტიზაციის ცხრილი</h3>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="routes">მოლოდინი...</pre>
-        </details>
-        </section>
+        
 
         <section class="card">
             <h3>Wi-Fi კავშირი</h3>
@@ -1139,6 +1117,27 @@ html,body{max-width:100%;overflow-x:hidden}
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
 
         <section class="card">
+            <h3>ქსელის ინტერფეისები</h3>
+            <label for="interfaceFilter" class="muted">
+                ინტერფეისის ფილტრი:
+            </label>
+            <select id="interfaceFilter">
+                <option value="all">ყველა ინტერფეისი</option>
+                <option value="active">მხოლოდ აქტიური</option>
+            </select>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="interfaces">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <section class="card">
+            <h3>მარშრუტიზაციის ცხრილი</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="routes">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <section class="card">
             <h3 id="dns-title">DNS-ის მართვა</h3>
             <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
             <label for="dnsInterface">ქსელის ინტერფეისი</label>
@@ -1180,6 +1179,13 @@ html,body{max-width:100%;overflow-x:hidden}
         </section>
 
         <div id="system-section" class="section-heading"><div><span class="section-kicker">06 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
+
+        <section class="card">
+            <h3>მოწყობილობის შესაძლებლობები</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="capabilities">მოლოდინი...</pre>
+        </details>
+        </section>
 
         <section class="card">
             <h3 id="system-title">სისტემა, ჟურნალები და აღდგენა</h3>
