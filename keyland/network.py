@@ -593,8 +593,22 @@ def get_wifi():
                                 item["signal_dbm"] = int(match.group())
                         elif value.startswith("tx bitrate:"):
                             item["tx_bitrate"] = value.split(":", 1)[1].strip()
-                    item["channel"] = _wifi_channel(item.get("frequency_mhz"))
-                    frequency = item.get("frequency_mhz")
+                # AP interfaces are not associated as Wi-Fi clients; their
+                # active channel is reported by "iw dev <iface> info".
+                info = run_command(["iw", "dev", interface_name, "info"])
+                info_output = info.get("output", "")
+                for line in info_output.splitlines():
+                    value = line.strip()
+                    if value.startswith("type "):
+                        item["type"] = value.split(maxsplit=1)[1]
+                    match = re.search(r"channel\\s+(\\d+)\\s+\\((\\d+)\\s+MHz\\)", value)
+                    if match and not item.get("frequency_mhz"):
+                        item["channel"] = int(match.group(1))
+                        item["frequency_mhz"] = int(match.group(2))
+                frequency = item.get("frequency_mhz")
+                if frequency:
+                    item["channel"] = item.get("channel") or _wifi_channel(frequency)
+                    item["connected"] = item["connected"] or item.get("type") == "AP"
                     item["band"] = (
                         "6 GHz" if frequency and frequency >= 5955
                         else "5 GHz" if frequency and frequency >= 4900
