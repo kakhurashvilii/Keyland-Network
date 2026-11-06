@@ -614,6 +614,14 @@ main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
 .diagnostic-details>summary{cursor:pointer;color:#91b9e8;font-size:11px;font-weight:650;user-select:none}
 .diagnostic-details[open]>summary{margin-bottom:8px}
 .diagnostic-details pre{margin:0;max-height:260px}
+
+/* Mobile refinement */
+html,body{max-width:100%;overflow-x:hidden}
+.app-layout,main,.grid,.card{min-width:0}
+.diagnostic-details{overflow:hidden}
+.diagnostic-details>summary{min-height:34px;display:flex;align-items:center}
+@media(max-width:760px){header{padding:14px}header h1{font-size:16px;letter-spacing:.1em}.header-row{gap:10px;align-items:center}.header-actions{gap:6px}.header-actions button{min-height:40px;min-width:42px;margin:0;padding:8px 11px}.header-status{display:flex;flex-wrap:wrap;gap:5px}.app-layout{padding:9px 10px 24px}.primary-nav{margin:0 -10px 14px;padding:8px 10px;border-radius:0;border-left:0;border-right:0}.primary-nav a{min-height:44px;gap:7px;padding:6px 9px}.grid{gap:10px}.grid>.card{padding:14px;border-radius:12px}.section-heading h2{font-size:17px}.metric{font-size:23px}.cellular-grid{gap:8px}.cellular-item{padding:10px}.cellular-value{font-size:14px}button,select{min-height:42px}.hotspot-grid{grid-template-columns:minmax(0,1fr);gap:10px}.hotspot-wide{grid-column:1}.chart-container{height:180px}pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.client-device-actions button{min-height:40px}}
+@media(max-width:380px){.cellular-grid{grid-template-columns:minmax(0,1fr)}.section-heading h2{font-size:16px}}
 </style>
 </head>
 
