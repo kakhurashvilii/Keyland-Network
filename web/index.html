@@ -931,7 +931,7 @@ footer{padding:16px;font-size:9px}
 <!-- LOGIN -->
 
 <div id="loginOverlay" class="login-overlay">
-    <form id="loginForm" class="login-box">
+    <form id="loginForm" class="login-box" method="post" action="/api/v1/auth/login">
         <div class="login-logo">KEYLAND NETWORK</div>
         <div class="login-subtitle">
             ქსელის მართვის ერთიანი პანელი
@@ -2083,7 +2083,7 @@ async function renderWifiLive(data) {
     target.title = "ინტერფეისი: " + active.interface + (active.ssid ? " · SSID: " + active.ssid : "");
 }
 
-function loadData() {
+async function loadData() {
     if (!state.authenticated || state.loading) return;
 
     state.loading = true;
