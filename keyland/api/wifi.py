@@ -116,6 +116,16 @@ def router_wifi_autostart_status(user: dict = Depends(require_admin)):
     return _call_router_helper("autostart_status")
 
 
+@router.post("/router/autostart/enable")
+def router_wifi_autostart_enable(payload: StopRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("autostart_enable")
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Could not enable automatic startup."))
+    return result
+
+
 @router.post("/router/autostart/disable")
 def router_wifi_autostart_disable(payload: StopRequest, user: dict = Depends(require_admin)):
     if payload.confirmed is not True:
