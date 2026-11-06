@@ -58,6 +58,9 @@ if [ "${#KEYLAND_JWT_SECRET}" -lt 32 ]; then
     exit 1
 fi
 KEYLAND_PORT="${KEYLAND_PORT:-8000}"
+if ! grep -q '^KEYLAND_PORT=' "$ENV_FILE"; then
+    printf 'KEYLAND_PORT=8000\n' >> "$ENV_FILE"
+fi
 # ap0 is managed by Keyland/hostapd, not by NetworkManager
 mkdir -p /etc/NetworkManager/conf.d
 printf '[keyfile]\nunmanaged-devices=interface-name:ap0\n' > /etc/NetworkManager/conf.d/99-keyland-ap0.conf
@@ -88,7 +91,7 @@ LISTEN_PIDS="$(ss -ltnp "sport = :${KEYLAND_PORT}" 2>/dev/null | grep -oE 'pid=[
 for pid in $LISTEN_PIDS; do
     command_line="$(ps -p "$pid" -o args= 2>/dev/null || true)"
     case "$command_line" in
-        *"uvicorn keyland.main:app"*) kill -TERM "$pid" ;;
+        *uvicorn*keyland.main:app*) kill -TERM "$pid" ;;
         *) echo "ERROR: Port ${KEYLAND_PORT} is used by another process (PID ${pid}); not stopped."; exit 1 ;;
     esac
 done
