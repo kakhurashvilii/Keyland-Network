@@ -2,14 +2,16 @@
 Description=Keyland Network router panel and engine
 After=NetworkManager.service ModemManager.service network-online.target
 Wants=NetworkManager.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=/opt/keyland
 EnvironmentFile=/etc/keyland/keyland.env
-ExecStart=/opt/keyland/.venv/bin/uvicorn keyland.main:app --host ${KEYLAND_HOST} --port ${KEYLAND_PORT}
-Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/keyland/.venv/bin/uvicorn keyland.main:app --host 127.0.0.1 --port ${KEYLAND_PORT}
+Restart=always
 RestartSec=5
 KillMode=mixed
 TimeoutStopSec=25
