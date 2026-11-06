@@ -113,6 +113,177 @@ def _read_ip_forward() -> int | None:
         return None
 
 
+
+_IFACE_NAME = re.compile(r"^[A-Za-z0-9_.:-]{1,15}$")
+_BSSID = re.compile(r"^(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
+
+
+def _split_nmcli_fields(line: str) -> list[str]:
+    fields: list[str] = []
+    value: list[str] = []
+    escaped = False
+    for char in line:
+        if escaped:
+            value.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == ":":
+            fields.append("".join(value))
+            value = []
+        else:
+            value.append(char)
+    fields.append("".join(value))
+    return fields
+
+
+def _managed_interface(interface: str) -> dict[str, Any] | None:
+    if not isinstance(interface, str) or not _IFACE_NAME.fullmatch(interface):
+        return None
+    result = _run(["iw", "dev"])
+    if not result["success"]:
+        return None
+    return next(
+        (
+            item for item in _parse_iw_dev(result["output"])
+            if item.get("name") == interface and item.get("type") == "managed"
+        ),
+        None,
+    )
+
+
+def _active_ap_on_phy(phy: str | None) -> bool:
+    if not phy:
+        return False
+    result = _run(["iw", "dev"])
+    if not result["success"]:
+        return True
+    return any(
+        item.get("phy") == phy
+        and item.get("type") in ("AP", "P2P-GO")
+        and item.get("ssid")
+        for item in _parse_iw_dev(result["output"])
+    )
+
+
+def connect_wifi(
+    interface: str,
+    ssid: str,
+    bssid: str,
+    password: str = "",
+    confirmed: bool = False,
+) -> dict[str, Any]:
+    """Connect a managed Wi-Fi interface to one network selected by scan."""
+    if confirmed is not True:
+        return {"success": False, "error": "Explicit administrator confirmation is required."}
+    if not shutil.which("nmcli"):
+        return {"success": False, "error": "NetworkManager (nmcli) is required to connect to Wi-Fi."}
+    if not isinstance(ssid, str) or not 1 <= len(ssid.encode("utf-8")) <= 32:
+        return {"success": False, "error": "Choose a valid Wi-Fi network name."}
+    if not isinstance(bssid, str) or not _BSSID.fullmatch(bssid):
+        return {"success": False, "error": "Choose a valid BSSID from the scan results."}
+    if not isinstance(password, str) or len(password) > 63:
+        return {"success": False, "error": "Wi-Fi password is too long."}
+
+    station = _managed_interface(interface)
+    if not station:
+        return {"success": False, "error": "Choose an existing managed Wi-Fi interface; AP interfaces cannot be used as the upstream."}
+    if _active_ap_on_phy(station.get("phy")):
+        return {
+            "success": False,
+            "error": "Stop the active Hotspot before changing the Wi-Fi upstream. The AP and client share one radio.",
+        }
+
+    scan = _run([
+        "nmcli", "--terse", "--escape", "yes",
+        "--fields", "SSID,BSSID,SECURITY",
+        "device", "wifi", "list", "ifname", interface,
+    ], timeout=20)
+    if not scan["success"]:
+        return {"success": False, "error": "Could not verify the selected network. Scan Wi-Fi networks again."}
+
+    selected = None
+    for row in scan["output"].splitlines():
+        fields = _split_nmcli_fields(row)
+        if len(fields) >= 3 and fields[1].lower() == bssid.lower():
+            selected = fields
+            break
+    if not selected or selected[0] != ssid:
+        return {"success": False, "error": "The selected network is no longer in the scan results. Scan again."}
+
+    security = (selected[2] or "").strip().lower()
+    is_open = not security or security in ("--", "open")
+    if not is_open and not 8 <= len(password) <= 63:
+        return {"success": False, "error": "Enter the Wi-Fi password (8–63 characters)."}
+    if is_open and password:
+        return {"success": False, "error": "This network is open; no password is required."}
+
+    command = [
+        "nmcli", "--wait", "40", "device", "wifi", "connect",
+        bssid, "ifname", interface,
+    ]
+    if not is_open:
+        command.extend(["password", password])
+
+    result = _run(command, timeout=45)
+    if not result["success"]:
+        return {
+            "success": False,
+            "error": "NetworkManager could not connect. Check the password, signal and network security, then try again.",
+        }
+
+    link = _run(["iw", "dev", interface, "link"])
+    connected_ssid = None
+    connected_bssid = None
+    if link["success"]:
+        for line in link["output"].splitlines():
+            clean = line.strip()
+            if clean.startswith("SSID:"):
+                connected_ssid = clean.split(":", 1)[1].strip()
+            elif clean.startswith("Connected to "):
+                connected_bssid = clean.split()[-1].lower()
+
+    if connected_ssid != ssid:
+        return {
+            "success": False,
+            "error": "NetworkManager accepted the request, but the Wi-Fi connection could not be verified.",
+        }
+    return {
+        "success": True,
+        "connected": True,
+        "interface": interface,
+        "ssid": connected_ssid,
+        "bssid": connected_bssid or bssid.lower(),
+        "message": "Wi-Fi connected. You can now share this connection through the Keyland Hotspot.",
+    }
+
+
+def disconnect_wifi(interface: str, confirmed: bool = False) -> dict[str, Any]:
+    """Disconnect only the selected managed Wi-Fi client interface."""
+    if confirmed is not True:
+        return {"success": False, "error": "Explicit administrator confirmation is required."}
+    if not shutil.which("nmcli"):
+        return {"success": False, "error": "NetworkManager (nmcli) is required to disconnect Wi-Fi."}
+
+    station = _managed_interface(interface)
+    if not station:
+        return {"success": False, "error": "Choose an existing managed Wi-Fi interface."}
+    if _active_ap_on_phy(station.get("phy")):
+        return {
+            "success": False,
+            "error": "Stop the active Hotspot before disconnecting the upstream Wi-Fi. The AP and client share one radio.",
+        }
+
+    link = _run(["iw", "dev", interface, "link"])
+    if link["success"] and "Not connected." in link["output"]:
+        return {"success": True, "connected": False, "interface": interface, "already_disconnected": True}
+
+    result = _run(["nmcli", "--wait", "20", "device", "disconnect", interface], timeout=25)
+    if not result["success"]:
+        return {"success": False, "error": "NetworkManager could not disconnect the selected Wi-Fi interface."}
+    return {"success": True, "connected": False, "interface": interface, "message": "Wi-Fi disconnected."}
+
+
 def get_repeater_status() -> dict[str, Any]:
     """Report observed Wi-Fi roles and basic forwarding prerequisites."""
 
