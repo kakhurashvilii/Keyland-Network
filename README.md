@@ -4,6 +4,7 @@ v0.2.0	მომხმარებლები, ავტორიზაცი�
 v0.3.0	Wi-Fi AP / Client / Repeater
 v0.4.0	SIM / LTE / 4G / 5G
 v0.5.0	WAN Failover
+v0.5.1	გამარტივებული პანელი და Repeater Wi-Fi connect / disconnect
 v0.6.0	DHCP / DNS / Firewall / NAT
 v0.7.0	OpenWrt სრული ადაპტერი
 v0.8.0	Android / Termux / Root Agent
