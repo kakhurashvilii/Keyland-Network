@@ -565,11 +565,48 @@ def get_wifi():
             }
 
         result = run_command(["iw", "dev"])
+        connections = []
+        if result["success"]:
+            interface_names = [
+                line.strip().split(maxsplit=1)[1]
+                for line in result["output"].splitlines()
+                if line.strip().startswith("Interface ")
+            ]
+            for interface_name in interface_names:
+                link = run_command(["iw", "dev", interface_name, "link"])
+                item = {"interface": interface_name, "connected": False}
+                link_output = link.get("output", "")
+                if link["success"] and not link_output.lower().startswith("not connected"):
+                    item["connected"] = True
+                    for line in link_output.splitlines():
+                        value = line.strip()
+                        if value.startswith("SSID:"):
+                            item["ssid"] = value.split(":", 1)[1].strip()
+                        elif value.startswith("freq:"):
+                            try:
+                                item["frequency_mhz"] = int(value.split(":", 1)[1].strip())
+                            except ValueError:
+                                pass
+                        elif value.startswith("signal:"):
+                            match = re.search(r"-?\\d+", value)
+                            if match:
+                                item["signal_dbm"] = int(match.group())
+                        elif value.startswith("tx bitrate:"):
+                            item["tx_bitrate"] = value.split(":", 1)[1].strip()
+                    item["channel"] = _wifi_channel(item.get("frequency_mhz"))
+                    frequency = item.get("frequency_mhz")
+                    item["band"] = (
+                        "6 GHz" if frequency and frequency >= 5955
+                        else "5 GHz" if frequency and frequency >= 4900
+                        else "2.4 GHz" if frequency else None
+                    )
+                connections.append(item)
 
         return {
             "platform": SYSTEM,
             "available": result["success"],
             "details": result["output"],
+            "connections": connections,
             "error": result["error"],
         }
 
