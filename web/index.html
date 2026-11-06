@@ -982,6 +982,7 @@ footer{padding:16px;font-size:9px}
                 <span class="muted" id="connection"
                       aria-live="polite">სესიის შემოწმება...</span>
                 <span class="cellular-badge" id="serverVersion">API · --</span>
+                <span class="cellular-badge" id="wifiLiveStatus" aria-live="polite">Wi-Fi · ამოწმებს...</span>
             </div>
         </div>
 
@@ -2065,7 +2066,24 @@ function updateResources(data) {
 
 /* MAIN DASHBOARD */
 
-async function loadData() {
+async function renderWifiLive(data) {
+    const target = element("wifiLiveStatus");
+    if (!target) return;
+    const links = Array.isArray(data.connections) ? data.connections : [];
+    const active = links.find(item => item.connected && item.frequency_mhz);
+    if (!active) {
+        target.textContent = "Wi-Fi · კავშირი არ არის";
+        target.title = "აქტიური Wi-Fi სიხშირე ამჟამად მიუწვდომელია";
+        return;
+    }
+    const frequency = Number(active.frequency_mhz);
+    const band = active.band || (frequency >= 5955 ? "6 GHz" : frequency >= 4900 ? "5 GHz" : "2.4 GHz");
+    const signal = active.signal_dbm != null ? " · " + active.signal_dbm + " dBm" : "";
+    target.textContent = band + " · CH " + (active.channel ?? "—") + " · " + frequency + " MHz" + signal;
+    target.title = "ინტერფეისი: " + active.interface + (active.ssid ? " · SSID: " + active.ssid : "");
+}
+
+function loadData() {
     if (!state.authenticated || state.loading) return;
 
     state.loading = true;
@@ -2100,6 +2118,11 @@ async function loadData() {
                 if (!state.authenticated) return { name, data };
 
                 switch (name) {
+                    case "wifi":
+                        renderWifiLive(data);
+                        showJSON("wifi", data);
+                        break;
+
                     case "traffic":
                         updateTraffic(data);
                         break;
