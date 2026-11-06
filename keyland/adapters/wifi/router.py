@@ -16,6 +16,14 @@ def _read_autostart() -> dict[str, Any] | None:
     except (OSError, ValueError, TypeError):
         return None
 
+def _write_autostart(config: dict[str, Any]) -> None:
+    AUTOSTART_FILE.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    temp_config = AUTOSTART_FILE.with_suffix(".tmp")
+    temp_config.write_text(json.dumps(config))
+    os.chmod(temp_config, 0o600)
+    temp_config.replace(AUTOSTART_FILE)
+
+
 def autostart_status() -> dict[str, Any]:
     config = _read_autostart()
     return {
@@ -484,11 +492,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         state["firewall_table"] = TABLE
         write_state({k: v for k, v in state.items() if k != "password"})
         saved = {**cfg, "source_interface": p.get("source_interface", "wlan0")}
-        AUTOSTART_FILE.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        temp_config = AUTOSTART_FILE.with_suffix(".tmp")
-        temp_config.write_text(json.dumps(saved))
-        os.chmod(temp_config, 0o600)
-        temp_config.replace(AUTOSTART_FILE)
+        _write_autostart(saved)
         return {"success": True, "active": True, "autostart": True, "mode": cfg["mode"], "interface": ap,
                 "upstream_interface": wan, "ssid": cfg["ssid"], "ipv4_cidr": cfg["ipv4_cidr"],
                 "band": cfg["band"], "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
