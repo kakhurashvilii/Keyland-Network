@@ -42,6 +42,31 @@ def disable_autostart() -> dict[str, Any]:
     except OSError as exc:
         return {"success": False, "error": f"Could not disable automatic router startup: {exc}"}
 
+def enable_autostart() -> dict[str, Any]:
+    state = read_state()
+    if not state or not status().get("active"):
+        return {"success": False, "error": "Start Router Wi-Fi before enabling automatic startup."}
+    try:
+        hostapd_config = (ROOT / "hostapd.conf").read_text()
+        password_line = next(
+            (line for line in hostapd_config.splitlines() if line.startswith("wpa_passphrase=")),
+            None,
+        )
+        if not password_line:
+            return {"success": False, "error": "Could not read the active WPA2 configuration."}
+        config = {
+            key: state[key]
+            for key in ("mode", "interface", "upstream_interface", "ssid", "ipv4_cidr",
+                        "dns_servers", "band", "channel")
+            if key in state
+        }
+        config["password"] = password_line.split("=", 1)[1]
+        config["source_interface"] = state.get("source_interface", "wlan0")
+        _write_autostart(config)
+        return {"success": True, "enabled": True}
+    except (OSError, KeyError, StopIteration) as exc:
+        return {"success": False, "error": f"Could not enable automatic startup: {exc}"}
+
 def restore_autostart() -> dict[str, Any]:
     """Restore saved router mode after boot without changing the phone WAN."""
     config = _read_autostart()
@@ -400,7 +425,8 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
     except ValueError as exc: return {"success": False, "error": str(exc)}
     ap, wan = cfg["interface"], cfg["upstream_interface"]
     ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
-    state = {**cfg, "previous_ip_forward": Path("/proc/sys/net/ipv4/ip_forward").read_text().strip(),
+    state = {**cfg, "source_interface": p.get("source_interface", "wlan0"),
+             "previous_ip_forward": Path("/proc/sys/net/ipv4/ip_forward").read_text().strip(),
              "previous_wan_rp_filter": None}
     policy_routes_created = False
     policy_rule_added = False
