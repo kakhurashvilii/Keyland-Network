@@ -2,7 +2,7 @@ name: Python tests
 
 on:
   push:
-    branches: [main, feature/oneplus6t-router-management, feature/hotspot-interface-fixes]
+    branches: [main, feature/oneplus6t-router-management, feature/hotspot-interface-fixes, feature/persistent-router-mode]
   pull_request:
     branches: [main]
 
