@@ -78,3 +78,36 @@ def test_restore_waits_for_selected_wan_without_preparing_ap(tmp_path):
     assert result["success"] is False
     assert result["waiting"] is True
     prepare.assert_not_called()
+
+def test_enable_autostart_saves_live_config_from_root_only_hostapd_file(tmp_path):
+    target = tmp_path / "router-autostart.json"
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "hostapd.conf").write_text(
+        "interface=keyland-ap\nssid=Keyland\nwpa_passphrase=PrivatePass123\n"
+    )
+    state = {
+        "mode": "hotspot",
+        "interface": "keyland-ap",
+        "upstream_interface": "qmapmux0.0",
+        "source_interface": "wlan0",
+        "ssid": "Keyland",
+        "ipv4_cidr": "192.168.88.1/24",
+        "dns_servers": ["1.1.1.1"],
+        "band": "2.4",
+        "channel": 6,
+    }
+
+    with (
+        patch.object(router, "AUTOSTART_FILE", target),
+        patch.object(router, "ROOT", runtime),
+        patch.object(router, "read_state", return_value=state),
+        patch.object(router, "status", return_value={"active": True}),
+    ):
+        result = router.enable_autostart()
+
+    saved = json.loads(target.read_text())
+    assert result == {"success": True, "enabled": True}
+    assert saved["password"] == "PrivatePass123"
+    assert saved["source_interface"] == "wlan0"
+    assert target.stat().st_mode & 0o777 == 0o600
