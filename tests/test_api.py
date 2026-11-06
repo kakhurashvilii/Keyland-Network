@@ -96,6 +96,14 @@ def test_system_resources():
     assert "cpu_percent" in response.json()
 
 
+def test_system_power_endpoint():
+    response = client.get("/api/v1/system/power")
+    assert response.status_code == 200
+    data = response.json()
+    assert "available" in data
+    assert "chargers" in data
+
+
 def test_wifi_scan():
     response = client.get("/api/v1/wifi/scan")
     assert response.status_code == 200
