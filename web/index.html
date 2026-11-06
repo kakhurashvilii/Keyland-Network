@@ -874,6 +874,55 @@ footer{padding:16px;font-size:9px}
  .metric{font-size:20px}
 }
 
+
+/* Dedicated Hotspot navigation and refined access-point workspace */
+#hotspot-section{scroll-margin-top:22px}
+.primary-nav a.active{background:linear-gradient(100deg,rgba(38,111,169,.22),rgba(22,48,75,.48));border-color:rgba(91,157,213,.38);color:#f2f7ff}
+.primary-nav a.active .nav-index{background:#24517a;color:#d8edff}
+.primary-nav a.nav-hotspot{position:relative}
+.primary-nav a.nav-hotspot .nav-index{background:rgba(30,119,160,.2);color:#82d6ee}
+.primary-nav a.nav-hotspot.active{background:linear-gradient(100deg,rgba(20,111,145,.25),rgba(17,44,67,.55));border-color:rgba(77,178,204,.4)}
+.nav-link-indicator{width:6px;height:6px;flex:0 0 6px;margin-left:auto;border-radius:50%;background:#4bbbd1;box-shadow:0 0 0 3px rgba(75,187,209,.1)}
+.hotspot-card{position:relative;overflow:hidden;border-color:rgba(70,145,184,.45)!important;background:linear-gradient(145deg,#14283c 0%,#0e1c2c 72%)!important}
+.hotspot-card:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,#50c4d7,#3189c9);opacity:.85}
+.hotspot-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(103,139,171,.2)}
+.hotspot-heading h3{margin:3px 0 4px;font-size:16px;letter-spacing:-.02em;color:#eff7ff}
+.hotspot-heading p{max-width:68ch;margin:0;font-size:11px}
+.hotspot-kicker{color:#69c5d6;font-size:8px;font-weight:800;letter-spacing:.16em}
+.hotspot-control-tag{flex:0 0 auto;padding:5px 8px;border:1px solid rgba(83,163,192,.32);border-radius:6px;background:rgba(23,93,119,.18);color:#8ed8e7;font-size:8px;font-weight:800;letter-spacing:.1em}
+.hotspot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+.hotspot-grid>div{min-width:0;padding:8px 9px;border:1px solid rgba(93,123,153,.18);border-radius:8px;background:rgba(5,14,24,.24)}
+.hotspot-grid label{display:block;margin:0 0 5px;color:#9fb5ca;font-size:9px;font-weight:650;letter-spacing:.025em;text-transform:none}
+.hotspot-grid input,.hotspot-grid select{width:100%;margin:0}
+.hotspot-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.hotspot-actions button{min-width:125px;margin:0}
+.hotspot-wide{min-width:0}
+.hotspot-card>details.hotspot-wide{margin-top:12px;padding:0 10px;border:1px solid rgba(85,119,151,.26);border-radius:8px;background:rgba(5,14,24,.22)}
+.hotspot-card>details.hotspot-wide>summary{min-height:36px;display:flex;align-items:center;cursor:pointer;color:#b5cbe0;font-size:10px;font-weight:700;list-style:none}
+.hotspot-card>details.hotspot-wide>summary::-webkit-details-marker{display:none}
+.hotspot-card>details.hotspot-wide>summary:after{content:"+";margin-left:auto;color:#83bce4;font-size:15px}
+.hotspot-card>details.hotspot-wide[open]>summary:after{content:"−"}
+.hotspot-card>details.hotspot-wide[open]>summary{margin-bottom:8px;border-bottom:1px solid rgba(85,119,151,.2)}
+.hotspot-card .diagnostic-details{margin:8px 0 10px}
+#hotspotMessage{min-height:16px;margin:9px 0 0;font-size:10px}
+@media(max-width:760px){
+ #hotspot-section{scroll-margin-top:62px}
+ .hotspot-heading{gap:8px;margin-bottom:10px;padding-bottom:9px}
+ .hotspot-heading h3{font-size:14px}
+ .hotspot-heading p{font-size:10px}
+ .hotspot-control-tag{padding:4px 6px;font-size:7px}
+ .hotspot-grid{grid-template-columns:minmax(0,1fr);gap:6px}
+ .hotspot-grid>div{padding:7px 8px}
+ .hotspot-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .hotspot-actions button{min-width:0;width:100%;padding:7px 6px;font-size:10px}
+ .primary-nav a.nav-hotspot .nav-link-indicator{display:none}
+}
+@media(max-width:390px){
+ .hotspot-heading{align-items:flex-start}
+ .hotspot-control-tag{max-width:72px;text-align:center;white-space:normal}
+ .hotspot-actions{grid-template-columns:minmax(0,1fr)}
+}
+
 </style>
 </head>
 
@@ -948,12 +997,13 @@ footer{padding:16px;font-size:9px}
     <div class="nav-brand"><span class="brand-mark">K</span><div><strong>KEYLAND</strong><small>NETWORK CONTROL</small></div></div>
     <div class="nav-group-label">მართვა</div>
     <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
-    <a href="#wireless-section"><span class="nav-index">02</span><span><strong>Wi-Fi ქსელი</strong><small>ადაპტერები და Hotspot</small></span></a>
-    <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>Wi-Fi გამეორება</small></span></a>
-    <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
-    <a href="#mobile-section"><span class="nav-index">05</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
+    <a href="#wireless-section"><span class="nav-index">02</span><span><strong>Wi-Fi ქსელი</strong><small>ადაპტერები და კავშირი</small></span></a>
+    <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">03</span><span><strong>Wi-Fi Hotspot</strong><small>წვდომის წერტილის მართვა</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
+    <a href="#repeater-section"><span class="nav-index">04</span><span><strong>Repeater</strong><small>Wi-Fi გამეორება</small></span></a>
+    <a href="#network-section"><span class="nav-index">05</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
+    <a href="#mobile-section"><span class="nav-index">06</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
     <div class="nav-group-label">მოწყობილობა</div>
-    <a href="#system-section"><span class="nav-index">06</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
+    <a href="#system-section"><span class="nav-index">07</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
     <div class="nav-footer"><span class="nav-status-dot"></span><span>ადმინისტრატორის პანელი</span></div>
 </aside>
 
@@ -1169,9 +1219,15 @@ footer{padding:16px;font-size:9px}
         </details>
         </section>
 
-        <section class="card hotspot-card" style="grid-column: 1 / -1;">
-            <h3 id="hotspot-title">Wi-Fi Hotspot</h3>
-            <p class="muted">OpenWrt-ის მსგავსი AP მართვა: ცალკე AP ინტერფეისი, არჩეული WAN, DHCP, DNS და NAT. upstream ინტერფეისი არ გადაირთვება. </p>
+        <section class="card hotspot-card" id="hotspot-section" style="grid-column: 1 / -1;" aria-labelledby="hotspot-title">
+            <div class="hotspot-heading">
+                <div>
+                    <span class="hotspot-kicker">WIRELESS ACCESS POINT</span>
+                    <h3 id="hotspot-title">Wi-Fi Hotspot</h3>
+                    <p class="muted">მართე უსადენო წვდომის წერტილი, ინტერნეტის წყარო და დაკავშირებული მოწყობილობები.</p>
+                </div>
+                <span class="hotspot-control-tag">AP CONTROL</span>
+            </div>
             <div class="hotspot-grid">
                 <div>
                     <label for="hotspotMode">როუტერის რეჟიმი</label>
@@ -2860,6 +2916,37 @@ element("interfaceFilter").addEventListener(
     "change",
     loadInterfaces
 );
+
+/* Sidebar section tracking — keeps navigation context in sync while scrolling */
+(() => {
+    const links = Array.from(document.querySelectorAll(".primary-nav a[href^='#']"));
+    const sections = links
+        .map(link => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+    const activate = id => {
+        links.forEach(link => {
+            const active = link.getAttribute("href") === "#" + id;
+            link.classList.toggle("active", active);
+            if (active) link.setAttribute("aria-current", "location");
+            else link.removeAttribute("aria-current");
+        });
+    };
+    links.forEach(link => link.addEventListener("click", () => {
+        const id = link.getAttribute("href").slice(1);
+        activate(id);
+    }));
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+            const visible = entries.filter(entry => entry.isIntersecting)
+                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (visible) activate(visible.target.id);
+        }, {rootMargin:"-18% 0px -68% 0px",threshold:[0,.15,.35,.6]});
+        sections.forEach(section => observer.observe(section));
+    } else {
+        const initial = location.hash.slice(1) || "overview-section";
+        activate(initial);
+    }
+})();
 
 /* POLLING */
 
