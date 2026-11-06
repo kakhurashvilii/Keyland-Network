@@ -8,6 +8,7 @@ import subprocess
 from keyland.adapters.wifi.hotspot import (
     get_hotspot_capabilities, start_hotspot, stop_hotspot,
 )
+from keyland.adapters.wifi.repeater import connect_wifi, disconnect_wifi
 
 router = APIRouter(prefix="/api/v1/wifi/hotspot", tags=["Wi-Fi Hotspot"])
 
@@ -110,6 +111,42 @@ def _call_router_helper(action: str, payload: dict | None = None) -> dict:
 @router.get("/router/status")
 def router_wifi_get_status(user: dict = Depends(require_admin)):
     return _call_router_helper("status")
+
+
+class RepeaterConnectRequest(BaseModel):
+    interface: str = Field(min_length=1, max_length=15)
+    ssid: str = Field(min_length=1, max_length=32)
+    bssid: str = Field(min_length=17, max_length=17)
+    password: str = Field(default="", max_length=63)
+    confirmed: bool = False
+
+
+class RepeaterDisconnectRequest(BaseModel):
+    interface: str = Field(min_length=1, max_length=15)
+    confirmed: bool = False
+
+
+@router.post("/repeater/connect")
+def repeater_connect(payload: RepeaterConnectRequest, user: dict = Depends(require_admin)):
+    result = connect_wifi(
+        payload.interface,
+        payload.ssid,
+        payload.bssid,
+        payload.password,
+        payload.confirmed,
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Wi-Fi connection failed."))
+    return result
+
+
+@router.post("/repeater/disconnect")
+def repeater_disconnect(payload: RepeaterDisconnectRequest, user: dict = Depends(require_admin)):
+    result = disconnect_wifi(payload.interface, payload.confirmed)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Wi-Fi disconnect failed."))
+    return result
+
 
 @router.get("/router/autostart")
 def router_wifi_autostart_status(user: dict = Depends(require_admin)):
