@@ -500,8 +500,10 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         # without changing the phone's existing default routes.
         table_id = "42002"
         rules_now = run(["ip", "rule", "show"])
-        if not rules_now["ok"] or "42002:" in rules_now["out"]:
-            raise RuntimeError("Policy-routing priority 42002 is already in use.")
+        if not rules_now["ok"]:
+            raise RuntimeError("Could not inspect existing policy-routing rules.")
+        if re.search(r"^\s*1000:", rules_now["out"], re.MULTILINE):
+            raise RuntimeError("Policy-routing priority 1000 is already in use.")
         if run(["ip", "route", "show", "table", table_id])["out"]:
             raise RuntimeError("Policy-routing table 42002 is already in use.")
         selected_route = next((x for x in defaults() if x.get("dev") == wan), None)
@@ -517,11 +519,11 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
             r = run(["ip", "route", "replace", "default", "dev", wan, "table", table_id])
             if r["ok"]: policy_routes_created = True
         if not r["ok"]: raise RuntimeError("Could not add selected WAN default route: " + str(r["err"]))
-        r = run(["ip", "rule", "add", "priority", "42002", "iif", ap, "lookup", table_id])
+        r = run(["ip", "rule", "add", "priority", "1000", "iif", ap, "lookup", table_id])
         if not r["ok"]: raise RuntimeError("Could not add AP policy-routing rule: " + str(r["err"]))
         policy_rule_added = True
         state["policy_table"] = table_id
-        state["policy_priority"] = "42002"
+        state["policy_priority"] = "1000"
         state["policy_gateway"] = gateway
         rules = f'''table inet {TABLE} {{
  chain forward {{ type filter hook forward priority filter; policy accept;
@@ -547,7 +549,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
     except Exception as exc:
         if firewall_created: run(["nft", "delete", "table", "inet", TABLE])
-        if policy_rule_added: run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
+        if policy_rule_added: run(["ip", "rule", "del", "priority", "1000", "iif", ap, "lookup", "42002"])
         if policy_routes_created: run(["ip", "route", "flush", "table", "42002"])
         for key in ("dnsmasq_pid", "hostapd_pid"):
             try: os.kill(int(state.get(key, 0)), signal.SIGTERM)
@@ -761,6 +763,8 @@ def stop(confirmed: bool) -> dict[str, Any]:
                 run(["tc", "qdisc", "del", "dev", ap, "ingress"])
         traffic_state_file.unlink(missing_ok=True)
     run(["nft", "delete", "table", "inet", "keyland_client_control"])
+    # Remove only Keyland's AP rules: the current priority and the legacy one.
+    run(["ip", "rule", "del", "priority", "1000", "iif", ap, "lookup", "42002"])
     run(["ip", "rule", "del", "priority", "42002", "iif", ap, "lookup", "42002"])
     run(["ip", "route", "flush", "table", "42002"])
     r = run(["nft", "delete", "table", "inet", TABLE])
