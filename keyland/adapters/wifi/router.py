@@ -7,6 +7,56 @@ from keyland.adapters.wifi.capabilities import parse_interface_combinations
 
 ROOT = Path("/run/keyland-router")
 STATE = ROOT / "state.json"
+AUTOSTART_FILE = Path("/etc/keyland/router-autostart.json")
+
+def _read_autostart() -> dict[str, Any] | None:
+    try:
+        data = json.loads(AUTOSTART_FILE.read_text())
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+def autostart_status() -> dict[str, Any]:
+    config = _read_autostart()
+    return {
+        "enabled": bool(config),
+        "active": bool(status().get("active")),
+        "ssid": config.get("ssid") if config else None,
+        "interface": config.get("interface") if config else None,
+        "upstream_interface": config.get("upstream_interface") if config else None,
+        "message": "Router mode will be restored automatically when the device and selected WAN are ready." if config else "Automatic router startup is disabled.",
+    }
+
+def disable_autostart() -> dict[str, Any]:
+    try:
+        AUTOSTART_FILE.unlink(missing_ok=True)
+        return {"success": True, "enabled": False}
+    except OSError as exc:
+        return {"success": False, "error": f"Could not disable automatic router startup: {exc}"}
+
+def restore_autostart() -> dict[str, Any]:
+    """Restore saved router mode after boot without changing the phone WAN."""
+    config = _read_autostart()
+    if not config:
+        return {"success": True, "skipped": True, "reason": "No saved router configuration."}
+    if status().get("active"):
+        return {"success": True, "active": True, "already_running": True}
+    source = config.get("source_interface", "wlan0")
+    ap = config.get("interface", "keyland-ap")
+    wan = config.get("upstream_interface")
+    if not isinstance(wan, str) or wan not in {x.get("dev") for x in defaults()}:
+        return {"success": False, "waiting": True, "error": "Waiting for the saved upstream interface to become available."}
+    prepared = prepare_ap({"interface": source, "ap_interface": ap, "confirmed": True})
+    if not prepared.get("success"):
+        live = next((x for x in interfaces() if x.get("name") == ap and x.get("type") == "AP"), None)
+        if not live:
+            return {"success": False, "waiting": True, "error": prepared.get("error", "AP interface is not ready.")}
+    payload = {k: v for k, v in config.items() if k != "source_interface"}
+    payload["confirmed"] = True
+    result = start(payload)
+    if result.get("success"):
+        result["restored"] = True
+    return result
 TABLE = "keyland_router"
 IFACE = re.compile(r"^[A-Za-z0-9_.:-]{1,15}$")
 
@@ -433,7 +483,13 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         firewall_created = True
         state["firewall_table"] = TABLE
         write_state({k: v for k, v in state.items() if k != "password"})
-        return {"success": True, "active": True, "mode": cfg["mode"], "interface": ap,
+        saved = {**cfg, "source_interface": p.get("source_interface", "wlan0")}
+        AUTOSTART_FILE.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        temp_config = AUTOSTART_FILE.with_suffix(".tmp")
+        temp_config.write_text(json.dumps(saved))
+        os.chmod(temp_config, 0o600)
+        temp_config.replace(AUTOSTART_FILE)
+        return {"success": True, "active": True, "autostart": True, "mode": cfg["mode"], "interface": ap,
                 "upstream_interface": wan, "ssid": cfg["ssid"], "ipv4_cidr": cfg["ipv4_cidr"],
                 "band": cfg["band"], "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
@@ -454,6 +510,7 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         run(["nmcli", "device", "set", ap, "managed", "yes"])
         for name in ("hostapd.conf", "dnsmasq.conf"):
             (ROOT / name).unlink(missing_ok=True)
+        STATE.unlink(missing_ok=True)
         return {"success": False, "error": str(exc), "rolled_back": True}
 
 
@@ -671,5 +728,8 @@ def stop(confirmed: bool) -> dict[str, Any]:
         STATE.unlink(missing_ok=True)
         for name in ("hostapd.conf", "dnsmasq.conf"):
             (ROOT / name).unlink(missing_ok=True)
-    return {"success": not errors, "active": False, "configured": bool(errors), "errors": errors,
-            "message": "AP and NAT stopped; selected upstream was not reconfigured."}
+        disabled = disable_autostart()
+        if not disabled.get("success"):
+            errors.append(disabled.get("error", "Could not disable automatic startup."))
+    return {"success": not errors, "active": False, "autostart": AUTOSTART_FILE.exists(), "configured": bool(errors), "errors": errors,
+            "message": "AP and NAT stopped; automatic startup disabled; selected upstream was not reconfigured."}
