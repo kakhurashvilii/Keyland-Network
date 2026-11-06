@@ -74,6 +74,8 @@ def restore_autostart() -> dict[str, Any]:
         return {"success": True, "skipped": True, "reason": "No saved router configuration."}
     if status().get("active"):
         return {"success": True, "active": True, "already_running": True}
+    if read_state():
+        return {"success": False, "waiting": False, "error": "Stale router state detected. Automatic recovery is disabled until existing routes and firewall ownership are verified; no network changes made."}
     source = config.get("source_interface", "wlan0")
     ap = config.get("interface", "keyland-ap")
     wan = config.get("upstream_interface")
