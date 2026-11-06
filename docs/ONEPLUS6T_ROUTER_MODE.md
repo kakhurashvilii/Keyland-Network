@@ -69,3 +69,26 @@ After starting, test:
 4. The phone's own Wi-Fi, SIM, Tailscale and ZeroTier connections remain available.
 
 Do not treat a successful API response as proof of end-to-end forwarding. Do not enable the feature on a remote-only management path until tested locally.
+
+
+## Persistent Router Mode (boot restore)
+
+Starting Router Wi-Fi now stores the selected router configuration for automatic restoration after reboot. The saved file is:
+
+- `/etc/keyland/router-autostart.json`
+- Root-owned directory and file permissions are restricted; the file is written atomically with mode `0600`.
+- The Wi-Fi passphrase is stored only in this root-only configuration file. It is never returned by the status API.
+- The existing runtime state remains under `/run/keyland-router`; it is recreated during boot restoration.
+
+The installer enables:
+
+- `keyland-router-restore.timer`: first attempt 45 seconds after boot, then retries every 30 seconds.
+- `keyland-router-restore.service`: prepares the dedicated AP interface and restores the saved configuration only after the selected WAN has a default route.
+
+If the selected WAN or Wi-Fi device is not ready, the restore attempt waits for the next timer run. The controller does not replace the phone's default route or reconfigure the selected WAN. Router Wi-Fi Stop removes the saved auto-start configuration after a successful stop.
+
+Authenticated API:
+- GET `/api/v1/wifi/hotspot/router/autostart`
+- POST `/api/v1/wifi/hotspot/router/autostart/disable` with `{"confirmed": true}`
+
+The feature does not enable public Internet exposure. Continue to access the GUI through the AP LAN or a separately secured ZeroTier/Tailscale path.
