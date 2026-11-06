@@ -23,6 +23,12 @@ from keyland.adapters.wifi import router
 
 def main() -> int:
     try:
+        if sys.argv[1:] == ["--restore"]:
+            result = router.restore_autostart()
+            print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+            return 0 if result.get("success") else 1
+        if sys.argv[1:]:
+            raise ValueError("Unsupported command-line arguments.")
         request = json.load(sys.stdin)
         if not isinstance(request, dict):
             raise ValueError("Request must be a JSON object.")
@@ -33,6 +39,9 @@ def main() -> int:
 
         handlers = {
             "status": lambda: router.status(),
+            "autostart_status": lambda: router.autostart_status(),
+            "autostart_enable": lambda: router.enable_autostart(),
+            "autostart_disable": lambda: router.disable_autostart(),
             "prepare": lambda: router.prepare_ap(payload),
             "start": lambda: router.start(payload),
             "stop": lambda: router.stop(payload.get("confirmed") is True),

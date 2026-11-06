@@ -1,0 +1,12 @@
+[Unit]
+Description=Retry Keyland Router Mode restore until the saved WAN and Wi-Fi are ready
+
+[Timer]
+OnBootSec=45s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Persistent=true
+Unit=keyland-router-restore.service
+
+[Install]
+WantedBy=timers.target

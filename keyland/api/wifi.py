@@ -68,6 +68,7 @@ def hotspot_create_interface(payload: VirtualApRequest, user: dict = Depends(req
 class RouterWifiRequest(BaseModel):
     mode: str = "hotspot"
     interface: str = Field(default="keyland-ap", min_length=1, max_length=15)
+    source_interface: str = Field(default="wlan0", min_length=1, max_length=15)
     upstream_interface: str = Field(min_length=1, max_length=15)
     band: str = "2.4"
     channel: int | None = Field(default=None, ge=1, le=165)
@@ -109,6 +110,30 @@ def _call_router_helper(action: str, payload: dict | None = None) -> dict:
 @router.get("/router/status")
 def router_wifi_get_status(user: dict = Depends(require_admin)):
     return _call_router_helper("status")
+
+@router.get("/router/autostart")
+def router_wifi_autostart_status(user: dict = Depends(require_admin)):
+    return _call_router_helper("autostart_status")
+
+
+@router.post("/router/autostart/enable")
+def router_wifi_autostart_enable(payload: StopRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("autostart_enable")
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Could not enable automatic startup."))
+    return result
+
+
+@router.post("/router/autostart/disable")
+def router_wifi_autostart_disable(payload: StopRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
+    result = _call_router_helper("autostart_disable")
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Could not disable automatic startup."))
+    return result
 
 
 @router.post("/router/start")

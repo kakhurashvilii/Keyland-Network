@@ -1,0 +1,10 @@
+[Unit]
+Description=Restore persistent Keyland Router Mode
+After=NetworkManager.service ModemManager.service
+Wants=NetworkManager.service
+ConditionPathExists=/etc/keyland/router-autostart.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/keyland-routerctl --restore
+TimeoutStartSec=60
