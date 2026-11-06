@@ -940,6 +940,11 @@ footer{padding:16px;font-size:9px}
 .wifi-result-card p{margin:6px 0;color:var(--muted);font-size:10px}
 .repeater-connect-button{margin:2px 0 0}
 @media(max-width:760px){.repeater-controls{grid-template-columns:minmax(0,1fr)}#wifiScan.wifi-results-grid{grid-template-columns:minmax(0,1fr)}.repeater-actions{display:grid;grid-template-columns:1fr}.repeater-actions button{width:100%}}
+
+/* Scan results: the outer container stacks the result grid and summary. */
+#wifiScan.wifi-results-grid{display:block}
+#wifiScan .wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(max-width:760px){#wifiScan .wifi-results-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 
