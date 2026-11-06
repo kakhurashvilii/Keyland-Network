@@ -1327,8 +1327,13 @@ function showJSON(id,data) {
     const target=element(id);
     if(!target) return;
     target.textContent=typeof data==="string" ? data : JSON.stringify(data,null,2);
-    const details=target.closest("details");
+    let details=target.closest("details");
     if(!details) return;
+    // If diagnostics are nested (for example Hotspot advanced settings),
+    // lift the live summary panel outside every collapsed details container.
+    while(details.parentElement && details.parentElement.closest("details")) {
+        details=details.parentElement.closest("details");
+    }
     const viewId=id+"TechnicalView";
     let view=element(viewId);
     if(!view) {
