@@ -622,6 +622,112 @@ html,body{max-width:100%;overflow-x:hidden}
 .diagnostic-details>summary{min-height:34px;display:flex;align-items:center}
 @media(max-width:760px){header{padding:14px}header h1{font-size:16px;letter-spacing:.1em}.header-row{gap:10px;align-items:center}.header-actions{gap:6px}.header-actions button{min-height:40px;min-width:42px;margin:0;padding:8px 11px}.header-status{display:flex;flex-wrap:wrap;gap:5px}.app-layout{padding:9px 10px 24px}.primary-nav{margin:0 -10px 14px;padding:8px 10px;border-radius:0;border-left:0;border-right:0}.primary-nav a{min-height:44px;gap:7px;padding:6px 9px}.grid{gap:10px}.grid>.card{padding:14px;border-radius:12px}.section-heading h2{font-size:17px}.metric{font-size:23px}.cellular-grid{gap:8px}.cellular-item{padding:10px}.cellular-value{font-size:14px}button,select{min-height:42px}.hotspot-grid{grid-template-columns:minmax(0,1fr);gap:10px}.hotspot-wide{grid-column:1}.chart-container{height:180px}pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.client-device-actions button{min-height:40px}}
 @media(max-width:380px){.cellular-grid{grid-template-columns:minmax(0,1fr)}.section-heading h2{font-size:16px}}
+
+/* FINAL LAYOUT PASS — consistent technical console and small-screen controls */
+.section-heading {
+  grid-column: 1 / -1;
+  padding: 18px 18px 10px;
+  margin: 10px 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(100deg,rgba(20,38,60,.82),rgba(12,23,39,.55));
+}
+.section-heading h2 { margin: 3px 0 4px; }
+.section-heading p { margin: 0 0 5px; max-width: 70ch; }
+.diagnostic-details {
+  margin-top: 12px;
+  border: 1px solid rgba(74,98,128,.42);
+  border-radius: 9px;
+  background: rgba(5,13,24,.28);
+}
+.diagnostic-details > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  color: #a9c8ee;
+  font-size: 12px;
+  font-weight: 700;
+}
+.diagnostic-details > summary::-webkit-details-marker { display:none; }
+.diagnostic-details > summary::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  margin-right: 8px;
+  border-radius: 5px;
+  background: #1b3450;
+  color: #8fc5ff;
+}
+.diagnostic-details[open] > summary::before { content: "−"; }
+.diagnostic-details pre { margin: 0 10px 10px; }
+.card > .muted { max-width: 78ch; }
+.hotspot-grid > div { min-width: 0; }
+.hotspot-actions { align-items: center; }
+.client-list { min-width: 0; }
+#trafficChart { max-width: 100%; }
+#wifiScan { min-width: 0; }
+@media (min-width:1101px) {
+  .grid > .card { grid-column: span 6; }
+  .grid > .card.hotspot-card,
+  .grid > #hotspotClientsCard,
+  .grid > .repeater-card { grid-column: 1 / -1; }
+}
+@media (max-width:760px) {
+  html { scroll-padding-top: 72px; }
+  header { padding: 13px 14px; }
+  .header-row { align-items: center; }
+  header h1 { font-size: 15px; }
+  header p { font-size: 11px; }
+  .header-status { max-width: 100%; }
+  .header-status > * { font-size: 9px; }
+  .header-actions { flex: 0 0 auto; }
+  .app-layout { padding: 8px 10px 24px; }
+  .primary-nav {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    width: calc(100% + 20px);
+    margin: 0 -10px 13px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    background: rgba(8,16,27,.97);
+  }
+  .primary-nav a { flex: 0 0 auto; white-space: nowrap; }
+  .primary-nav a strong { font-size: 11px; }
+  .grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .grid > .card { grid-column: 1 / -1; padding: 14px; }
+  .section-heading { padding: 13px 12px 8px; margin-top: 8px; }
+  .section-heading h2 { font-size: 17px; }
+  .section-heading p { font-size: 11px; }
+  .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .cellular-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .cellular-item { padding: 10px; }
+  .cellular-value { font-size: 13px; }
+  .hotspot-grid { grid-template-columns: minmax(0,1fr); }
+  .hotspot-wide { grid-column: 1 / -1; }
+  .hotspot-actions button, .card > p > button { min-height: 42px; }
+  input, select, textarea { min-width: 0; font-size: 16px; }
+  button { min-height: 42px; }
+  .traffic-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .chart-container { height: 170px; }
+  pre { max-width: 100%; overflow-x: auto; font-size: 11px; }
+  footer { padding: 18px 12px; }
+}
+@media (max-width:390px) {
+  .header-status { gap: 4px; }
+  .header-status > * { padding: 4px 6px; }
+  .header-actions button { min-width: 38px; padding: 7px 8px; }
+  .cellular-grid { grid-template-columns: minmax(0,1fr); }
+  .metric-grid { gap: 8px; }
+  .metric { font-size: 21px; }
+  .section-kicker { font-size: 8px; }
+}
+
 </style>
 </head>
 
@@ -1911,6 +2017,8 @@ const translations = {
 
 };
 const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+const englishToGeorgian = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+Object.assign(englishToGeorgian, {"SIM STATUS":"SIM-ის მდგომარეობა","MODEM STATUS":"მოდემის მდგომარეობა","REGISTRATION":"ქსელში რეგისტრაცია","SIGNAL QUALITY":"სიგნალის ხარისხი","MOBILE CONNECTION":"მობილური კავშირი","MOBILE DOWNLOAD":"მობილური ჩამოტვირთვა","MOBILE UPLOAD":"მობილური ატვირთვა","CELLULAR INTERFACES / IP ADDRESSES":"მობილური ინტერფეისები / IP მისამართები","connected":"დაკავშირებულია","disconnected":"გათიშულია","home":"სახლის ქსელი","detected":"აღმოჩენილია","unknown":"უცნობია","enabled":"ჩართულია","disabled":"გამორთულია","active":"აქტიურია","inactive":"არააქტიურია","Services / Tools":"სერვისები და ხელსაწყოები","Technical details":"ტექნიკური დეტალები","Loading...":"იტვირთება..."});
 
 const originalTextNodes = new WeakMap();
 let uiLanguage = localStorage.getItem("keyland-language") === "en" ? "en" : "ka";
@@ -1920,7 +2028,7 @@ function translateTextNode(node) {
     const original = originalTextNodes.get(node);
     const trimmed = original.trim();
     if (!trimmed) return;
-    const translated = uiLanguage === "en" ? translations[trimmed] : reverseTranslations[trimmed];
+    const translated = uiLanguage === "en" ? (translations[trimmed] || trimmed) : (englishToGeorgian[trimmed] || reverseTranslations[trimmed]);
     node.nodeValue = translated ? original.replace(trimmed, translated) : original;
 }
 function translateAddedContent(root) {
