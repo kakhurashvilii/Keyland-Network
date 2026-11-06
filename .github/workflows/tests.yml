@@ -18,7 +18,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+      - name: Test persistent Router Mode
+        env:
+          KEYLAND_JWT_SECRET: test-only-secret-key-never-use-in-production-123456
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -q tests/test_router_autostart.py
+
+      - name: Run full test suite
         env:
           KEYLAND_JWT_SECRET: test-only-secret-key-never-use-in-production-123456
           PYTHONPATH: ${{ github.workspace }}
