@@ -1865,35 +1865,87 @@ const translations = {
  "Read-only inspection of AP + Client and forwarding readiness.":"AP + Client რეჟიმისა და ტრაფიკის გადაცემის მზადყოფნის მხოლოდ წაკითხვადი შემოწმება.",
  "Press Scan Wi-Fi networks":"დააჭირე Wi-Fi ქსელების ძიებას",
  "Connection error: ":"კავშირის შეცდომა: "
+
+ "მობილური ქსელი":"Mobile network",
+ "სისტემის მიმოხილვა":"System overview",
+ "მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა":"Current device, internet and resource status",
+ "ინტერნეტთან კავშირი":"Internet connection",
+ "მობილური ინტერფეისები / IP მისამართები":"Cellular interfaces / IP addresses",
+ "ქსელური ტრაფიკი":"Network traffic",
+ "ჩამოტვირთვა RX":"Download RX",
+ "ატვირთვა TX":"Upload TX",
+ "მიღება RX":"Receive RX",
+ "გაგზავნა TX":"Transmit TX",
+ "ბოლო 60 ჩანაწერი":"Last 60 samples",
+ "ინტერფეისის ფილტრი:":"Interface filter:",
+ "ყველა ინტერფეისი":"All interfaces",
+ "მხოლოდ აქტიური":"Active only",
+ "Wi-Fi ქსელი":"Wi-Fi network",
+ "ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა":"Adapter capabilities, connections and wireless access",
+ "ახლომდებარე Wi-Fi ქსელები":"Nearby Wi-Fi networks",
+ "დამატებითი პარამეტრები და დიაგნოსტიკა":"Advanced settings and diagnostics",
+ "როუტერის რეჟიმი":"Router mode",
+ "ინტერნეტის წყარო (WAN)":"Internet source (WAN)",
+ "პაროლი (8–63 ASCII სიმბოლო)":"Password (8–63 ASCII characters)",
+ "Hotspot-ის დაკავშირებული მოწყობილობები":"Hotspot connected devices",
+ "ჩამოტვირთული":"Downloaded",
+ "ატვირთული":"Uploaded",
+ "დაბლოკვა":"Block",
+ "განბლოკვა":"Unblock",
+ "სიჩქარის ლიმიტი":"Speed limit",
+ "ტექნიკური დეტალები":"Technical details",
+ "მობილური ქსელის მართვა":"Mobile network management",
+ "ტექნიკური დიაგნოსტიკა":"Technical diagnostics",
+ "ინტერფეისები":"Interfaces",
+ "ქსელის მდგომარეობა":"Network status",
+ "სერვისები / ხელსაწყოები":"Services / Tools",
+ "მდგომარეობა განახლებულია.":"Status updated.",
+ "სესიის შემოწმება...":"Checking session...",
+ "სისტემის მართვის პანელი":"System control panel",
+ "მობილური ჩამოტვირთვა":"Mobile download",
+ "მობილური ატვირთვა":"Mobile upload",
+ "სიგნალის ხარისხი":"Signal quality",
+ "მოდემის სტატუსი":"Modem status",
+ "რეგისტრაცია":"Registration",
+ "ოპერატორი":"Operator",
+ "SIM-ის სტატუსი":"SIM status"
+
 };
 const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
 
 const originalTextNodes = new WeakMap();
 let uiLanguage = localStorage.getItem("keyland-language") === "en" ? "en" : "ka";
+function translateTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE) return;
+    if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
+    const original = originalTextNodes.get(node);
+    const trimmed = original.trim();
+    if (!trimmed) return;
+    const translated = uiLanguage === "en" ? translations[trimmed] : reverseTranslations[trimmed];
+    node.nodeValue = translated ? original.replace(trimmed, translated) : original;
+}
+function translateAddedContent(root) {
+    if (!root) return;
+    if (root.nodeType === Node.TEXT_NODE) { translateTextNode(root); return; }
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) translateTextNode(node);
+}
 function applyLanguage(language) {
     uiLanguage = language === "en" ? "en" : "ka";
     localStorage.setItem("keyland-language", uiLanguage);
     document.documentElement.lang = uiLanguage;
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
-        if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
-        const original = originalTextNodes.get(node);
-        const trimmed = original.trim();
-        if (!trimmed) continue;
-        const translated = uiLanguage === "en" ? translations[trimmed] : reverseTranslations[trimmed];
-        if (translated) {
-            node.nodeValue = original.replace(trimmed, translated);
-        } else {
-            node.nodeValue = original;
-        }
-    }
+    translateAddedContent(document.body);
     const toggle = document.getElementById("languageToggle");
     if (toggle) toggle.textContent = uiLanguage === "en" ? "ქარ" : "EN";
 }
 function tr(ka, en) { return uiLanguage === "en" ? en : ka; }
 document.getElementById("languageToggle").addEventListener("click", () => applyLanguage(uiLanguage === "en" ? "ka" : "en"));
 applyLanguage(uiLanguage);
+const languageObserver = new MutationObserver(records => {
+    for (const record of records) for (const added of record.addedNodes) translateAddedContent(added);
+});
+languageObserver.observe(document.body, {childList:true,subtree:true});
 
 
 function formatRate(mbps) {
@@ -1906,7 +1958,7 @@ function renderHotspotClients(status) {
     const count = element("hotspotClientCount");
     if (!list || !count) return;
     const clients = Array.isArray(status?.clients) ? status.clients : [];
-    count.textContent = clients.length + " მოწყობილობა";
+    count.textContent = clients.length + " " + tr("მოწყობილობა", "devices");
 
     if (!status?.active || clients.length === 0) {
         list.replaceChildren();
@@ -1948,13 +2000,13 @@ function renderHotspotClients(status) {
         traffic.className = "client-traffic";
         const download = document.createElement("div");
         const downloadLabel = document.createElement("small");
-        downloadLabel.textContent = "ჩამოტვირთული";
+        downloadLabel.textContent = tr("ჩამოტვირთული", "Downloaded");
         const downloadValue = document.createElement("b");
         downloadValue.textContent = formatBytes(tx);
         download.append(downloadLabel, downloadValue);
         const upload = document.createElement("div");
         const uploadLabel = document.createElement("small");
-        uploadLabel.textContent = "ატვირთული";
+        uploadLabel.textContent = tr("ატვირთული", "Uploaded");
         const uploadValue = document.createElement("b");
         uploadValue.textContent = formatBytes(rx);
         upload.append(uploadLabel, uploadValue);
@@ -1978,13 +2030,13 @@ function renderHotspotClients(status) {
         actions.className = "client-device-actions";
         const block = document.createElement("button");
         block.className = client.blocked ? "secondary" : "danger";
-        block.textContent = client.blocked ? "განბლოკვა" : "დაბლოკვა";
+        block.textContent = client.blocked ? tr("განბლოკვა", "Unblock") : tr("დაბლოკვა", "Block");
         block.addEventListener("click", () => manageHotspotClient(
             client, client.blocked ? "unblock" : "block"
         ));
         const limit = document.createElement("button");
         limit.className = "secondary";
-        limit.textContent = "სიჩქარის ლიმიტი";
+        limit.textContent = tr("სიჩქარის ლიმიტი", "Speed limit");
         limit.addEventListener("click", () => manageHotspotClient(client, "limit"));
         actions.append(block, limit);
         card.append(head, meta, traffic, rate, actions);
