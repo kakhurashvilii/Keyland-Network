@@ -64,11 +64,16 @@ fi
 
 echo "[6/6] systemd service"
 install -m 644 "$DEST/deploy/keyland.service" /etc/systemd/system/keyland.service
+install -m 644 "$DEST/deploy/keyland-router-restore.service" /etc/systemd/system/keyland-router-restore.service
+install -m 644 "$DEST/deploy/keyland-router-restore.timer" /etc/systemd/system/keyland-router-restore.timer
 systemctl daemon-reload
 systemctl enable --now keyland.service
+systemctl enable --now keyland-router-restore.timer
 sleep 2
 systemctl --no-pager --lines=5 status keyland.service || true
 
 echo
 echo "Done. Panel: http://<phone-ip>:8000  (also via Tailscale/ZeroTier address)"
-echo "Open the panel, set hotspot password, press Start."
+echo "Open the panel, configure Router Wi-Fi and press Start once."
+echo "Router Mode is saved securely and restored automatically after reboot."
+echo "Stop Router Wi-Fi from the GUI to disable automatic startup."
