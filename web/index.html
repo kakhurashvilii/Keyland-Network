@@ -1350,30 +1350,7 @@ function showJSON(id,data) {
 }
 
 function renderRepeaterStatus(data) {
-    const target = element("repeaterStatus");
-    if (!target) return;
-    const radio = data.radio || {};
-    const forwarding = data.forwarding || {};
-    const checks = forwarding.prerequisites || {};
-    const yesNo = value => value === true ? "დიახ" : value === false ? "არა" : "უცნობია";
-    const lines = [
-        "შემოწმების რეჟიმი: " + (data.read_only ? "მხოლოდ დიაგნოსტიკა" : "—"),
-        "მდგომარეობა: " + (data.assessment || data.error || "უცნობია"),
-        "AP + Client ერთდროულად: " + yesNo(radio.concurrent_ap_client_observed),
-        "ერთი PHY: " + yesNo(radio.shared_phy_observed),
-        "ერთი არხი: " + yesNo(radio.same_channel_observed),
-        "",
-        "ინტერნეტის გაზიარების წინაპირობები:",
-        "IP forwarding: " + yesNo(checks.ip_forward_enabled),
-        "Firewall (" + (forwarding.firewall_tool || "არ მოიძებნა") + "): " + yesNo(checks.firewall_tool_available),
-        "dnsmasq: " + yesNo(checks.dnsmasq_available),
-        "",
-        "AP ინტერფეისები: " + ((radio.access_points || []).map(item => item.name + " · " + (item.ssid || "SSID უცნობია") + (item.channel ? " · CH " + item.channel : "")).join(", ") || "აქტიური AP არ ჩანს"),
-        "Client ინტერფეისები: " + ((radio.clients || []).map(item => item.name + " · " + (item.ssid || "SSID უცნობია") + (item.channel ? " · CH " + item.channel : "")).join(", ") || "აქტიური Client არ ჩანს"),
-        "",
-        data.message || radio.note || "—"
-    ];
-    target.textContent = lines.join("\n");
+    showJSON("repeaterStatus", data);
 }
 
 
@@ -1685,10 +1662,8 @@ function updateCellular(status, usage) {
         element("cellularSignal").textContent = "--";
         element("cellularSignalBar").style.width = "0%";
         element("cellularConnection").textContent = "--";
-        element("cellularInterfaces").textContent =
-            JSON.stringify(status.interfaces || [], null, 2);
-        element("cellularDetails").textContent =
-            JSON.stringify(status, null, 2);
+        showJSON("cellularInterfaces", status.interfaces || []);
+        showJSON("cellularDetails", { ...status, usage });
         element("cellularRx").textContent = "--";
         element("cellularTx").textContent = "--";
         return;
@@ -1750,10 +1725,7 @@ function updateCellular(status, usage) {
     element("cellularConnection").textContent =
         connected ? "Interface active" : "Not confirmed";
 
-    element("cellularInterfaces").textContent =
-        interfaces.length
-            ? JSON.stringify(interfaces, null, 2)
-            : "No cellular interfaces detected.";
+    showJSON("cellularInterfaces", interfaces);
 
     const usageInterfaces = usage.interfaces || [];
 
@@ -1768,8 +1740,7 @@ function updateCellular(status, usage) {
     element("cellularRx").textContent = formatBytes(rx);
     element("cellularTx").textContent = formatBytes(tx);
 
-    element("cellularDetails").textContent =
-        JSON.stringify(status, null, 2);
+    showJSON("cellularDetails", { ...status, usage });
 }
 
 /* TRAFFIC CHART */
@@ -1975,8 +1946,7 @@ async function loadData() {
 
                 if (name === "cellularStatus" ||
                     name === "cellularUsage") {
-                    element("cellularDetails").textContent =
-                        name + " error: " + result.reason.message;
+                    showJSON("cellularDetails", { error: name + ": " + result.reason.message });
                 } else {
                     const target = element(name);
 
