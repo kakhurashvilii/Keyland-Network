@@ -923,6 +923,23 @@ footer{padding:16px;font-size:9px}
  .hotspot-actions{grid-template-columns:minmax(0,1fr)}
 }
 
+/* Simple, action-first Repeater workspace */
+.repeater-status-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.repeater-status-row h3{margin:0 0 5px}
+.repeater-connection{font-size:14px;font-weight:750}
+.repeater-connection.online{color:var(--green)}
+.repeater-connection.offline{color:var(--orange)}
+.repeater-connection.unknown{color:var(--muted)}
+.repeater-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.repeater-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.repeater-actions button{margin:0}
+#wifiScan.wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.wifi-result-card{min-width:0;padding:11px;border:1px solid var(--border);border-radius:9px;background:rgba(5,14,24,.3)}
+.wifi-result-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.wifi-result-heading strong{overflow-wrap:anywhere}
+.wifi-result-card p{margin:6px 0;color:var(--muted);font-size:10px}
+.repeater-connect-button{margin:2px 0 0}
+@media(max-width:760px){.repeater-controls{grid-template-columns:minmax(0,1fr)}#wifiScan.wifi-results-grid{grid-template-columns:minmax(0,1fr)}.repeater-actions{display:grid;grid-template-columns:1fr}.repeater-actions button{width:100%}}
 </style>
 </head>
 
@@ -998,13 +1015,11 @@ footer{padding:16px;font-size:9px}
     <div class="nav-brand"><span class="brand-mark">K</span><div><strong>KEYLAND</strong><small>NETWORK CONTROL</small></div></div>
     <div class="nav-group-label">მართვა</div>
     <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
-    <a href="#wireless-section"><span class="nav-index">02</span><span><strong>Wi-Fi ქსელი</strong><small>ადაპტერები და კავშირი</small></span></a>
-    <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">03</span><span><strong>Wi-Fi Hotspot</strong><small>წვდომის წერტილის მართვა</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
-    <a href="#repeater-section"><span class="nav-index">04</span><span><strong>Repeater</strong><small>Wi-Fi გამეორება</small></span></a>
-    <a href="#network-section"><span class="nav-index">05</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
-    <a href="#mobile-section"><span class="nav-index">06</span><span><strong>მობილური ქსელი</strong><small>SIM / LTE / 5G</small></span></a>
+    <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">02</span><span><strong>Hotspot</strong><small>ინტერნეტის გაზიარება</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
+    <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
+    <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
     <div class="nav-group-label">მოწყობილობა</div>
-    <a href="#system-section"><span class="nav-index">07</span><span><strong>სისტემა</strong><small>სერვისები და ჟურნალები</small></span></a>
+    <a href="#system-section"><span class="nav-index">05</span><span><strong>სისტემა</strong><small>მდგომარეობა და დიაგნოსტიკა</small></span></a>
     <div class="nav-footer"><span class="nav-status-dot"></span><span>ადმინისტრატორის პანელი</span></div>
 </aside>
 
@@ -1014,10 +1029,6 @@ footer{padding:16px;font-size:9px}
 
     <button id="refreshButton" type="button">
         მონაცემების განახლება
-    </button>
-
-    <button id="scanButton" type="button">
-        Wi-Fi ქსელების ძიება
     </button>
 
     <span class="muted" id="updated">ჯერ არ განახლებულა</span>
@@ -1185,41 +1196,6 @@ footer{padding:16px;font-size:9px}
 
         
 
-        <div id="wireless-section" class="section-heading"><div><span class="section-kicker">02 / WIRELESS</span><h2>Wi-Fi ქსელი</h2><p>ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა</p></div></div>
-
-        <section class="card">
-            <h3 id="wifi-hardware-title">Wi-Fi ადაპტერის შესაძლებლობები</h3>
-            <p class="muted">
-                Supported Wi-Fi modes, bands, channels and interfaces.
-            </p>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="wifiCapabilities">Loading...</pre>
-        </details>
-        </section>
-
-
-        
-
-        <section class="card">
-            <h3>Wi-Fi კავშირი</h3>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="wifi">მოლოდინი...</pre>
-        </details>
-        </section>
-
-        <section class="card">
-            <h3>ახლომდებარე Wi-Fi ქსელები</h3>
-            <pre id="wifiScan">Press Wi-Fi ქსელების ძიება</pre>
-        </section>
-
-        <section class="card">
-            <h3>Wi-Fi ადაპტერები და ჩიპსეტები</h3>
-            <p class="muted">ადაპტერებისა და რეჟიმების აღმოჩენა აქტიურია. AP/Client/Repeater კონფიგურაცია დაემატება მხოლოდ მოწყობილობის შესაძლებლობების დადასტურების შემდეგ.</p>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="wifiManagementNote">მოქმედი Wi-Fi კავშირი დაცულია; დრაივერის გადატვირთვა ავტომატურად არ შესრულდება.</pre>
-        </details>
-        </section>
-
         <section class="card hotspot-card" id="hotspot-section" style="grid-column: 1 / -1;" aria-labelledby="hotspot-title">
             <div class="hotspot-heading">
                 <div>
@@ -1307,18 +1283,19 @@ footer{padding:16px;font-size:9px}
             <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. სიჩქარის შეზღუდვა და დაბლოკვა ცალკე, დაცულ მართვის API-ს მოითხოვს.</p>
         </section>
 
-        <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>არსებული Wi-Fi კავშირის გამეორება ცალკე AP ქსელით</p></div></div>
-
+        <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
         <section class="card repeater-card" style="grid-column:1 / -1;">
-            <h3>Repeater-ის მზადყოფნა</h3>
-            <p class="muted">აქ გამოჩნდება AP + Client რეჟიმის, არხის თავსებადობისა და ინტერნეტის გაზიარების შემოწმება. ძირითადი Wi-Fi კავშირი არ შეიცვლება.</p>
-            <details class="diagnostic-details"><summary>Repeater-ის დიაგნოსტიკა</summary>
-            <pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre>
-        </details>
-            <p class="muted">ახლომდებარე Wi-Fi ქსელების სკანირება ხელმისაწვდომია Wi-Fi ქსელის განყოფილებაში — განმეორებითი სკანირების ბლოკი აქ აღარ არის.</p>
-            <p class="muted">Repeater რეჟიმში WAN-ად აირჩიე დაკავშირებული Wi-Fi client ინტერფეისი. AP და client ერთ PHY-ზე ერთ არხზე იმუშავებენ; თუ დრაივერი ერთდროულ მუშაობას ვერ უზრუნველყოფს, გაშვება უარყოფილი იქნება.</p>
+            <div class="repeater-status-row"><div><h3>Wi-Fi კავშირი</h3><div id="repeaterConnection" class="repeater-connection unknown" role="status" aria-live="polite">კავშირის მდგომარეობა მოწმდება...</div></div><span class="cellular-badge">UPSTREAM</span></div>
+            <div class="repeater-controls">
+                <div><label for="repeaterInterface">Wi-Fi ადაპტერი</label><select id="repeaterInterface"><option value="wlan0">wlan0</option></select></div>
+                <div><label for="repeaterPassword">არჩეული ქსელის პაროლი</label><input id="repeaterPassword" type="password" maxlength="63" autocomplete="off" placeholder="ღია ქსელისთვის ცარიელი დატოვე"></div>
+            </div>
+            <div class="repeater-actions"><button id="scanButton" type="button">ქსელების ძიება</button><button id="repeaterDisconnectButton" type="button" class="danger secondary" disabled>Wi-Fi-ის გათიშვა</button><button id="repeaterShareButton" type="button" class="secondary" disabled>ამ კავშირის გაზიარება</button></div>
+            <p id="repeaterMessage" class="muted" role="status" aria-live="polite">ჯერ მოძებნე ახლომდებარე Wi-Fi ქსელები.</p>
+            <div id="wifiScan" class="wifi-results-grid" aria-live="polite"><p class="muted">ქსელების სია ჯერ არ მოძებნილა.</p></div>
+            <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
+            <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
-
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>DNS, WAN/LAN, Firewall და დაკავშირებული მოწყობილობები</p></div></div>
 
         <section class="card">
@@ -1358,52 +1335,11 @@ footer{padding:16px;font-size:9px}
             <p id="dnsMessage" class="muted" role="status"></p>
         </section>
 
-        
-
-        
-
-        
-
-        
-
-        <section class="card">
-            <h3>WAN / LAN და DHCP</h3>
-            <p class="muted">ინტერფეისების, მისამართებისა და მარშრუტების მონიტორინგი ხელმისაწვდომია. მისამართის, Gateway-ის, DHCP-ისა და MTU-ის შეცვლამდე დაემატება წინასწარი შემოწმება და უკან დაბრუნება.</p>
+        <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
+        <section class="card"><h3>სისტემის დიაგნოსტიკა</h3><p class="muted">ჩვეულებრივ მართვას ეს მონაცემები არ სჭირდება. გახსენი მხოლოდ პრობლემის შემოწმებისას.</p>
+            <details class="diagnostic-details"><summary>მოწყობილობის შესაძლებლობები</summary><pre id="capabilities">მოლოდინი...</pre></details>
+            <details class="diagnostic-details"><summary>სერვისები და ხელსაწყოები</summary><pre id="services">მოლოდინი...</pre></details>
         </section>
-
-        <section class="card">
-            <h3>Firewall და NAT</h3>
-            <p class="muted">მართვა ჩაირთვება მხოლოდ აქტიური firewall backend-ის (nftables ან iptables) აღმოჩენისა და წესების სარეზერვო ასლის შექმნის შემდეგ.</p>
-        </section>
-
-        <div id="mobile-section" class="section-heading"><div><span class="section-kicker">05 / CELLULAR</span><h2>მობილური ქსელი</h2><p>SIM ბარათისა და მობილური მოდემის პარამეტრები</p></div></div>
-
-        <section class="card">
-            <h3>მობილური ქსელის მართვა</h3>
-            <p class="muted">ამჟამად ხელმისაწვდომია SIM-ის, ოპერატორის, LTE რეგისტრაციისა და სიგნალის მხოლოდ წაკითხვადი მონიტორინგი — ეს მონაცემები ჩანს მიმოხილვის განყოფილებაში. APN-ისა და ქსელის რეჟიმის შეცვლა ჯერ არ არის ჩართული.</p>
-        </section>
-
-        <div id="system-section" class="section-heading"><div><span class="section-kicker">06 / SYSTEM</span><h2>სისტემა და სერვისები</h2><p>მომსახურებები, ჟურნალები და მოწყობილობის ადმინისტრირება</p></div></div>
-
-        <section class="card">
-            <h3>მოწყობილობის შესაძლებლობები</h3>
-            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
-            <pre id="capabilities">მოლოდინი...</pre>
-        </details>
-        </section>
-
-        <section class="card">
-            <h3 id="system-title">სისტემა, ჟურნალები და აღდგენა</h3>
-            <p class="muted">სერვისების მონიტორინგი ხელმისაწვდომია. სარეზერვო ასლის შექმნა და აღდგენა დაემატება ცვლილებების უსაფრთხო მართვის ნაწილად.</p>
-        </section>
-
-        <section class="card">
-            <h3>Services / Tools</h3>
-            <details class="diagnostic-details"><summary>სერვისებისა და ხელსაწყოების ტექნიკური მონაცემები</summary>
-            <pre id="services">მოლოდინი...</pre>
-        </details>
-        </section>
-
     </div>
 </main>
 </div>
@@ -1523,21 +1459,17 @@ function showJSON(id,data) {
     const target=element(id);
     if(!target) return;
     target.textContent=typeof data==="string" ? data : JSON.stringify(data,null,2);
-    let details=target.closest("details");
+    const details=target.closest("details");
     if(!details) return;
-    // If diagnostics are nested (for example Hotspot advanced settings),
-    // lift the live summary panel outside every collapsed details container.
-    while(details.parentElement && details.parentElement.closest("details")) {
-        details=details.parentElement.closest("details");
-    }
     const viewId=id+"TechnicalView";
     let view=element(viewId);
     if(!view) {
         view=document.createElement("div");
         view.id=viewId;
         view.className="technical-panel";
-        details.parentNode.insertBefore(view,details);
+        details.insertBefore(view,target);
     }
+    target.classList.add("hidden");
     view.replaceChildren();
     const heading=document.createElement("div");
     heading.className="technical-panel-title";
@@ -1550,8 +1482,34 @@ function showJSON(id,data) {
     view.appendChild(buildTechnicalNode(parsed,0));
 }
 
+let repeaterCurrentConnection = null;
+
 function renderRepeaterStatus(data) {
     showJSON("repeaterStatus", data);
+    const interfaces = Array.isArray(data?.radio?.interfaces) ? data.radio.interfaces : [];
+    const managed = interfaces.filter(item => item.type === "managed");
+    const select = element("repeaterInterface");
+    if (select) {
+        const previous = select.value;
+        select.replaceChildren(...managed.map(item => new Option(
+            item.name + (item.ssid ? " · " + item.ssid : ""),
+            item.name
+        )));
+        if (managed.some(item => item.name === previous)) select.value = previous;
+        else if (managed.length) select.value = managed[0].name;
+    }
+    repeaterCurrentConnection = managed.find(item => item.ssid) || null;
+    const status = element("repeaterConnection");
+    const disconnect = element("repeaterDisconnectButton");
+    const share = element("repeaterShareButton");
+    if (status) {
+        status.textContent = repeaterCurrentConnection
+            ? tr("დაკავშირებულია: ", "Connected: ") + repeaterCurrentConnection.ssid
+            : tr("Wi-Fi ქსელთან დაკავშირებული არ არის", "Not connected to a Wi-Fi network");
+        status.className = "repeater-connection " + (repeaterCurrentConnection ? "online" : "offline");
+    }
+    if (disconnect) disconnect.disabled = !repeaterCurrentConnection;
+    if (share) share.disabled = !repeaterCurrentConnection;
 }
 
 
@@ -2333,6 +2291,22 @@ Object.assign(translations, {
  "შეფასება":"Assessment","შეტყობინება":"Message","შეცდომა":"Error","წვდომის წერტილები (AP)":"Access points (AP)","Wi-Fi კლიენტები":"Wi-Fi clients","AP + Client ერთდროულად":"AP + Client observed simultaneously","საერთო PHY":"Shared PHY","ერთი არხი":"Same channel","ტრაფიკის გადაცემა":"Forwarding","წინაპირობები":"Prerequisites","Firewall სისტემა":"Firewall backend","Firewall ხელმისაწვდომია":"Firewall available","dnsmasq ხელმისაწვდომია":"dnsmasq available","მიღებული მონაცემები":"Received bytes","გაგზავნილი მონაცემები":"Transmitted bytes","ჩამოტვირთვის სიჩქარე":"Download rate","ატვირთვის სიჩქარე":"Upload rate","ქსელის ტექნოლოგია":"Network technology","რეგისტრაციის მდგომარეობა":"Registration state","ოპერატორი":"Operator","SIM ბარათი":"SIM card","მოდემი":"Modem","მოდემები":"Modems","ქსელი":"Network","ვერსია":"Version","სერვისი":"Service","აქტიური მდგომარეობა":"Active state","ქვემდგომი მდგომარეობა":"Sub-state","აღწერა":"Description","მართვის სისტემა":"Manager","DNS ინტერფეისების მიხედვით":"DNS by interface","DNS სერვერები":"DNS servers","ტიპი":"Type","რაოდენობა":"Count","ჩართვის დრო":"Boot time","მუშაობის დრო":"Uptime",
  "მოწყობილობა":"Device","სისტემური რესურსები":"System resources","ინტერნეტის ტექნიკური მონაცემები":"Internet diagnostics","მობილური ინტერფეისები":"Cellular interfaces","მოდემისა და SIM-ის მონაცემები":"Modem and SIM details","ქსელური ტრაფიკი":"Network traffic","მოწყობილობის შესაძლებლობები":"Device capabilities","ქსელის ინტერფეისები":"Network interfaces","Wi-Fi ადაპტერის შესაძლებლობები":"Wi-Fi adapter capabilities","მარშრუტიზაციის ცხრილი":"Routing table","Wi-Fi კავშირი":"Wi-Fi connection","Hotspot-ის შესაძლებლობები":"Hotspot capabilities","Repeater-ის დიაგნოსტიკა":"Repeater diagnostics","DNS-ის მდგომარეობა":"DNS status","სერვისები და ხელსაწყოები":"Services and tools"
 });
+Object.assign(translations, {
+ "ქსელების ძიება":"Scan networks",
+ "Wi-Fi ადაპტერი":"Wi-Fi adapter",
+ "არჩეული ქსელის პაროლი":"Selected network password",
+ "დაკავშირება":"Connect",
+ "დაკავშირებულია: ":"Connected: ",
+ "Wi-Fi ქსელთან დაკავშირებული არ არის":"Not connected to a Wi-Fi network",
+ "ჯერ მოძებნე ახლომდებარე Wi-Fi ქსელები.":"Scan for nearby Wi-Fi networks first.",
+ "ქსელების სია ჯერ არ მოძებნილა.":"Networks have not been scanned yet.",
+ "დამატებითი დიაგნოსტიკა":"Advanced diagnostics",
+ "სისტემის დიაგნოსტიკა":"System diagnostics",
+ "მდგომარეობა და დიაგნოსტიკა":"Status and diagnostics",
+ "ინტერნეტის გაზიარება":"Share internet",
+ "ქსელთან დაკავშირება მიმდინარეობს...":"Connecting to Wi-Fi...",
+ "კავშირის მდგომარეობა მოწმდება...":"Checking connection status..."
+});
 const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
 const englishToGeorgian = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
 Object.assign(englishToGeorgian, {"SIM STATUS":"SIM-ის მდგომარეობა","MODEM STATUS":"მოდემის მდგომარეობა","REGISTRATION":"ქსელში რეგისტრაცია","SIGNAL QUALITY":"სიგნალის ხარისხი","MOBILE CONNECTION":"მობილური კავშირი","MOBILE DOWNLOAD":"მობილური ჩამოტვირთვა","MOBILE UPLOAD":"მობილური ატვირთვა","CELLULAR INTERFACES / IP ADDRESSES":"მობილური ინტერფეისები / IP მისამართები","connected":"დაკავშირებულია","disconnected":"გათიშულია","home":"სახლის ქსელი","detected":"აღმოჩენილია","unknown":"უცნობია","enabled":"ჩართულია","disabled":"გამორთულია","active":"აქტიურია","inactive":"არააქტიურია","Services / Tools":"სერვისები და ხელსაწყოები","Technical details":"ტექნიკური დეტალები","Loading...":"იტვირთება...","Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.","Press Wi-Fi ქსელების ძიება":"დააჭირე ღილაკს Wi-Fi ქსელების მოსაძებნად","Router mode":"როუტერის რეჟიმი","SIM Mobile Hotspot":"SIM ბარათის ინტერნეტით Hotspot","Wi-Fi Repeater":"Wi-Fi გამეორება","Select source Wi-Fi interface":"აირჩიე საწყისი Wi-Fi ინტერფეისი","Select interface":"აირჩიე ინტერფეისი","No data":"მონაცემები არ არის","Device capabilities":"მოწყობილობის შესაძლებლობები","Network interfaces":"ქსელის ინტერფეისები","Repeater readiness":"გამეორების რეჟიმის მზადყოფნა","Advanced settings and diagnostics":"დამატებითი პარამეტრები და დიაგნოსტიკა","Internet source (WAN)":"ინტერნეტის წყარო (WAN)","AP interface":"წვდომის წერტილის ინტერფეისი (AP)","Hotspot name":"Hotspot-ის სახელი","Password":"პაროლი","Scan Wi-Fi networks":"Wi-Fi ქსელების ძიება","Refresh data":"მონაცემების განახლება","Network control panel":"ქსელის მართვის პანელი","Administrator panel":"ადმინისტრატორის პანელი","System overview":"სისტემის მიმოხილვა","Network management":"ქსელის მართვა","Mobile network management":"მობილური ქსელის მართვა","Firewall & NAT":"Firewall და NAT","WAN / LAN & DHCP":"WAN / LAN და DHCP"});
@@ -2929,7 +2903,11 @@ function renderWifiScan(targetId, data) {
     if (!target) return;
     target.replaceChildren();
 
-    const networks = Array.isArray(data.networks) ? data.networks : [];
+    const allNetworks = Array.isArray(data.networks) ? data.networks : [];
+    const selectedInterface = element("repeaterInterface")?.value || "";
+    const networks = targetId === "wifiScan" && selectedInterface
+        ? allNetworks.filter(item => item.interface === selectedInterface)
+        : allNetworks;
     if (!networks.length) {
         const empty = document.createElement("p");
         empty.className = "muted";
@@ -2967,7 +2945,12 @@ function renderWifiScan(targetId, data) {
             network.frequency_mhz ? network.frequency_mhz + " MHz" : "",
             "სიგნალი " + signal
         ].filter(Boolean).join(" · ");
-        card.append(heading, meta);
+        const connect = document.createElement("button");
+        connect.type = "button";
+        connect.className = "secondary repeater-connect-button";
+        connect.textContent = tr("დაკავშირება", "Connect");
+        connect.addEventListener("click", () => connectRepeaterNetwork(network));
+        card.append(heading, meta, connect);
         grid.appendChild(card);
     });
     target.appendChild(grid);
@@ -2999,10 +2982,81 @@ async function scanWifi() {
     }
 }
 
+async function connectRepeaterNetwork(network) {
+    const interfaceName = element("repeaterInterface").value || network.interface || "wlan0";
+    const ssid = String(network.ssid || "");
+    const bssid = String(network.bssid || "");
+    const security = String(network.security || "Open").toLowerCase();
+    const password = element("repeaterPassword").value;
+    const secured = security !== "open" && security !== "--" && security !== "";
+    if (secured && (password.length < 8 || password.length > 63)) {
+        element("repeaterMessage").textContent = tr("შეიყვანე ქსელის სწორი პაროლი (8–63 სიმბოლო).", "Enter the network password (8–63 characters).");
+        element("repeaterPassword").focus();
+        return;
+    }
+    if (!window.confirm(tr(
+        "Wi-Fi ადაპტერი დაუკავშირდება " + ssid + "-ს. მიმდინარე Wi-Fi ინტერნეტი შეიძლება დროებით გაითიშოს. გავაგრძელოთ?",
+        "The Wi-Fi adapter will switch to " + ssid + ". Your current Wi-Fi internet connection may be interrupted. Continue?"
+    ))) return;
+    element("repeaterMessage").textContent = tr("ქსელთან დაკავშირება მიმდინარეობს...", "Connecting to Wi-Fi...");
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/repeater/connect", {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({interface:interfaceName, ssid, bssid, password:secured ? password : "", confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("repeaterPassword").value = "";
+        element("repeaterMessage").textContent = tr("დაკავშირებულია: ", "Connected: ") + (data.ssid || ssid) + ". " + tr("ახლა შეგიძლია გააზიარო Hotspot-ით.", "You can now share it through Hotspot.");
+        await loadData();
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("repeaterMessage").textContent = tr("დაკავშირება ვერ მოხერხდა: ", "Connection failed: ") + error.message;
+    }
+}
+
+async function disconnectRepeater() {
+    const connection = repeaterCurrentConnection;
+    if (!connection) return;
+    if (!window.confirm(tr("გათიშო " + connection.ssid + "? ამ Wi-Fi კავშირის ინტერნეტი შეწყდება.", "Disconnect from " + connection.ssid + "? Internet through this Wi-Fi will stop."))) return;
+    const button = element("repeaterDisconnectButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/repeater/disconnect", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:connection.name, confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("repeaterMessage").textContent = tr("Wi-Fi კავშირი გათიშულია.", "Wi-Fi disconnected.");
+        await loadData();
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("repeaterMessage").textContent = tr("გათიშვა ვერ მოხერხდა: ", "Disconnect failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function shareRepeaterConnection() {
+    if (!repeaterCurrentConnection) return;
+    element("hotspotMode").value = "repeater";
+    element("hotspotSourceInterface").value = repeaterCurrentConnection.name;
+    await loadHotspotCapabilities();
+    element("hotspot-section").scrollIntoView({behavior:"smooth", block:"start"});
+    element("hotspotMessage").textContent = tr(
+        "Repeater კავშირი არჩეულია. შეამოწმე WAN, მიუთითე Hotspot-ის პაროლი და ჩართე გაზიარება.",
+        "Repeater connection selected. Confirm the WAN, enter a Hotspot password and start sharing."
+    );
+    if (!element("hotspotPassword").value) element("hotspotPassword").focus({preventScroll:true});
+}
+
 /* CONTROLS */
 
 element("refreshButton").addEventListener("click", loadData);
 element("scanButton").addEventListener("click", scanWifi);
+element("repeaterDisconnectButton").addEventListener("click", disconnectRepeater);
+element("repeaterShareButton").addEventListener("click", shareRepeaterConnection);
 
 
 element("interfaceFilter").addEventListener(
