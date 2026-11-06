@@ -2365,27 +2365,28 @@ source.value = (data.interfaces || []).some(
         renderHotspotClients(clientData);
         start.disabled = !wan.value || status.configured;
         element("hotspotStopButton").disabled = !status.configured;
-        const lines = [
-            "AP mode: " + (data.ap_mode_supported ? "SUPPORTED" : "NOT CONFIRMED"),
-            "AP interface: " + ((data.interfaces || []).filter(x => x.type === "AP").map(x => x.name).join(", ") || "none"),
-            "WAN candidates: " + ((data.upstream_sources || []).map(x => x.interface + " (" + x.type + ")").join(", ") || "none"),
-            "Default routes: " + ((data.default_route_interfaces || []).join(", ") || "none"),
-            "Router Wi-Fi: " + (status.active ? "ACTIVE" : status.configured ? "INCOMPLETE · CLEANUP REQUIRED" : "STOPPED"),
-            "Connected clients: " + ((status.clients || []).length),
-            ...((status.clients || []).map(x => x.mac + " · " + (x.signal || "signal n/a") + " · RX " + (x.rx_bytes || 0) + " B · TX " + (x.tx_bytes || 0) + " B")),
-            "Manager: hostapd + dnsmasq + nftables",
-            "",
-            ...(data.limitations || [])
-        ];
-        if (status.active) lines.push("", "Active configuration: " + JSON.stringify(status.configuration || {}));
-        output.textContent = lines.join("\n");
+        showJSON("hotspotPreflight", {
+            ap_mode_supported: data.ap_mode_supported,
+            interfaces: data.interfaces || [],
+            ap_candidates: data.ap_candidates || [],
+            upstream_sources: data.upstream_sources || [],
+            default_route_interfaces: data.default_route_interfaces || [],
+            router_status: {
+                active: status.active,
+                configured: status.configured,
+                clients: status.clients || [],
+                configuration: status.configuration || {}
+            },
+            manager: "hostapd + dnsmasq + nftables",
+            limitations: data.limitations || []
+        });
         element("hotspotMessage").textContent = status.active
             ? tr("როუტერი ჩართულია.","Router Wi-Fi is active.")
             : status.configured
                 ? tr("წინა გაშვება არასრულად დასრულდა. ჯერ გამორთე/გაწმინდე კონფიგურაცია.","Previous startup was incomplete. Stop and clean it before restarting.")
                 : tr("აირჩიე WAN და AP ინტერფეისი, შემდეგ ჩართე.","Choose WAN and AP interface, then start.");
     } catch (error) {
-        output.textContent = tr("შემოწმება ვერ მოხერხდა: ","Preflight failed: ") + error.message;
+        showJSON("hotspotPreflight", { error: tr("შემოწმება ვერ მოხერხდა: ","Preflight failed: ") + error.message });
     }
 }
 async function startHotspot() {
@@ -2550,30 +2551,13 @@ updateHotspotChannels();
 
 /* DNS MANAGEMENT */
 function renderDnsStatus(data) {
-    const box = element("dnsStatus");
-    if (!data.available) {
-        box.textContent = "DNS-ის მართვა ამ სისტემაზე მიუწვდომელია.\nმიზეზი: " + (data.error || "systemd-resolved ვერ მოიძებნა") +
-            "\n\nშენიშვნა: პანელი ჯერ არ შეცვლის ქსელის მენეჯერის მუდმივ პარამეტრებს.";
-        return;
-    }
-    const lines = [
-        "მდგომარეობა: ხელმისაწვდომია",
-        "მართვის სისტემა: " + (data.manager || "უცნობია"),
-        "ცვლილება: დროებითი (გადატვირთვის შემდეგ შეიძლება აღდგეს)",
-        "",
-        "DNS სერვერები ინტერფეისების მიხედვით:",
-        ...(Array.isArray(data.dns_by_link) && data.dns_by_link.length ? data.dns_by_link : ["ინტერფეისების DNS ჩანაწერები ვერ მოიძებნა"]),
-        "",
-        "დეტალური მდგომარეობა:",
-        data.status || "დეტალური ინფორმაცია არ არის"
-    ];
-    box.textContent = lines.join("\n");
+    showJSON("dnsStatus", data);
 }
 
 async function loadDnsStatus() {
     if (!state.authenticated) return;
     const box = element("dnsStatus");
-    box.textContent = "DNS-ის მდგომარეობა იტვირთება...";
+    showJSON("dnsStatus", { status: "იტვირთება..." });
     try {
         const response = await apiFetch(API + "/network/dns");
         const data = await response.json().catch(() => ({}));
@@ -2592,7 +2576,7 @@ async function loadDnsStatus() {
         renderDnsStatus(data);
         element("dnsMessage").textContent = "მდგომარეობა განახლებულია.";
     } catch (error) {
-        box.textContent = "DNS-ის წაკითხვა ვერ მოხერხდა.\n" + error.message;
+        showJSON("dnsStatus", { error: "DNS-ის წაკითხვა ვერ მოხერხდა.", details: error.message });
         element("dnsMessage").textContent = "შეამოწმეთ სერვერის ვერსია და API კავშირი.";
     }
 }
