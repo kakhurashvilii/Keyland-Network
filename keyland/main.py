@@ -32,6 +32,7 @@ from keyland.network import (
     get_traffic_history,
     get_internet_status,
     get_network_diagnostics,
+    get_power_status,
 )
 
 from keyland.auth import (
@@ -322,6 +323,13 @@ def wifi_repeater_status(
 @app.get("/api/v1/system/resources")
 def system_resources(user: dict = Depends(require_admin)):
     return get_system_resources()
+
+
+
+
+@app.get("/api/v1/system/power")
+def system_power(user: dict = Depends(require_admin)):
+    return get_power_status()
 
 
 @app.get("/api/v1/monitoring")
