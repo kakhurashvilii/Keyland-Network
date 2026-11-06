@@ -85,6 +85,28 @@ def restore_autostart() -> dict[str, Any]:
         if not live:
             return {"success": False, "waiting": True, "error": prepared.get("error", "AP interface is not ready.")}
     payload = {k: v for k, v in config.items() if k != "source_interface"}
+
+    # In repeater mode, AP and upstream station share one PHY.
+    # Always follow the channel currently used by the connected Wi-Fi.
+    if config.get("mode") == "repeater":
+        station = next(
+            (x for x in interfaces()
+             if x.get("name") == source
+             and x.get("type") == "managed"
+             and x.get("ssid")),
+            None,
+        )
+        channel = (station or {}).get("channel")
+        if not isinstance(channel, int):
+            return {
+                "success": False,
+                "waiting": True,
+                "error": "Waiting for the upstream Wi-Fi channel to become available.",
+            }
+
+        payload["channel"] = channel
+        payload["band"] = "2.4" if channel <= 14 else "5"
+
     payload["confirmed"] = True
     result = start(payload)
     if result.get("success"):
