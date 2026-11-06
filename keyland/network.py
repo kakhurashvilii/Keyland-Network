@@ -11,6 +11,7 @@ import psutil
 from collections import deque
 from datetime import datetime, timezone
 import re
+from pathlib import Path
 
 SYSTEM = platform.system().lower()
 
@@ -842,4 +843,124 @@ def get_services():
             command: shutil.which(command) is not None
             for command in commands
         },
+    }
+
+
+def get_power_status():
+    """Read battery and charger telemetry from Linux power_supply sysfs."""
+    if SYSTEM != "linux":
+        return {
+            "platform": SYSTEM,
+            "available": False,
+            "battery": None,
+            "chargers": [],
+            "error": "Power-supply monitoring is supported on Linux only",
+        }
+
+    root = Path("/sys/class/power_supply")
+    if not root.is_dir():
+        return {
+            "platform": SYSTEM,
+            "available": False,
+            "battery": None,
+            "chargers": [],
+            "error": "Power-supply sysfs is unavailable",
+        }
+
+    def read_text(directory, name):
+        try:
+            value = (directory / name).read_text(encoding="utf-8").strip()
+            return value if value else None
+        except (OSError, UnicodeError):
+            return None
+
+    def read_number(directory, name):
+        value = read_text(directory, name)
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    battery = None
+    chargers = []
+
+    try:
+        devices = sorted(item for item in root.iterdir() if item.is_dir())
+    except OSError:
+        devices = []
+
+    for device in devices:
+        supply_type = read_text(device, "type")
+        if not supply_type:
+            continue
+
+        name = device.name
+        status = read_text(device, "status")
+        voltage_uv = read_number(device, "voltage_now")
+        current_ua = read_number(device, "current_now")
+        voltage_v = round(voltage_uv / 1_000_000, 3) if voltage_uv is not None else None
+        current_ma = round(current_ua / 1_000, 1) if current_ua is not None else None
+
+        if supply_type.lower() == "battery":
+            capacity = read_number(device, "capacity")
+            temp_raw = read_number(device, "temp")
+            charge_now = read_number(device, "charge_now")
+            charge_full = read_number(device, "charge_full")
+            charge_design = read_number(device, "charge_full_design")
+            energy_now = read_number(device, "energy_now")
+            energy_full = read_number(device, "energy_full")
+            energy_design = read_number(device, "energy_full_design")
+            min_design_uv = read_number(device, "voltage_min_design")
+            max_design_uv = read_number(device, "voltage_max_design")
+
+            battery = {
+                "name": name,
+                "present": read_number(device, "present") != 0,
+                "status": status,
+                "capacity_percent": capacity,
+                "capacity_level": read_text(device, "capacity_level"),
+                "health": read_text(device, "health"),
+                "voltage_v": voltage_v,
+                "current_ma": current_ma,
+                "temperature_c": round(temp_raw / 10, 1) if temp_raw is not None else None,
+                "charge_now_mah": round(charge_now / 1000, 1) if charge_now is not None else None,
+                "charge_full_mah": round(charge_full / 1000, 1) if charge_full is not None else None,
+                "charge_full_design_mah": round(charge_design / 1000, 1) if charge_design is not None else None,
+                "energy_now_wh": round(energy_now / 1_000_000, 3) if energy_now is not None else None,
+                "energy_full_wh": round(energy_full / 1_000_000, 3) if energy_full is not None else None,
+                "energy_full_design_wh": round(energy_design / 1_000_000, 3) if energy_design is not None else None,
+                "voltage_min_design_v": round(min_design_uv / 1_000_000, 3) if min_design_uv is not None else None,
+                "voltage_max_design_v": round(max_design_uv / 1_000_000, 3) if max_design_uv is not None else None,
+                "technology": read_text(device, "technology"),
+                "manufacturer": read_text(device, "manufacturer"),
+                "model_name": read_text(device, "model_name"),
+                "cycle_count": read_number(device, "cycle_count"),
+            }
+        else:
+            online_value = read_number(device, "online")
+            charger = {
+                "name": name,
+                "type": supply_type,
+                "online": bool(online_value) if online_value is not None else None,
+                "status": status,
+                "voltage_v": voltage_v,
+                "current_ma": current_ma,
+                "power_mw": round((voltage_uv * current_ua) / 1_000_000_000, 1)
+                    if voltage_uv is not None and current_ua is not None else None,
+                "health": read_text(device, "health"),
+                "usb_type": read_text(device, "usb_type"),
+                "manufacturer": read_text(device, "manufacturer"),
+                "model_name": read_text(device, "model_name"),
+            }
+            chargers.append(charger)
+
+    return {
+        "platform": SYSTEM,
+        "available": battery is not None,
+        "battery": battery,
+        "chargers": chargers,
+        "source": str(root),
+        "error": None if battery is not None else "No battery device was found in power_supply",
     }
