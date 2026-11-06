@@ -1257,6 +1257,7 @@ footer{padding:16px;font-size:9px}
                 <button id="hotspotStartButton" type="button" disabled>Hotspot-ის ჩართვა</button>
                 <button id="hotspotStopButton" type="button" class="danger secondary" disabled>გამორთვა</button>
                 <button id="hotspotAutostartDisableButton" type="button" class="secondary" disabled>ავტომატური გაშვების გამორთვა</button>
+                <button id="hotspotAutostartEnableButton" type="button" class="secondary" disabled>ავტომატური გაშვების ჩართვა</button>
             </div>
             <details class="hotspot-wide">
                 <summary>დამატებითი პარამეტრები და დიაგნოსტიკა</summary>
@@ -2573,6 +2574,7 @@ source.value = (data.interfaces || []).some(
         start.disabled = !wan.value || status.configured;
         element("hotspotStopButton").disabled = !status.configured;
         element("hotspotAutostartDisableButton").disabled = !autostart.enabled;
+        element("hotspotAutostartEnableButton").disabled = autostart.enabled || !status.active;
         showJSON("hotspotPreflight", {
             ap_mode_supported: data.ap_mode_supported,
             interfaces: data.interfaces || [],
@@ -2693,6 +2695,33 @@ async function startHotspot() {
         button.disabled = false;
     }
 }
+async function enableHotspotAutostart() {
+    if (!window.confirm(tr(
+        "ჩაირთოს ავტომატური გაშვება? მიმდინარე Router კონფიგურაცია უსაფრთხოდ შეინახება.",
+        "Enable automatic startup? The current Router configuration will be saved securely."
+    ))) return;
+    const button = element("hotspotAutostartEnableButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/router/autostart/enable", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr(
+            "ავტომატური გაშვება ჩართულია.",
+            "Automatic startup enabled."
+        );
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("hotspotMessage").textContent = tr("ვერ მოხერხდა: ", "Failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
 async function disableHotspotAutostart() {
     if (!window.confirm(tr(
         "გამორთო ავტომატური გაშვება? მიმდინარე Hotspot მუშაობას გააგრძელებს.",
@@ -2778,6 +2807,7 @@ element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities)
 element("hotspotStartButton").addEventListener("click", startHotspot);
 element("hotspotStopButton").addEventListener("click", stopHotspot);
 element("hotspotAutostartDisableButton").addEventListener("click", disableHotspotAutostart);
+element("hotspotAutostartEnableButton").addEventListener("click", enableHotspotAutostart);
 function updateHotspotChannels() {
     const band = element("hotspotBand").value;
     const channels = band === "5" ? [36, 40, 44, 48] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
