@@ -51,3 +51,30 @@ def test_restore_skips_when_no_persistent_configuration(tmp_path):
 
     assert result["success"] is True
     assert result["skipped"] is True
+
+def test_restore_waits_for_selected_wan_without_preparing_ap(tmp_path):
+    target = tmp_path / "router-autostart.json"
+    target.write_text(json.dumps({
+        "mode": "hotspot",
+        "interface": "keyland-ap",
+        "upstream_interface": "qmapmux0.0",
+        "source_interface": "wlan0",
+        "ssid": "Keyland",
+        "password": "PrivatePass123",
+        "ipv4_cidr": "192.168.88.1/24",
+        "dns_servers": ["1.1.1.1"],
+        "band": "2.4",
+        "channel": 6,
+    }))
+
+    with (
+        patch.object(router, "AUTOSTART_FILE", target),
+        patch.object(router, "status", return_value={"active": False}),
+        patch.object(router, "defaults", return_value=[]),
+        patch.object(router, "prepare_ap") as prepare,
+    ):
+        result = router.restore_autostart()
+
+    assert result["success"] is False
+    assert result["waiting"] is True
+    prepare.assert_not_called()
