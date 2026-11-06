@@ -728,6 +728,23 @@ html,body{max-width:100%;overflow-x:hidden}
   .section-kicker { font-size: 8px; }
 }
 
+
+/* Visible technical panels */
+.technical-panel{display:block;min-width:0;margin:12px 0 2px;padding:12px;border:1px solid rgba(89,116,148,.34);border-radius:11px;background:linear-gradient(145deg,rgba(18,31,48,.76),rgba(9,18,31,.68))}
+.technical-panel:empty{display:none}
+.technical-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;color:#9fc8f2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.technical-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.technical-field{min-width:0;padding:9px 10px;border:1px solid rgba(92,116,145,.24);border-radius:8px;background:rgba(4,12,22,.38)}
+.technical-field.wide{grid-column:1/-1}
+.technical-label{display:block;margin-bottom:5px;color:#8397b1;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+.technical-value{display:block;color:#e2ebf7;font-size:12px;line-height:1.45;font-weight:600;overflow-wrap:anywhere;word-break:break-word}
+.technical-value.boolean{display:inline-flex;width:max-content;max-width:100%;padding:3px 8px;border-radius:20px;background:rgba(91,129,166,.17);color:#b9d8fa}
+.technical-array{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.technical-object{min-width:0;padding:10px;border:1px solid rgba(92,116,145,.27);border-radius:9px;background:rgba(4,12,22,.3)}
+.technical-object-title{margin:0 0 8px;color:#c4d8ef;font-size:11px;font-weight:750;overflow-wrap:anywhere}
+.technical-empty{color:#8191a7;font-size:11px}
+@media(max-width:760px){.technical-panel{padding:10px;margin-top:10px}.technical-grid,.technical-array{grid-template-columns:minmax(0,1fr)}.technical-field{padding:9px}.technical-value{font-size:12px}}
+
 </style>
 </head>
 
@@ -1231,11 +1248,105 @@ function element(id) {
     return document.getElementById(id);
 }
 
-function showJSON(id, data) {
-    const target = element(id);
-    if (!target) return;
-
-    target.textContent = JSON.stringify(data, null, 2);
+const technicalLabels = {
+ platform:"პლატფორმა",system:"სისტემა",release:"ბირთვის ვერსია",architecture:"არქიტექტურა",hostname:"მოწყობილობის სახელი",python:"Python ვერსია",
+ cpu_percent:"პროცესორის დატვირთვა",cpu_logical_cores:"ლოგიკური ბირთვები",cpu_physical_cores:"ფიზიკური ბირთვები",memory:"მეხსიერება",total_bytes:"სრული მოცულობა",available_bytes:"თავისუფალი მოცულობა",used_bytes:"გამოყენებული",percent:"გამოყენება",disk:"დისკი",path:"მონტაჟის წერტილი",free:"თავისუფალი",
+ interfaces:"ინტერფეისები",interface:"ინტერფეისი",name:"სახელი",state:"მდგომარეობა",status:"სტატუსი",is_up:"აქტიურია",operstate:"ოპერაციული მდგომარეობა",mtu:"MTU",mac:"MAC მისამართი",mac_address:"MAC მისამართი",ipv4:"IPv4 მისამართები",ipv6:"IPv6 მისამართები",address:"მისამართი",netmask:"ქსელის ნიღაბი",gateway:"Gateway",gateways:"Gateway-ები",routes:"მარშრუტები",destination:"დანიშნულება",metric:"მეტრიკა",table:"ცხრილი",protocol:"პროტოკოლი",default:"ნაგულისხმევი მარშრუტი",
+ driver:"დრაივერი",chipset:"ჩიპსეტი",vendor:"მწარმოებელი",product:"მოდელი",bus:"მიერთების ტიპი",phy:"PHY",phy_name:"PHY სახელი",bands:"სიხშირის დიაპაზონები",channels:"არხები",modes:"რეჟიმები",supported_modes:"მხარდაჭერილი რეჟიმები",frequencies:"სიხშირეები",channel:"არხი",frequency:"სიხშირე",ssid:"ქსელის სახელი (SSID)",bssid:"BSSID",signal:"სიგნალი",signal_dbm:"სიგნალი (dBm)",signal_percent:"სიგნალი (%)",security:"დაცვა",connected:"დაკავშირებულია",available:"ხელმისაწვდომია",enabled:"ჩართულია",disabled:"გამორთულია",read_only:"მხოლოდ წაკითხვა",
+ assessment:"შეფასება",message:"შეტყობინება",error:"შეცდომა",access_points:"წვდომის წერტილები (AP)",clients:"Wi-Fi კლიენტები",concurrent_ap_client_observed:"AP + Client ერთდროულად",shared_phy_observed:"საერთო PHY",same_channel_observed:"ერთი არხი",forwarding:"ტრაფიკის გადაცემა",prerequisites:"წინაპირობები",ip_forward_enabled:"IP forwarding",firewall_tool:"Firewall სისტემა",firewall_tool_available:"Firewall ხელმისაწვდომია",dnsmasq_available:"dnsmasq ხელმისაწვდომია",rx_bytes:"მიღებული მონაცემები",tx_bytes:"გაგზავნილი მონაცემები",rx_packets:"მიღებული პაკეტები",tx_packets:"გაგზავნილი პაკეტები",total_rx_mbps:"ჩამოტვირთვის სიჩქარე",total_tx_mbps:"ატვირთვის სიჩქარე",technology:"ქსელის ტექნოლოგია",registration_state:"რეგისტრაციის მდგომარეობა",operator:"ოპერატორი",sim:"SIM ბარათი",modem:"მოდემი",modems:"მოდემები",network:"ქსელი",quality_percent:"სიგნალის ხარისხი",version:"ვერსია",service:"სერვისი",active_state:"აქტიური მდგომარეობა",sub_state:"ქვემდგომი მდგომარეობა",description:"აღწერა",manager:"მართვის სისტემა",dns_by_link:"DNS ინტერფეისების მიხედვით",dns_servers:"DNS სერვერები",type:"ტიპი",count:"რაოდენობა",boot_time:"ჩართვის დრო",uptime:"მუშაობის დრო"
+};
+function technicalLabel(key) {
+    const clean=String(key).replace(/_/g," ");
+    return technicalLabels[key] || clean.charAt(0).toUpperCase()+clean.slice(1);
+}
+function technicalValue(value) {
+    if(value===null || value===undefined || value==="") return "—";
+    if(typeof value==="boolean") return value ? "დიახ" : "არა";
+    if(typeof value==="number") return Number.isFinite(value) ? String(value) : "—";
+    return String(value);
+}
+function buildTechnicalNode(value,depth) {
+    if(Array.isArray(value)) {
+        const wrap=document.createElement("div");
+        wrap.className="technical-array";
+        if(!value.length) {
+            const empty=document.createElement("span");
+            empty.className="technical-empty";
+            empty.textContent="მონაცემები არ არის";
+            wrap.appendChild(empty);
+            return wrap;
+        }
+        value.forEach((item,index)=>{
+            const card=document.createElement("article");
+            card.className="technical-object";
+            if(item && typeof item==="object") {
+                const heading=document.createElement("h4");
+                heading.className="technical-object-title";
+                heading.textContent=item.name || item.interface || item.ssid || ("ჩანაწერი "+(index+1));
+                card.append(heading,buildTechnicalNode(item,depth+1));
+            } else {
+                const val=document.createElement("span");
+                val.className="technical-value";
+                val.textContent=technicalValue(item);
+                card.appendChild(val);
+            }
+            wrap.appendChild(card);
+        });
+        return wrap;
+    }
+    if(value && typeof value==="object") {
+        const grid=document.createElement("div");
+        grid.className="technical-grid";
+        Object.entries(value).forEach(([key,item])=>{
+            const field=document.createElement("div");
+            field.className="technical-field";
+            if(item && typeof item==="object") field.classList.add("wide");
+            const label=document.createElement("span");
+            label.className="technical-label";
+            label.textContent=technicalLabel(key);
+            field.appendChild(label);
+            if(item && typeof item==="object" && depth<4) {
+                field.appendChild(buildTechnicalNode(item,depth+1));
+            } else {
+                const val=document.createElement("span");
+                val.className="technical-value";
+                val.textContent=item && typeof item==="object" ? "[მონაცემები]" : technicalValue(item);
+                if(typeof item==="boolean") val.classList.add("boolean");
+                field.appendChild(val);
+            }
+            grid.appendChild(field);
+        });
+        return grid;
+    }
+    const val=document.createElement("span");
+    val.className="technical-value";
+    val.textContent=technicalValue(value);
+    return val;
+}
+function showJSON(id,data) {
+    const target=element(id);
+    if(!target) return;
+    target.textContent=typeof data==="string" ? data : JSON.stringify(data,null,2);
+    const details=target.closest("details");
+    if(!details) return;
+    const viewId=id+"TechnicalView";
+    let view=element(viewId);
+    if(!view) {
+        view=document.createElement("div");
+        view.id=viewId;
+        view.className="technical-panel";
+        details.parentNode.insertBefore(view,details);
+    }
+    view.replaceChildren();
+    const heading=document.createElement("div");
+    heading.className="technical-panel-title";
+    heading.textContent=technicalLabel(id);
+    view.appendChild(heading);
+    let parsed=data;
+    if(typeof data==="string") {
+        try { parsed=JSON.parse(data); } catch(_) { parsed=data; }
+    }
+    view.appendChild(buildTechnicalNode(parsed,0));
 }
 
 function renderRepeaterStatus(data) {
