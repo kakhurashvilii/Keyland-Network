@@ -8,6 +8,6 @@ ConditionPathExists=/etc/keyland/router-autostart.json
 Type=oneshot
 # Keep hostapd and dnsmasq alive after the restore helper exits.
 KillMode=process
-RemainAfterExit=yes
+RemainAfterExit=no
 ExecStart=/usr/local/sbin/keyland-routerctl --restore
 TimeoutStartSec=60
