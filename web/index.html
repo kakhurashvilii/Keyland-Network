@@ -1081,7 +1081,39 @@ footer{padding:16px;font-size:9px}
         </details>
         </section>
 
-        <section class="card">
+        
+        <section class="card" style="grid-column: 1 / -1;">
+            <div class="cellular-heading">
+                <h3>ელემენტი და კვება</h3>
+                <span id="batteryStatus" class="cellular-badge">მოწმდება...</span>
+            </div>
+            <div class="metric-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px;margin:14px 0;">
+                <div>
+                    <div class="metric" id="batteryLevel">--%</div>
+                    <div class="metric-label">ელემენტის დონე</div>
+                    <div class="bar"><div id="batteryLevelBar"></div></div>
+                </div>
+                <div><div class="metric" id="batteryVoltage">-- V</div><div class="metric-label">ელემენტის ძაბვა</div></div>
+                <div><div class="metric" id="batteryTemperature">-- °C</div><div class="metric-label">ტემპერატურა</div></div>
+                <div><div class="metric" id="batteryCurrent">-- mA</div><div class="metric-label">ელემენტის დენი</div></div>
+            </div>
+            <div class="cellular-grid">
+                <div class="cellular-item"><div class="metric-label">დამტენი</div><div class="cellular-value" id="chargerType">--</div></div>
+                <div class="cellular-item"><div class="metric-label">დამტენის ძაბვა</div><div class="cellular-value" id="chargerVoltage">--</div></div>
+                <div class="cellular-item"><div class="metric-label">დამტენის დენი</div><div class="cellular-value" id="chargerCurrent">--</div></div>
+                <div class="cellular-item"><div class="metric-label">შეყვანის სიმძლავრე</div><div class="cellular-value" id="chargerPower">--</div></div>
+                <div class="cellular-item"><div class="metric-label">მიმდინარე დამუხტვა</div><div class="cellular-value" id="batteryChargeNow">--</div></div>
+                <div class="cellular-item"><div class="metric-label">სრული ტევადობა / ქარხნული</div><div class="cellular-value" id="batteryChargeFull">--</div></div>
+                <div class="cellular-item"><div class="metric-label">ელემენტის ჯანმრთელობა</div><div class="cellular-value" id="batteryHealth">მონაცემი არ არის</div></div>
+                <div class="cellular-item"><div class="metric-label">ქიმია / მწარმოებელი</div><div class="cellular-value" id="batteryTechnology">--</div></div>
+            </div>
+            <details class="diagnostic-details" style="margin-top:12px;">
+                <summary>ელემენტისა და დამტენის ტექნიკური დეტალები</summary>
+                <pre id="batteryDetails">მონაცემების მოლოდინი...</pre>
+            </details>
+        </section>
+
+<section class="card">
             <h3>ინტერნეტის მდგომარეობა</h3>
             <div id="internetStatus" class="internet-status unknown">
                 მოწმდება...
@@ -2027,6 +2059,55 @@ function updateResources(data) {
         data.cpu_logical_cores ?? "--";
 }
 
+
+function renderPowerStatus(data) {
+    const battery = data && data.battery;
+    const chargers = data && Array.isArray(data.chargers) ? data.chargers : [];
+    const charger = chargers.find(item => item.online === true) || chargers[0] || null;
+    const setText = (id, value) => {
+        const target = element(id);
+        if (target) target.textContent = value == null || value === "" ? "—" : String(value);
+    };
+    const fmt = (value, unit, digits = 1) =>
+        value == null ? "—" : Number(value).toFixed(digits) + unit;
+
+    if (!data || !data.available || !battery) {
+        setText("batteryStatus", (data && data.error) || "ელემენტი ვერ მოიძებნა");
+        setText("batteryLevel", "—");
+        setText("batteryVoltage", "—");
+        setText("batteryTemperature", "—");
+        setText("batteryCurrent", "—");
+        return;
+    }
+
+    setText("batteryStatus", battery.status || "Unknown");
+    setText("batteryLevel", battery.capacity_percent == null ? "—" : battery.capacity_percent + "%");
+    setText("batteryVoltage", fmt(battery.voltage_v, " V", 3));
+    setText("batteryTemperature", fmt(battery.temperature_c, " °C"));
+    setText("batteryCurrent", fmt(battery.current_ma, " mA"));
+    setText("batteryChargeNow", fmt(battery.charge_now_mah, " mAh"));
+    setText("batteryChargeFull",
+        fmt(battery.charge_full_mah, " mAh") + " / " +
+        fmt(battery.charge_full_design_mah, " mAh"));
+    setText("batteryHealth", battery.health || "დამტენზე არ არის მოწოდებული");
+    setText("batteryTechnology",
+        [battery.technology, battery.manufacturer].filter(Boolean).join(" · ") || "—");
+
+    const bar = element("batteryLevelBar");
+    if (bar) {
+        const level = Number(battery.capacity_percent);
+        bar.style.width = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) + "%" : "0%";
+    }
+
+    setText("chargerType", charger
+        ? charger.type + (charger.online === true ? " · მიერთებულია" : " · არააქტიური")
+        : "დამტენი არ არის");
+    setText("chargerVoltage", charger ? fmt(charger.voltage_v, " V", 3) : "—");
+    setText("chargerCurrent", charger ? fmt(charger.current_ma, " mA") : "—");
+    setText("chargerPower", charger ? fmt(charger.power_mw, " mW") : "—");
+    showJSON("batteryDetails", data);
+}
+
 /* MAIN DASHBOARD */
 
 async function renderWifiLive(data) {
@@ -2067,6 +2148,7 @@ async function loadData() {
         ["hotspotClients", API + "/wifi/hotspot/router/clients"],
         ["services", API + "/services"],
         ["resources", API + "/system/resources"],
+        ["power", API + "/system/power"],
         ["traffic", API + "/network/traffic"],
         ["internet", API + "/network/internet"],
         ["cellularStatus", API + "/cellular/status"],
@@ -2097,6 +2179,9 @@ async function loadData() {
                     case "resources":
                         updateResources(data);
                         showJSON("resources", data);
+                        break;
+                    case "power":
+                        renderPowerStatus(data);
                         break;
                     case "repeaterStatus":
                         renderRepeaterStatus(data);
@@ -2130,7 +2215,10 @@ async function loadData() {
 
                 const name = jobs[index][0];
 
-                if (name === "cellularStatus" ||
+                if (name === "power") {
+                    const status = element("batteryStatus");
+                    if (status) status.textContent = "შეცდომა: " + result.reason.message;
+                } else if (name === "cellularStatus" ||
                     name === "cellularUsage") {
                     showJSON("cellularDetails", { error: name + ": " + result.reason.message });
                 } else {
