@@ -84,6 +84,7 @@ fi
 
 echo "[6/6] Nginx and systemd services"
 install -m 644 "$DEST/deploy/keyland.nginx.conf" /etc/nginx/sites-available/keyland
+sed -i "s/127.0.0.1:8000/127.0.0.1:${KEYLAND_PORT}/" /etc/nginx/sites-available/keyland
 ln -sfn /etc/nginx/sites-available/keyland /etc/nginx/sites-enabled/keyland
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
