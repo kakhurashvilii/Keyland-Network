@@ -3049,10 +3049,16 @@ async function shareRepeaterConnection() {
     element("hotspotSourceInterface").value = repeaterCurrentConnection.name;
     await loadHotspotCapabilities();
     element("hotspot-section").scrollIntoView({behavior:"smooth", block:"start"});
-    element("hotspotMessage").textContent = tr(
-        "Repeater კავშირი არჩეულია. შეამოწმე WAN, მიუთითე Hotspot-ის პაროლი და ჩართე გაზიარება.",
-        "Repeater connection selected. Confirm the WAN, enter a Hotspot password and start sharing."
-    );
+    const hotspotAlreadyConfigured = !element("hotspotStopButton").disabled;
+    element("hotspotMessage").textContent = hotspotAlreadyConfigured
+        ? tr(
+            "ჯერ გამორთე მოქმედი Hotspot. შემდეგ Repeater რეჟიმში თავიდან ჩართე გაზიარება.",
+            "Stop the currently active Hotspot first. Then start sharing again in Repeater mode."
+        )
+        : tr(
+            "Repeater კავშირი არჩეულია. შეამოწმე WAN, მიუთითე Hotspot-ის პაროლი და ჩართე გაზიარება.",
+            "Repeater connection selected. Confirm the WAN, enter a Hotspot password and start sharing."
+        );
     if (!element("hotspotPassword").value) element("hotspotPassword").focus({preventScroll:true});
 }
 
