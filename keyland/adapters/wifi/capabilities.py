@@ -171,7 +171,7 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
     """Parse valid wireless interface combinations reported by iw."""
 
     lines = output.splitlines()
-    combinations = []
+    raw_lines = []
     in_section = False
 
     for raw in lines:
@@ -185,14 +185,13 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
             if not line:
                 continue
             if line.endswith(":") and not line.startswith("#"):
-                in_section = False
-                continue
-            combinations.append(line)
+                break
+            raw_lines.append(line)
 
     groups = []
     current = ""
 
-    for line in combinations:
+    for line in raw_lines:
         if line.startswith("*"):
             if current:
                 groups.append(current)
@@ -203,14 +202,14 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
     if current:
         groups.append(current)
 
-    compatible = []
+    parsed = []
 
     for group in groups:
         limits = {}
 
         for match in re.finditer(
             r"#\s*\{([^}]*)\}\s*<=\s*(\d+)",
-            group
+            group,
         ):
             modes = [item.strip() for item in match.group(1).split(",")]
             limit = int(match.group(2))
@@ -218,21 +217,46 @@ def parse_interface_combinations(output: str) -> dict[str, Any]:
             for mode in modes:
                 limits[mode] = max(limits.get(mode, 0), limit)
 
-        if limits.get("managed", 0) >= 1 and limits.get("AP", 0) >= 1:
-            compatible.append(group)
+        simultaneous = (
+            limits.get("managed", 0) >= 1
+            and limits.get("AP", 0) >= 1
+        )
 
-    channel_limits = []
-    for group in compatible:
-        match = re.search(r"#channels\s*<=\s*(\d+)", group)
-        if match:
-            channel_limits.append(int(match.group(1)))
+        channel_match = re.search(r"#channels\s*<=\s*(\d+)", group)
+        max_channels = int(channel_match.group(1)) if channel_match else None
+
+        parsed.append({
+            "simultaneous_ap_client": simultaneous,
+            "max_channels": max_channels,
+            "details": group,
+            "limits": limits,
+        })
+
+    compatible = [
+        item for item in parsed
+        if item["simultaneous_ap_client"]
+    ]
+
+    channel_limits = [
+        item["max_channels"]
+        for item in compatible
+        if item["max_channels"] is not None
+    ]
+
+    max_channels_ap_client = max(channel_limits, default=None)
 
     return {
-        "reported": bool(combinations),
+        "reported": bool(parsed),
+        "combinations": parsed,
         "ap_client_combination_mentioned": bool(compatible),
-        "details": combinations,
-        "compatible_combinations": compatible,
-        "max_channels_for_ap_client": max(channel_limits, default=None),
+        "max_channels_ap_client": max_channels_ap_client,
+
+        # Newer schema retained for compatibility.
+        "details": raw_lines,
+        "compatible_combinations": [
+            item["details"] for item in compatible
+        ],
+        "max_channels_for_ap_client": max_channels_ap_client,
         "simultaneous_ap_client": (
             "driver_reports_combination" if compatible else "unknown"
         ),

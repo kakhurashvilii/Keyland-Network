@@ -2,13 +2,21 @@ from keyland.adapters.wifi.hotspot import _validate, start_hotspot
 
 
 def test_hotspot_config_validation_accepts_wpa2():
-    interface, ssid, dns, password, ipv4_cidr = _validate({
-        "interface": "ap0",
-        "ssid": "Keyland-Home",
-        "password": "StrongPassphrase123",
-        "security": "wpa2-psk",
-        "dns_servers": ["1.1.1.1", "8.8.8.8"],
-    })
+    from unittest.mock import patch
+    from keyland.adapters.wifi import hotspot
+
+    with patch.object(
+        hotspot,
+        "_run",
+        return_value={"success": True, "output": "[]", "error": None},
+    ):
+        interface, ssid, dns, password, ipv4_cidr = _validate({
+            "interface": "ap0",
+            "ssid": "Keyland-Home",
+            "password": "StrongPassphrase123",
+            "security": "wpa2-psk",
+            "dns_servers": ["1.1.1.1", "8.8.8.8"],
+        })
     assert interface == "ap0"
     assert ssid == "Keyland-Home"
     assert dns == ["1.1.1.1", "8.8.8.8"]

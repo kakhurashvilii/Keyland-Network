@@ -275,13 +275,13 @@ def _validate(payload: dict[str, Any]) -> tuple[str, str, list[str], str, str]:
 
 def start_hotspot(payload: dict[str, Any]) -> dict[str, Any]:
     """Create/update and activate the dedicated NetworkManager AP profile."""
+    if payload.get("confirmed") is not True:
+        return {"success": False, "error": "Explicit administrator confirmation is required."}
+
     try:
         interface, ssid, dns, password, ipv4_cidr = _validate(payload)
     except ValueError as exc:
         return {"success": False, "error": str(exc)}
-
-    if payload.get("confirmed") is not True:
-        return {"success": False, "error": "Explicit administrator confirmation is required."}
 
     preflight = get_hotspot_capabilities()
     if not preflight.get("available") or not preflight.get("safe_to_apply"):

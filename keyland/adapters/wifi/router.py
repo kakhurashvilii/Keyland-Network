@@ -442,6 +442,99 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
             "channel": requested_channel}
 
 
+def _stop_managed_processes(state: dict[str, Any]) -> list[str]:
+    """Stop only verified Keyland daemons and wait for their exit."""
+    expected = {
+        "hostapd_pid": "hostapd",
+        "dnsmasq_pid": "dnsmasq",
+    }
+    processes = []
+    errors = []
+
+    # Validate every PID before signalling any process.
+    for key, name in expected.items():
+        raw_pid = state.get(key)
+        if raw_pid is None:
+            continue
+        try:
+            pid = int(raw_pid)
+            if pid <= 1:
+                raise ValueError("invalid PID")
+
+            proc = Path(f"/proc/{pid}")
+            if not proc.exists():
+                continue
+
+            stat = (proc / "stat").read_text()
+            status = stat.rsplit(")", 1)[1].strip().split()[0]
+            if status in ("Z", "X"):
+                continue
+
+            argv = (proc / "cmdline").read_bytes().split(bytes([0]))
+            executable = Path(argv[0].decode(errors="replace")).name if argv[0] else ""
+
+            if executable != name:
+                errors.append(f"{name}: PID identity mismatch; left untouched.")
+                continue
+
+            processes.append((pid, name, proc))
+
+        except (OSError, KeyError, ValueError, TypeError, IndexError) as exc:
+            errors.append(f"{name}: {exc}")
+
+    if errors:
+        return errors
+
+    # Send SIGTERM only after all identities have been validated.
+    for pid, name, proc in processes:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        except OSError as exc:
+            errors.append(f"{name}: could not send SIGTERM: {exc}")
+
+    if errors:
+        return errors
+
+    # Wait up to 8 seconds for each daemon.
+    for pid, name, proc in processes:
+        deadline = time.monotonic() + 8
+        stopped = False
+
+        while time.monotonic() < deadline:
+            try:
+                if not proc.exists():
+                    stopped = True
+                    break
+
+                stat = (proc / "stat").read_text()
+                status = stat.rsplit(")", 1)[1].strip().split()[0]
+                if status in ("Z", "X"):
+                    stopped = True
+                    break
+
+                argv = (proc / "cmdline").read_bytes().split(bytes([0]))
+                executable = Path(argv[0].decode(errors="replace")).name if argv[0] else ""
+                if executable != name:
+                    stopped = True
+                    break
+
+            except (FileNotFoundError, ProcessLookupError):
+                stopped = True
+                break
+            except (OSError, IndexError) as exc:
+                errors.append(f"{name}: could not verify shutdown: {exc}")
+                break
+
+            time.sleep(0.2)
+
+        if not stopped and not any(name in e for e in errors):
+            errors.append(f"{name}: did not stop within 8 seconds.")
+
+    return errors
+
+
 def start(p: dict[str, Any]) -> dict[str, Any]:
     if p.get("confirmed") is not True: return {"success": False, "error": "Explicit administrator confirmation is required."}
     if read_state(): return {"success": False, "error": "Router Wi-Fi is already active. Stop it first."}
@@ -550,23 +643,41 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
                 "band": cfg["band"], "channel": cfg["channel"], "dns_servers": cfg["dns_servers"], "dhcp": True, "nat": True,
                 "message": "AP, DHCP and selected-uplink NAT started. Test a client connection."}
     except Exception as exc:
-        if firewall_created: run(["nft", "delete", "table", "inet", TABLE])
-        if policy_rule_added: run(["ip", "rule", "del", "priority", "1000", "iif", ap, "lookup", "42002"])
-        if policy_routes_created: run(["ip", "route", "flush", "table", "42002"])
-        for key in ("dnsmasq_pid", "hostapd_pid"):
-            try: os.kill(int(state.get(key, 0)), signal.SIGTERM)
-            except (OSError, ValueError, TypeError): pass
-        run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
+        process_errors = _stop_managed_processes(state)
+        if process_errors:
+            write_state({k: v for k, v in state.items() if k != "password"})
+            return {
+                "success": False,
+                "error": str(exc),
+                "cleanup_required": True,
+                "process_errors": process_errors,
+                "message": "Daemon shutdown not confirmed; network configuration left untouched.",
+            }
+
+        if firewall_created:
+            run(["nft", "delete", "table", "inet", TABLE])
+        if policy_rule_added:
+            run(["ip", "rule", "del", "priority", "1000", "iif", ap, "lookup", "42002"])
+        if policy_routes_created:
+            run(["ip", "route", "flush", "table", "42002"])
+
+        run(["ip", "addr", "flush", "dev", ap])
+        run(["ip", "link", "set", ap, "down"])
         run(["sysctl", "-w", "net.ipv4.ip_forward=" + state["previous_ip_forward"]])
+
         if state.get("previous_wan_rp_filter") is not None:
             try:
-                (Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter").write_text(state["previous_wan_rp_filter"] + "\n")
+                (Path("/proc/sys/net/ipv4/conf") / wan / "rp_filter").write_text(
+                    state["previous_wan_rp_filter"] + "\n"
+                )
             except OSError:
                 pass
+
         run(["nmcli", "device", "set", ap, "managed", "yes"])
         for name in ("hostapd.conf", "dnsmasq.conf"):
             (ROOT / name).unlink(missing_ok=True)
         STATE.unlink(missing_ok=True)
+
         return {"success": False, "error": str(exc), "rolled_back": True}
 
 
@@ -751,6 +862,15 @@ def stop(confirmed: bool) -> dict[str, Any]:
     state = read_state()
     if not state: return {"success": False, "error": "Keyland router Wi-Fi is not active."}
     ap, errors = state["interface"], []
+    process_errors = _stop_managed_processes(state)
+    if process_errors:
+        return {
+            "success": False,
+            "active": True,
+            "configured": True,
+            "errors": process_errors,
+            "message": "Daemon shutdown not confirmed; AP networking left untouched.",
+        }
     traffic_state_file = ROOT / "client-traffic.json"
     try:
         traffic_state = json.loads(traffic_state_file.read_text())
@@ -771,9 +891,6 @@ def stop(confirmed: bool) -> dict[str, Any]:
     run(["ip", "route", "flush", "table", "42002"])
     r = run(["nft", "delete", "table", "inet", TABLE])
     if not r["ok"] and "No such file" not in str(r["err"]): errors.append("Could not remove Keyland NAT table.")
-    for key in ("dnsmasq_pid", "hostapd_pid"):
-        try: os.kill(int(state[key]), signal.SIGTERM)
-        except (OSError, KeyError, ValueError, TypeError): pass
     run(["ip", "addr", "flush", "dev", ap]); run(["ip", "link", "set", ap, "down"])
     run(["sysctl", "-w", "net.ipv4.ip_forward=" + state.get("previous_ip_forward", "0")])
     if state.get("previous_wan_rp_filter") is not None:
