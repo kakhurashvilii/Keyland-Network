@@ -1679,6 +1679,7 @@ function getCookie(name) {
 /* AUTHENTICATION UI */
 
 function showLogin(message = "") {
+    if (typeof disconnectTerminal === "function") disconnectTerminal();
     state.authenticated = false;
     stopPolling();
 
