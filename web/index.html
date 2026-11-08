@@ -3380,7 +3380,11 @@ function renderHotspotClients(status) {
 
         const meta = document.createElement("div");
         meta.className = "muted";
-        meta.textContent = mac + (client.ip ? " · " + client.ip : "");
+        const radioLabel = client.ap_band
+            ? client.ap_band + (client.ap_channel ? " · CH " + client.ap_channel : "") +
+                (client.ap_frequency_mhz ? " · " + client.ap_frequency_mhz + " MHz" : "")
+            : "Wi-Fi დიაპაზონი მიუწვდომელია";
+        meta.textContent = mac + (client.ip ? " · " + client.ip : "") + " · " + radioLabel;
 
         const traffic = document.createElement("div");
         traffic.className = "client-traffic";
@@ -3424,6 +3428,9 @@ function renderHotspotClients(status) {
             ["TX retries", client.tx_retries],
             ["TX failed", client.tx_failed],
             ["Inactive time", client.inactive_time != null ? client.inactive_time + " ms" : null],
+            ["Wi-Fi დიაპაზონი", client.ap_band],
+            ["Wi-Fi არხი", client.ap_channel],
+            ["Wi-Fi სიხშირე", client.ap_frequency_mhz != null ? client.ap_frequency_mhz + " MHz" : null],
             ["TX bitrate", client.tx_bitrate],
             ["RX bitrate", client.rx_bitrate],
             ["სიგნალის ხარისხი", client.signal_quality_percent != null ? client.signal_quality_percent + "%" : null],
