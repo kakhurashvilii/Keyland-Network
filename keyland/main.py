@@ -54,7 +54,7 @@ from keyland.api.terminal import router as terminal_router
 from keyland.api.wan_wlan0 import router as wan_wlan0_router
 
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
