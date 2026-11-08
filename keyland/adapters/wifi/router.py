@@ -791,6 +791,55 @@ def client_status() -> dict[str, Any]:
                 }
     except OSError:
         pass
+
+    # Fallback for hostnames retained by the previous Keyland DHCP instance.
+    # Only use records matching currently associated clients and the AP subnet.
+    fallback_leases = Path("/var/lib/misc/dnsmasq.leases")
+    try:
+        network = ipaddress.ip_network(
+            state.get("network", "192.168.88.0/24"),
+            strict=False,
+        )
+        active_macs = {
+            str(client.get("mac", "")).lower()
+            for client in clients
+            if client.get("mac")
+        }
+
+        for line in fallback_leases.read_text(errors="replace").splitlines():
+            fields = line.split()
+            if len(fields) < 4:
+                continue
+
+            expiry_raw = fields[0]
+            if not expiry_raw.isdigit():
+                continue
+
+            lease_expiry = int(expiry_raw)
+            if lease_expiry != 0 and lease_expiry <= int(time.time()):
+                continue
+
+            mac = fields[1].lower()
+            hostname = fields[3]
+
+            if mac not in active_macs or hostname == "*":
+                continue
+
+            try:
+                lease_ip = ipaddress.ip_address(fields[2])
+            except ValueError:
+                continue
+
+            if lease_ip not in network:
+                continue
+
+            existing = lease_by_mac.setdefault(mac, {})
+            if not existing.get("hostname"):
+                existing["hostname"] = hostname
+
+    except (OSError, ValueError, TypeError):
+        pass
+
     blocked: set[str] = set()
     traffic_file = ROOT / "client-traffic.json"
     try:
