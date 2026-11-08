@@ -27,6 +27,12 @@ The current router dnsmasq configuration advertises the selected upstream DNS se
 
 DNS visibility will be an explicit opt-in setting. When enabled, DHCP option 6 will advertise the AP gateway address, and the Keyland-managed dnsmasq instance will forward queries to the configured upstream servers and log query metadata. When disabled, the existing direct-upstream DNS behavior remains unchanged. Enabling this option may require clients to renew their DHCP lease or reconnect.
 
+## Explicit privacy notice shown in the dashboard
+
+> Keyland does not read or record HTTPS content, private messages, passwords, or webpage contents. If enabled, DNS monitoring shows only DNS query metadata (domain, time, and query type), and only when the device sends DNS queries through Keyland's DNS server. VPNs, encrypted DNS, or other external resolvers may limit this visibility.
+
+This notice must remain visible in the Hotspot device panel in both Georgian and English. Do not imply that a DNS query proves a page was opened or that all activity is visible.
+
 ## v0.9.0 goals
 
 ### 1. Per-device DNS query history
