@@ -3114,7 +3114,8 @@ async function loadData() {
 
         const extraResults = await Promise.allSettled([
             loadInterfaces(),
-            loadTrafficHistory()
+            loadTrafficHistory(),
+            loadWlan0Wan()
         ]);
 
         extraResults.forEach(result => {
@@ -4000,6 +4001,80 @@ element("dnsResetButton").addEventListener("click", () => {
 });
 
 element("dnsRefreshButton").addEventListener("click", loadDnsStatus);
+
+/* WLAN0 WAN IPv4 */
+function toggleWlan0StaticFields() {
+    const mode = element("wlan0WanMode")?.value;
+    const fields = element("wlan0StaticFields");
+    if (fields) fields.hidden = mode !== "static";
+}
+
+async function loadWlan0Wan() {
+    if (!state.authenticated) return;
+    const message = element("wlan0WanMessage");
+    try {
+        const data = await fetchJSON(API + "/network/wan/wlan0");
+        element("wlan0WanMode").value = data.mode || "dhcp";
+        const saved = data.saved || {};
+        const address = String(saved.address || "").split("/");
+        element("wlan0Address").value = address[0] || "";
+        element("wlan0Prefix").value = address[1] || "24";
+        element("wlan0Gateway").value = saved.gateway || "";
+        element("wlan0Dns").value = (saved.dns || []).join(", ");
+        toggleWlan0StaticFields();
+        const active = data.active || {};
+        const ip = (active.addresses || [])[0] || "—";
+        const dns = (active.dns || []).join(", ") || "ავტომატური / უცნობია";
+        element("wlan0WanCurrent").textContent =
+            "პროფილი: " + data.profile + " · რეჟიმი: " + (data.mode === "static" ? "Static" : "DHCP") +
+            " · აქტიური IP: " + ip + " · Gateway: " + (active.gateway || "—") + " · DNS: " + dns;
+        if (message) message.textContent = "";
+    } catch (error) {
+        if (message) message.textContent = "WAN პარამეტრების წაკითხვა ვერ მოხერხდა: " + error.message;
+    }
+}
+
+async function applyWlan0Wan() {
+    const mode = element("wlan0WanMode").value;
+    const payload = {mode, confirmed: true};
+    if (mode === "static") {
+        payload.address = element("wlan0Address").value.trim();
+        payload.prefix = Number(element("wlan0Prefix").value);
+        payload.gateway = element("wlan0Gateway").value.trim();
+        payload.dns = element("wlan0Dns").value.split(",").map(value => value.trim()).filter(Boolean);
+        if (!payload.address || !payload.gateway || !Number.isInteger(payload.prefix) || payload.prefix < 1 || payload.prefix > 32) {
+            element("wlan0WanMessage").textContent = "შეავსე IP, Prefix და Gateway სწორად.";
+            return;
+        }
+    }
+    const warning = mode === "dhcp"
+        ? "wlan0 გადავა DHCP/Automatic რეჟიმზე. MAGTI Wi-Fi-ის IP და მარშრუტი განახლდება. გავაგრძელოთ?"
+        : "wlan0-ის IPv4 პარამეტრები შეიცვლება. არასწორმა IP/Gateway-მა შეიძლება ინტერნეტი გათიშოს. გავაგრძელოთ?";
+    if (!window.confirm(warning)) return;
+    const button = element("wlan0WanApply");
+    button.disabled = true;
+    element("wlan0WanMessage").textContent = "NetworkManager-ში პარამეტრები გამოიყენება...";
+    try {
+        const response = await apiFetch(API + "/network/wan/wlan0", {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("wlan0WanMessage").textContent = data.message || "პარამეტრები განახლდა.";
+        await loadWlan0Wan();
+        await loadData();
+    } catch (error) {
+        element("wlan0WanMessage").textContent = "WAN-ის შეცვლა ვერ მოხერხდა: " + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+element("wlan0WanMode")?.addEventListener("change", toggleWlan0StaticFields);
+element("wlan0WanRefresh")?.addEventListener("click", loadWlan0Wan);
+element("wlan0WanApply")?.addEventListener("click", applyWlan0Wan);
 
 /* WI-FI SCAN */
 element("wifiScanFilter")?.addEventListener("input", () => {
