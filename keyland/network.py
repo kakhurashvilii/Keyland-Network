@@ -699,6 +699,18 @@ def _wifi_channel(frequency: int | None) -> int | None:
         return (frequency - 5950) // 5
     return None
 
+def _wifi_band(frequency: int | None) -> str | None:
+    """Map a Wi-Fi center frequency in MHz to its radio band."""
+    if frequency is None:
+        return None
+    if 2400 <= frequency <= 2500:
+        return "2.4 GHz"
+    if 4900 <= frequency <= 5900:
+        return "5 GHz"
+    if 5925 <= frequency <= 7125:
+        return "6 GHz"
+    return None
+
 
 def _parse_iw_scan(output: str, interface: str) -> list[dict]:
     networks = []
@@ -708,6 +720,7 @@ def _parse_iw_scan(output: str, interface: str) -> list[dict]:
         if current and current.get("ssid"):
             current["interface"] = interface
             current["channel"] = _wifi_channel(current.get("frequency_mhz"))
+            current["band"] = _wifi_band(current.get("frequency_mhz"))
             current["signal_source"] = "iw measured RSSI" if current.get("signal_dbm") is not None else None
             current["distance_m_estimate"] = _wifi_distance_estimate(current.get("signal_dbm"))
             current["security"] = (
@@ -850,6 +863,7 @@ def get_wifi_scan():
                     found.append({
                         "interface": name, "ssid": parts[0], "bssid": parts[1],
                         "channel": channel, "frequency_mhz": frequency,
+                        "band": _wifi_band(frequency),
                         "rate": parts[4], "signal_percent": signal,
                         "signal_dbm_estimate": estimated_dbm,
                         "signal_source": "NetworkManager quality estimate" if signal is not None else None,
@@ -877,6 +891,9 @@ def get_wifi_scan():
                         item["signal_dbm"] = actual["signal_dbm"]
                         item["signal_source"] = "iw measured RSSI"
                         item["distance_m_estimate"] = _wifi_distance_estimate(actual["signal_dbm"])
+                        item["frequency_mhz"] = actual.get("frequency_mhz") or item.get("frequency_mhz")
+                        item["channel"] = actual.get("channel") or item.get("channel")
+                        item["band"] = actual.get("band") or _wifi_band(item.get("frequency_mhz"))
 
         if not found:
             raw = run_command(["iw", "dev", name, "scan"], timeout=30)
