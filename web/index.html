@@ -1503,7 +1503,7 @@ footer { color:#7187a4; }
 
 
 
-/* KEYLAND_WIFI_DISTANCE_UI */
+/* KEYLAND_WIFI_DISTANCE_UI_AND_BAND */
 .wifi-result-card .wifi-signal-detail{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .wifi-result-card .wifi-signal-detail span{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid rgba(111,151,190,.24);border-radius:6px;background:rgba(25,48,73,.58);color:#c5d9ef;font-size:10px}
 .wifi-result-card .wifi-signal-detail .wifi-distance{color:#8ee0bd;border-color:rgba(69,180,132,.28)}
@@ -4022,8 +4022,14 @@ function renderWifiScan(targetId, data) {
         const distance = network.distance_m_estimate != null
             ? "≈ " + network.distance_m_estimate + " მ"
             : "მანძილი —";
+        const radioBand = network.band || (
+            network.frequency_mhz >= 5925 ? "6 GHz" :
+            network.frequency_mhz >= 4900 ? "5 GHz" :
+            network.frequency_mhz >= 2400 ? "2.4 GHz" : ""
+        );
         meta.textContent = [
             network.bssid || "",
+            radioBand ? "დიაპაზონი " + radioBand : "სიხშირე უცნობია",
             network.channel ? "არხი " + network.channel : "",
             network.frequency_mhz ? network.frequency_mhz + " MHz" : "",
             "სიგნალი " + (signalParts.join(" / ") || "—"),
