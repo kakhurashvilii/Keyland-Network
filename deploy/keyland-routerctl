@@ -46,6 +46,7 @@ def main() -> int:
             "start": lambda: router.start(payload),
             "stop": lambda: router.stop(payload.get("confirmed") is True),
             "clients": lambda: router.client_status(),
+            "dns_queries": lambda: router.dns_queries(int(payload.get("limit", 200))),
             "client_block": lambda: router.client_block(
                 payload.get("mac", ""), payload.get("blocked") is True
             ),

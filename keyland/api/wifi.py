@@ -116,6 +116,7 @@ class RouterWifiRequest(BaseModel):
     password: str = Field(min_length=8, max_length=63)
     dns_servers: list[str] = Field(default_factory=list, max_length=4)
     ipv4_cidr: str = Field(default="192.168.88.1/24", min_length=9, max_length=18)
+    dns_monitoring: bool = False
     confirmed: bool = False
 
 
@@ -250,6 +251,13 @@ class ClientLimitRequest(BaseModel):
 @router.get("/router/clients")
 def router_wifi_clients(user: dict = Depends(require_admin)):
     return _call_router_helper("clients")
+
+
+@router.get("/router/dns/queries")
+def router_wifi_dns_queries(limit: int = 200, user: dict = Depends(require_admin)):
+    if not 1 <= limit <= 1000:
+        raise HTTPException(status_code=400, detail="DNS query limit must be between 1 and 1000.")
+    return _call_router_helper("dns_queries", {"limit": limit})
 
 
 @router.post("/router/clients/block")
