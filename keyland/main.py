@@ -49,9 +49,11 @@ from keyland.initialize import initialize
 from keyland.api.dns import router as dns_router
 from keyland.api.wifi import router as wifi_hotspot_router
 from keyland.api.system import router as system_router
+from keyland.api.sms import router as sms_router
+from keyland.api.terminal import router as terminal_router
 
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
@@ -68,6 +70,8 @@ app = FastAPI(
 app.include_router(dns_router)
 app.include_router(wifi_hotspot_router)
 app.include_router(system_router)
+app.include_router(sms_router)
+app.include_router(terminal_router)
 
 
 @app.middleware("http")
