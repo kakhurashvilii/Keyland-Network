@@ -51,6 +51,7 @@ from keyland.api.wifi import router as wifi_hotspot_router
 from keyland.api.system import router as system_router
 from keyland.api.sms import router as sms_router
 from keyland.api.terminal import router as terminal_router
+from keyland.api.wan_wlan0 import router as wan_wlan0_router
 
 
 VERSION = "1.0.1"
@@ -72,6 +73,7 @@ app.include_router(wifi_hotspot_router)
 app.include_router(system_router)
 app.include_router(sms_router)
 app.include_router(terminal_router)
+app.include_router(wan_wlan0_router)
 
 
 @app.middleware("http")
