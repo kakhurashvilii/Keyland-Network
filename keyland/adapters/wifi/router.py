@@ -204,12 +204,12 @@ def _clients(ap: str | None) -> list[dict[str, Any]]:
         key = key.strip().lower().replace(" ", "_").replace("/", "_")
         value = value.strip()
         if key in numeric_fields:
-            match = re.search(r"-?\\d+(?:\\.\\d+)?", value)
+            match = re.search(r"-?\d+(?:\.\d+)?", value)
             if match:
                 number = float(match.group())
                 current[key] = int(number) if number.is_integer() else number
         elif key in ("signal", "signal_avg"):
-            match = re.search(r"-?\\d+(?:\\.\\d+)?", value)
+            match = re.search(r"-?\d+(?:\.\d+)?", value)
             if match:
                 current[key] = float(match.group())
         elif key in ("tx_bitrate", "rx_bitrate", "authorized",
