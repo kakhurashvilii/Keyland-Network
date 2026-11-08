@@ -15,6 +15,7 @@ import re
 import signal
 import subprocess
 import struct
+import sys
 import termios
 from datetime import datetime, timezone
 from pathlib import Path
@@ -126,8 +127,15 @@ async def terminal_socket(websocket: WebSocket):
         fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 100, 0, 0))
         env = os.environ.copy()
         env.update({"TERM": "xterm-256color", "COLORTERM": "truecolor"})
+        # A small Python bootstrap acquires the PTY as the controlling
+        # terminal, then replaces itself with an interactive login Bash.
+        bootstrap = (
+            "import fcntl, os, termios; "
+            "fcntl.ioctl(0, termios.TIOCSCTTY, 0); "
+            "os.execv('/bin/bash', ['/bin/bash', '--login', '-i'])"
+        )
         process = subprocess.Popen(
-            ["/bin/bash", "--login", "-i"],
+            [sys.executable, "-c", bootstrap],
             stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
             cwd=str(ROOT), env=env, close_fds=True,
             start_new_session=True,
