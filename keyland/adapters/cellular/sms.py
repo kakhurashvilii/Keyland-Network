@@ -89,13 +89,24 @@ def _sms_detail(sms_id: str, listing_state: str = "") -> dict[str, Any]:
 
     pdu_text = str(pdu or "").lower()
     state_text = str(state or listing_state or "").lower()
-    direction = "received" if ("deliver" in pdu_text or "received" in state_text or "received" in listing_state.lower()) else "sent"
+    if "deliver" in pdu_text or "received" in state_text or "received" in listing_state.lower():
+        direction = "received"
+    elif "submit" in pdu_text or "sent" in state_text or "sent" in listing_state.lower():
+        direction = "sent"
+    else:
+        direction = "unknown"
+
+    delivery_state = ""
+    if isinstance(payload if "payload" in locals() else None, dict):
+        delivery_state = str(_find(payload, {"deliverystate"}) or "")
+
     return {
         "id": sms_id,
         "number": str(number or "Unknown"),
         "text": str(body or ""),
         "timestamp": str(timestamp or ""),
         "state": str(state or listing_state or "unknown"),
+        "delivery_state": delivery_state,
         "direction": direction,
     }
 
@@ -149,3 +160,44 @@ def send_sms_message(number: str, message: str) -> dict[str, Any]:
         "number": cleaned_number,
         "message": "SMS was accepted by ModemManager for sending.",
     }
+
+
+def _list_sms_ids(modem_id: str) -> list[str]:
+    """Return SMS identifiers currently exposed by ModemManager."""
+    result = _run(
+        ["mmcli", "-m", modem_id, "--messaging-list-sms"],
+        timeout=25,
+    )
+    if not result["success"]:
+        raise RuntimeError(
+            result["stderr"] or "Could not list modem SMS messages."
+        )
+    return list(dict.fromkeys(
+        re.findall(r"/SMS/(\d+)\s*\([^)]*\)", result["stdout"])
+    ))
+
+
+def delete_sms_message(sms_id: str) -> dict[str, Any]:
+    """Delete one existing SMS after verifying its modem identifier."""
+    if not re.fullmatch(r"\d+", str(sms_id)):
+        raise ValueError("Invalid SMS identifier.")
+
+    modem_id = _modem_id()
+    sms_id = str(sms_id)
+    if sms_id not in _list_sms_ids(modem_id):
+        raise LookupError("SMS message was not found on the modem.")
+
+    result = _run(
+        ["mmcli", "-m", modem_id, "--messaging-delete-sms=" + sms_id],
+        timeout=30,
+    )
+    if not result["success"]:
+        raise RuntimeError(
+            result["stderr"] or "Could not delete SMS message."
+        )
+    return {
+        "success": True,
+        "sms_id": sms_id,
+        "message": "SMS message deleted successfully.",
+    }
+
