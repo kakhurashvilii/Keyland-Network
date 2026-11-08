@@ -48,9 +48,14 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "0.5.1"
+    assert response.json()["version"] == "0.8.0"
     assert response.json()["api"] == "v1"
     assert response.json()["management"]["dns"] == "/api/v1/network/dns"
+
+
+def test_sms_endpoints_require_admin():
+    assert unauth_client.get("/api/v1/cellular/sms/messages").status_code == 401
+    assert unauth_client.delete("/api/v1/cellular/sms/messages/0").status_code == 401
 
 
 def test_device():
