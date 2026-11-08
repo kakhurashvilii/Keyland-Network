@@ -2408,6 +2408,19 @@ async function loadData() {
                 } else if (name === "cellularStatus" ||
                     name === "cellularUsage") {
                     showJSON("cellularDetails", { error: name + ": " + result.reason.message });
+                } else if (name === "hotspotDnsQueries") {
+                    const list = element("hotspotDnsQueries");
+                    const count = element("hotspotDnsCount");
+                    if (count) count.textContent = tr("API შეცდომა", "API error");
+                    if (list) {
+                        const message = document.createElement("div");
+                        message.className = "client-empty";
+                        message.textContent = tr(
+                            "DNS ისტორიის API მიუწვდომელია (" + result.reason.message + "). განაახლე Keyland backend v1.0.0-ზე და გადაამოწმე systemd სერვისი.",
+                            "DNS history API is unavailable (" + result.reason.message + "). Deploy the Keyland v1.0.0 backend and verify the systemd service."
+                        );
+                        list.replaceChildren(message);
+                    }
                 } else {
                     const target = element(name);
 
@@ -3243,8 +3256,8 @@ async function loadDnsStatus() {
                 version = health.version || version;
             } catch (_) {}
             throw new Error(tr(
-                "DNS API ამ გაშვებულ სერვერზე არ არის რეგისტრირებული (HTTP 404). სერვერის ვერსია: " + version + ". შეამოწმე, რომ გაშვებულია Keyland Network v0.5.0 ან უფრო ახალი და გადაიტვირთა სწორი systemd სერვისი.",
-                "The running server does not expose the DNS endpoint (HTTP 404). Server version: " + version + ". Ensure Keyland Network v0.5.0 or newer is deployed and the correct systemd service has been restarted."
+                "DNS API ამ გაშვებულ სერვერზე არ არის რეგისტრირებული (HTTP 404). სერვერის ვერსია: " + version + ". საჭიროა Keyland Network v1.0.0 ან უფრო ახალი backend და სწორი systemd სერვისის განახლება.",
+                "The running server does not expose the DNS endpoint (HTTP 404). Server version: " + version + ". Deploy the Keyland Network v1.0.0+ backend and restart the correct systemd service."
             ));
         }
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
