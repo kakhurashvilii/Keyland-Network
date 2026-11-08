@@ -978,6 +978,30 @@ footer{padding:16px;font-size:9px}
 .terminal-warning{padding:10px;border-left:3px solid var(--orange);background:rgba(251,191,36,.07);border-radius:6px;color:#d9c79f;font-size:12px}
 @media(max-width:600px){.terminal-input-row{align-items:stretch;flex-direction:column}.terminal-window{min-height:240px}#terminalOutput{min-height:210px}}
 
+
+/* Dashboard notification center */
+.header-actions{position:relative}.notification-wrap{position:relative}
+#notificationToggle{display:inline-flex;align-items:center;gap:7px}
+.notification-bell{font-size:15px;line-height:1}
+.notification-count{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#e34f61;color:#fff;font-size:10px;font-weight:800}
+.notification-panel{position:absolute;top:calc(100% + 10px);right:0;z-index:1000;width:min(410px,calc(100vw - 28px));max-height:min(72vh,560px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #344b66;border-radius:12px;background:#0d1929;box-shadow:0 18px 55px rgba(0,0,0,.48)}
+.notification-panel.hidden{display:none!important}
+.notification-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:13px;border-bottom:1px solid var(--border);background:#132238}
+.notification-header strong{padding-top:7px;font-size:13px}
+.notification-header-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.notification-header-actions button{min-height:30px;margin:0;padding:6px 8px;font-size:10px}
+.notification-list{overflow-y:auto;padding:7px}
+.notification-empty{padding:24px 12px;color:var(--muted);text-align:center;font-size:12px}
+.notification-item{display:block;width:100%;margin:0 0 6px;padding:11px 12px;border:1px solid #263b53;border-radius:8px;background:#111f31;color:var(--text);text-align:left;box-shadow:none;white-space:normal}
+.notification-item:hover{background:#172b43;transform:none}
+.notification-item.notification-unread{border-left:3px solid #4b9bf2;background:#14263d}
+.notification-item.notification-warning{border-left-color:var(--orange)}
+.notification-item.notification-error{border-left-color:var(--red)}
+.notification-item strong{display:block;margin-bottom:3px;font-size:12px}
+.notification-item span{display:block;color:#b7c6d9;font-size:11px;font-weight:450;line-height:1.5;overflow-wrap:anywhere}
+.notification-item small{display:block;margin-top:6px;color:var(--muted);font-size:9px}
+@media(max-width:600px){.header-actions{gap:5px}#notificationToggle{padding:8px 9px}#notificationButtonLabel{display:none}.notification-panel{position:fixed;top:74px;right:10px;width:min(410px,calc(100vw - 20px));max-height:calc(100vh - 90px)}.notification-header{flex-wrap:wrap}}
+
 </style>
 </head>
 
@@ -1042,6 +1066,23 @@ footer{padding:16px;font-size:9px}
         </div>
 
         <div class="header-actions">
+            <div class="notification-wrap hidden" id="notificationWrap">
+                <button id="notificationToggle" type="button" class="secondary" aria-label="შეტყობინებები" aria-haspopup="dialog" aria-expanded="false">
+                    <span class="notification-bell" aria-hidden="true">🔔</span>
+                    <span id="notificationButtonLabel">შეტყობინებები</span>
+                    <span id="notificationBadge" class="notification-count" hidden>0</span>
+                </button>
+                <section id="notificationPanel" class="notification-panel hidden" role="dialog" aria-label="შეტყობინებები">
+                    <div class="notification-header">
+                        <strong id="notificationTitle">შეტყობინებები</strong>
+                        <div class="notification-header-actions">
+                            <button id="notificationReadAll" type="button" class="secondary">ყველას წაკითხულად მონიშვნა</button>
+                            <button id="notificationClear" type="button" class="secondary">გასუფთავება</button>
+                        </div>
+                    </div>
+                    <div id="notificationList" class="notification-list" aria-live="polite"><div class="notification-empty">შეტყობინებები ჯერ არ არის.</div></div>
+                </section>
+            </div>
             <button id="languageToggle" type="button" class="secondary" aria-label="Change language">EN</button>
             <button id="logoutButton" type="button" class="hidden">გასვლა</button>
         </div>
@@ -1518,12 +1559,109 @@ const state = {
     scanLoading: false,
     interfaceLoading: false,
     pollingTimer: null,
+    smsPollingTimer: null,
+    smsLoading: false,
     sessionCheckInProgress: false
 };
 
 const hotspotClientSamples = new Map();
 
 const API = "/api/v1";
+
+
+/* ADMIN NOTIFICATIONS */
+const notificationKeys={items:"keyland.notify.items.v1",sms:"keyland.notify.sms.v1",clients:"keyland.notify.clients.v1",hotspot:"keyland.notify.hotspot.v1",internet:"keyland.notify.internet.v1",cellular:"keyland.notify.cellular.v1",resources:"keyland.notify.resources.v1"};
+function sessionRead(key,fallback){try{const raw=sessionStorage.getItem(key);return raw===null?fallback:JSON.parse(raw)}catch(_){return fallback}}
+const savedItems=sessionRead(notificationKeys.items,[]);
+const savedSms=sessionRead(notificationKeys.sms,[]);
+const notificationState={
+ items:Array.isArray(savedItems)?savedItems.slice(0,100):[],
+ seenSms:new Set(Array.isArray(savedSms)?savedSms.map(String):[]),
+ smsReady:sessionStorage.getItem(notificationKeys.sms)!==null,
+ clients:sessionRead(notificationKeys.clients,null),
+ hotspot:sessionRead(notificationKeys.hotspot,null),
+ internet:sessionRead(notificationKeys.internet,null),
+ cellular:sessionRead(notificationKeys.cellular,null),
+ resources:sessionRead(notificationKeys.resources,"")
+};
+const notificationApiErrors={};let notificationSeq=0;
+function saveNotifications(){try{
+ sessionStorage.setItem(notificationKeys.items,JSON.stringify(notificationState.items.slice(0,100)));
+ sessionStorage.setItem(notificationKeys.sms,JSON.stringify(Array.from(notificationState.seenSms).slice(-500)));
+ for(const key of ["clients","hotspot","internet","cellular","resources"])if(notificationState[key]!==null)sessionStorage.setItem(notificationKeys[key],JSON.stringify(notificationState[key]));
+}catch(_){}}
+function addNotification(type,titleKa,titleEn,bodyKa,bodyEn){
+ if(!state.authenticated)return;
+ notificationState.items.unshift({id:Date.now()+"-"+(++notificationSeq),type,titleKa,titleEn,bodyKa:String(bodyKa||""),bodyEn:String(bodyEn||""),timestamp:new Date().toISOString(),read:false});
+ notificationState.items=notificationState.items.slice(0,100);saveNotifications();renderNotifications();
+}
+function renderNotifications(){
+ const list=element("notificationList"),badge=element("notificationBadge");if(!list||!badge)return;
+ const unread=notificationState.items.filter(x=>!x.read).length;badge.textContent=unread>99?"99+":String(unread);badge.hidden=!unread;list.replaceChildren();
+ if(!notificationState.items.length){const empty=document.createElement("div");empty.className="notification-empty";empty.textContent=tr("შეტყობინებები ჯერ არ არის.","No notifications yet.");list.append(empty);return}
+ notificationState.items.forEach(item=>{const row=document.createElement("button");row.type="button";row.className="notification-item"+(item.read?"":" notification-unread")+(item.type==="warning"?" notification-warning":"")+(item.type==="error"?" notification-error":"");
+ const title=document.createElement("strong"),body=document.createElement("span"),time=document.createElement("small");
+ title.textContent=uiLanguage==="en"?item.titleEn:item.titleKa;body.textContent=uiLanguage==="en"?item.bodyEn:item.bodyKa;
+ const stamp=new Date(item.timestamp);time.textContent=Number.isNaN(stamp.getTime())?"":stamp.toLocaleString(uiLanguage==="en"?"en-US":"ka-GE");
+ row.append(title,body,time);row.addEventListener("click",()=>{item.read=true;saveNotifications();renderNotifications()});list.append(row)});
+}
+function setNotificationPanel(open){const panel=element("notificationPanel"),button=element("notificationToggle");if(!panel||!button)return;panel.classList.toggle("hidden",!open);button.setAttribute("aria-expanded",String(open))}
+element("notificationToggle")?.addEventListener("click",()=>setNotificationPanel(element("notificationPanel")?.classList.contains("hidden")));
+element("notificationReadAll")?.addEventListener("click",()=>{notificationState.items.forEach(x=>x.read=true);saveNotifications();renderNotifications()});
+element("notificationClear")?.addEventListener("click",()=>{notificationState.items.length=0;saveNotifications();renderNotifications()});
+document.addEventListener("click",event=>{const wrap=document.querySelector(".notification-wrap");if(wrap&&!wrap.contains(event.target))setNotificationPanel(false)});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")setNotificationPanel(false)});
+function trackHotspotNotifications(data){
+ if(!data||typeof data.active!=="boolean")return;
+ const active=data.active,current={};
+ (active&&Array.isArray(data.clients)?data.clients:[]).forEach(client=>{const mac=String(client.mac||"").toLowerCase();if(mac)current[mac]={name:String(client.hostname||client.ip||mac),ip:String(client.ip||"")}});
+ if(notificationState.clients===null){notificationState.clients=current;notificationState.hotspot=active;saveNotifications();return}
+ if(notificationState.hotspot!==null&&active!==notificationState.hotspot)addNotification(active?"success":"warning",active?"Hotspot ჩაირთო":"Hotspot გამოირთო",active?"Hotspot started":"Hotspot stopped",active?"Keyland Hotspot აქტიურია.":"Keyland Hotspot შეჩერდა.",active?"Keyland Hotspot is active.":"Keyland Hotspot has stopped.");
+ Object.keys(current).forEach(mac=>{if(!notificationState.clients[mac]){const d=current[mac];addNotification("info","ახალი მოწყობილობა","New device connected",d.name+" დაუკავშირდა Hotspot-ს"+(d.ip?" · "+d.ip:"")+" · "+mac,d.name+" connected to the hotspot"+(d.ip?" · "+d.ip:"")+" · "+mac)}});
+ Object.keys(notificationState.clients||{}).forEach(mac=>{if(!current[mac]){const d=notificationState.clients[mac];addNotification("warning","მოწყობილობა გაითიშა","Device disconnected",(d.name||mac)+" გაითიშა Hotspot-იდან · "+mac,(d.name||mac)+" disconnected from the hotspot · "+mac)}});
+ notificationState.clients=current;notificationState.hotspot=active;saveNotifications();
+}
+function trackInternetNotification(data){
+ if(typeof data?.connected!=="boolean")return;
+ if(notificationState.internet===null)notificationState.internet=data.connected;
+ else if(data.connected!==notificationState.internet){const up=data.connected;addNotification(up?"success":"warning",up?"ინტერნეტი აღდგა":"ინტერნეტი გაითიშა",up?"Internet restored":"Internet disconnected",up?"ინტერნეტთან კავშირი აღდგა.":"ინტერნეტთან კავშირი დაიკარგა.",up?"Internet connectivity restored.":"Internet connectivity was lost.");notificationState.internet=up}
+ saveNotifications();
+}
+function trackCellularNotification(data){
+ const modems=Array.isArray(data?.modems)?data.modems:[],m=modems.find(x=>x&&x.available)||modems[0];if(!m)return;
+ const n=m.network||{},s=m.sim||{},o=m.operator||{},fp=JSON.stringify([m.available,m.state,s.detected,s.state,n.registration_state,n.technology,o.name]);
+ if(notificationState.cellular===null)notificationState.cellular=fp;
+ else if(fp!==notificationState.cellular){const details=[m.state,n.registration_state,n.technology,o.name].filter(Boolean).join(" · ");addNotification("info","SIM/LTE მდგომარეობა შეიცვალა","SIM/LTE status changed","მობილური ქსელის ახალი მდგომარეობა: "+details,"New mobile network state: "+details);notificationState.cellular=fp}
+ saveNotifications();
+}
+function trackResourceNotifications(data){
+ if(!data)return;const warnings=[],cpu=Number(data.cpu_percent),ram=Number(data.memory?.percent),disk=Number(data.disk?.percent);
+ if(Number.isFinite(cpu)&&cpu>=90)warnings.push("CPU "+Math.round(cpu)+"%");
+ if(Number.isFinite(ram)&&ram>=90)warnings.push("RAM "+Math.round(ram)+"%");
+ if(Number.isFinite(disk)&&disk>=95)warnings.push("Disk "+Math.round(disk)+"%");
+ const key=warnings.join(" · ");if(key&&key!==notificationState.resources)addNotification("warning","მაღალი სისტემური დატვირთვა","High system resource usage","რესურსების მაღალი გამოყენება: "+key,"High resource usage: "+key);
+ notificationState.resources=key;saveNotifications();
+}
+function trackApiHealth(name,ok,detail){
+ if(!["internet","hotspotClients","cellularStatus","resources","power"].includes(name))return;
+ if(!ok&&!notificationApiErrors[name])addNotification("error","მონიტორინგის შეცდომა","Monitoring error",name+": "+String(detail||"მონაცემები მიუწვდომელია"),name+": "+String(detail||"Data unavailable"));
+ if(ok&&notificationApiErrors[name])addNotification("success","მონიტორინგი აღდგა","Monitoring recovered",name+" მონაცემების მიღება აღდგა.",name+" data collection recovered.");
+ notificationApiErrors[name]=!ok;
+}
+function trackSmsNotifications(messages){
+ if(!Array.isArray(messages))return;const received=messages.filter(x=>x&&x.direction==="received"&&x.id!=null);
+ if(!notificationState.smsReady){received.forEach(x=>notificationState.seenSms.add(String(x.id)));notificationState.smsReady=true;saveNotifications();return}
+ received.forEach(sms=>{const id=String(sms.id);if(notificationState.seenSms.has(id))return;notificationState.seenSms.add(id);
+ const number=String(sms.number||"უცნობი ნომერი"),raw=String(sms.text||"").trim(),preview=raw.length>180?raw.slice(0,177)+"...":raw;
+ addNotification("sms","ახალი SMS","New SMS received","გამომგზავნი: "+number+(preview?" · "+preview:""),"From: "+number+(preview?" · "+preview:""))});
+ saveNotifications();
+}
+function resetNotificationSession(){
+ notificationState.items.length=0;notificationState.seenSms.clear();notificationState.smsReady=false;notificationState.clients=null;notificationState.hotspot=null;notificationState.internet=null;notificationState.cellular=null;notificationState.resources="";
+ Object.keys(notificationApiErrors).forEach(k=>delete notificationApiErrors[k]);try{Object.values(notificationKeys).forEach(k=>sessionStorage.removeItem(k))}catch(_){}
+ renderNotifications();setNotificationPanel(false);
+}
+
 
 /* DOM HELPERS */
 
@@ -1704,8 +1842,11 @@ function getCookie(name) {
 
 function showLogin(message = "") {
     if (typeof disconnectTerminal === "function") disconnectTerminal();
+    const wasAuthenticated = state.authenticated;
     state.authenticated = false;
     stopPolling();
+    if (wasAuthenticated) resetNotificationSession();
+    element("notificationWrap")?.classList.add("hidden");
 
     document.body.classList.add("login-active");
 
@@ -1725,6 +1866,7 @@ function showDashboard(username) {
     element("loginOverlay").classList.add("hidden");
     element("dashboard").classList.remove("hidden");
     element("logoutButton").classList.remove("hidden");
+    element("notificationWrap")?.classList.remove("hidden");
 
     element("connection").textContent = "● Connected: " + username;
 }
@@ -2356,6 +2498,7 @@ async function loadData() {
                         break;
 
                     case "internet":
+                        trackInternetNotification(data);
                         updateInternet(data);
                         break;
 
@@ -2371,6 +2514,7 @@ async function loadData() {
                         break;
 
                     case "hotspotClients":
+                        trackHotspotNotifications(data);
                         renderHotspotClients(data);
                         break;
 
@@ -2395,6 +2539,7 @@ async function loadData() {
         let failures = 0;
 
         results.forEach((result, index) => {
+            trackApiHealth(jobs[index][0], result.status === "fulfilled", result.status === "rejected" ? result.reason?.message : "");
             if (result.status === "fulfilled") {
                 dataByName[result.value.name] = result.value.data;
             } else {
@@ -2433,11 +2578,13 @@ async function loadData() {
         });
 
         if (dataByName.cellularStatus) {
+            trackCellularNotification(dataByName.cellularStatus);
             updateCellular(
                 dataByName.cellularStatus,
                 dataByName.cellularUsage || { interfaces: [] }
             );
         }
+        if (dataByName.resources) trackResourceNotifications(dataByName.resources);
 
         const extraResults = await Promise.allSettled([
             loadInterfaces(),
@@ -2601,6 +2748,7 @@ Object.assign(translations, {
  "ქსელთან დაკავშირება მიმდინარეობს...":"Connecting to Wi-Fi...",
  "კავშირის მდგომარეობა მოწმდება...":"Checking connection status..."
 });
+Object.assign(translations, {"შეტყობინებები":"Notifications","ყველას წაკითხულად მონიშვნა":"Mark all as read","გასუფთავება":"Clear","შეტყობინებები ჯერ არ არის.":"No notifications yet."});
 const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
 const englishToGeorgian = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
 Object.assign(englishToGeorgian, {"SIM STATUS":"SIM-ის მდგომარეობა","MODEM STATUS":"მოდემის მდგომარეობა","REGISTRATION":"ქსელში რეგისტრაცია","SIGNAL QUALITY":"სიგნალის ხარისხი","MOBILE CONNECTION":"მობილური კავშირი","MOBILE DOWNLOAD":"მობილური ჩამოტვირთვა","MOBILE UPLOAD":"მობილური ატვირთვა","CELLULAR INTERFACES / IP ADDRESSES":"მობილური ინტერფეისები / IP მისამართები","connected":"დაკავშირებულია","disconnected":"გათიშულია","home":"სახლის ქსელი","detected":"აღმოჩენილია","unknown":"უცნობია","enabled":"ჩართულია","disabled":"გამორთულია","active":"აქტიურია","inactive":"არააქტიურია","Services / Tools":"სერვისები და ხელსაწყოები","Technical details":"ტექნიკური დეტალები","Loading...":"იტვირთება...","Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.","Press Wi-Fi ქსელების ძიება":"დააჭირე ღილაკს Wi-Fi ქსელების მოსაძებნად","Router mode":"როუტერის რეჟიმი","SIM Mobile Hotspot":"SIM ბარათის ინტერნეტით Hotspot","Wi-Fi Repeater":"Wi-Fi გამეორება","Select source Wi-Fi interface":"აირჩიე საწყისი Wi-Fi ინტერფეისი","Select interface":"აირჩიე ინტერფეისი","No data":"მონაცემები არ არის","Device capabilities":"მოწყობილობის შესაძლებლობები","Network interfaces":"ქსელის ინტერფეისები","Repeater readiness":"გამეორების რეჟიმის მზადყოფნა","Advanced settings and diagnostics":"დამატებითი პარამეტრები და დიაგნოსტიკა","Internet source (WAN)":"ინტერნეტის წყარო (WAN)","AP interface":"წვდომის წერტილის ინტერფეისი (AP)","Hotspot name":"Hotspot-ის სახელი","Password":"პაროლი","Scan Wi-Fi networks":"Wi-Fi ქსელების ძიება","Refresh data":"მონაცემების განახლება","Network control panel":"ქსელის მართვის პანელი","Administrator panel":"ადმინისტრატორის პანელი","System overview":"სისტემის მიმოხილვა","Network management":"ქსელის მართვა","Mobile network management":"მობილური ქსელის მართვა","Firewall & NAT":"Firewall და NAT","WAN / LAN & DHCP":"WAN / LAN და DHCP"});
@@ -2630,6 +2778,7 @@ function applyLanguage(language) {
     translateAddedContent(document.body);
     const toggle = document.getElementById("languageToggle");
     if (toggle) toggle.textContent = uiLanguage === "en" ? "ქარ" : "EN";
+    if (typeof renderNotifications === "function") renderNotifications();
 }
 function tr(ka, en) { return uiLanguage === "en" ? en : ka; }
 document.getElementById("languageToggle").addEventListener("click", () => applyLanguage(uiLanguage === "en" ? "ka" : "en"));
@@ -2853,6 +3002,13 @@ async function manageHotspotClient(client, action) {
             : data.blocked === false
                 ? "მოწყობილობა განიბლოკა: " + mac
                 : "სიჩქარის ლიმიტი დაყენებულია: " + mac;
+        if (action === "block" || action === "unblock") {
+            const verbKa = action === "block" ? "დაიბლოკა" : "განიბლოკა";
+            const verbEn = action === "block" ? "was blocked" : "was unblocked";
+            addNotification("info", "ადმინისტრატორის მოქმედება", "Administrator action", mac + " — მოწყობილობა " + verbKa + ".", mac + " — device " + verbEn + ".");
+        } else {
+            addNotification("info", "სიჩქარის ლიმიტი შეიცვალა", "Speed limit updated", mac + " · ჩამოტვირთვა " + payload.download_mbps + " Mbps · ატვირთვა " + payload.upload_mbps + " Mbps", mac + " · download " + payload.download_mbps + " Mbps · upload " + payload.upload_mbps + " Mbps");
+        }
         await loadHotspotCapabilities();
     } catch (error) {
         element("hotspotMessage").textContent = "მოქმედება ვერ შესრულდა: " + error.message;
@@ -3527,18 +3683,24 @@ function startPolling() {
     loadData();
     loadDnsStatus();
     loadHotspotCapabilities();
+    refreshSms(true);
 
     state.pollingTimer = setInterval(() => {
-        if (state.authenticated) {
-            loadData();
-        }
+        if (state.authenticated) loadData();
     }, 15000);
+    state.smsPollingTimer = setInterval(() => {
+        if (state.authenticated) refreshSms(true);
+    }, 30000);
 }
 
 function stopPolling() {
     if (state.pollingTimer !== null) {
         clearInterval(state.pollingTimer);
         state.pollingTimer = null;
+    }
+    if (state.smsPollingTimer !== null) {
+        clearInterval(state.smsPollingTimer);
+        state.smsPollingTimer = null;
     }
 }
 
@@ -3607,18 +3769,20 @@ function renderSmsMessages() {
     }
 }
 
-async function refreshSms() {
-    if (!state.authenticated) return;
+async function refreshSms(silent = false) {
+    if (!state.authenticated || state.smsLoading) return;
+    state.smsLoading = true;
     const status = element("smsStatus");
-    status.textContent = "SMS-ები იტვირთება...";
+    if (!silent && status) status.textContent = "SMS-ები იტვირთება...";
     try {
         const data = await fetchJSON(API + "/cellular/sms/messages");
         smsMessagesCache = Array.isArray(data.messages) ? data.messages : [];
+        trackSmsNotifications(smsMessagesCache);
         renderSmsMessages();
-        status.textContent = "მოდემი #" + data.modem_id + " · " + data.count + " შეტყობინება";
+        if (!silent && status) status.textContent = "მოდემი #" + data.modem_id + " · " + data.count + " შეტყობინება";
     } catch (error) {
-        status.textContent = "შეცდომა: " + error.message;
-    }
+        if (!silent && status) status.textContent = "შეცდომა: " + error.message;
+    } finally { state.smsLoading = false; }
 }
 
 async function deleteSmsMessage(sms) {
@@ -3634,6 +3798,7 @@ async function deleteSmsMessage(sms) {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
         status.textContent = "SMS წაიშალა · ID " + sms.id;
+        addNotification("info", "SMS წაიშალა", "SMS deleted", "შეტყობინება " + (sms.number || sms.id) + " წაიშალა.", "Message " + (sms.number || sms.id) + " was deleted.");
         await refreshSms();
     } catch (error) {
         status.textContent = "წაშლის შეცდომა: " + error.message;
@@ -3670,6 +3835,7 @@ element("smsSendForm")?.addEventListener("submit", async event => {
         element("smsMessage").value = "";
         element("smsLength").textContent = "0";
         element("smsStatus").textContent = "SMS მიღებულია გასაგზავნად · ID " + data.sms_id;
+        addNotification("success", "SMS გაიგზავნა", "SMS sent", "ნომერზე " + number + " SMS გაიგზავნა.", "An SMS was sent to " + number + ".");
         refreshSms();
     } catch (error) {
         element("smsStatus").textContent = "შეცდომა: " + error.message;
