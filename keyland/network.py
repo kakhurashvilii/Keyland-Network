@@ -853,9 +853,9 @@ def get_wifi_scan():
                     # nmcli may format FREQ as "2412 MHz" rather than a bare
                     # integer. Parse numeric portions independently so one formatted
                     # field cannot erase the channel and signal values.
-                    freq_match = re.search(r"(\\d{4,5})", parts[3] or "")
-                    chan_match = re.search(r"\\d{1,3}", parts[2] or "")
-                    sig_match = re.search(r"\\d{1,3}", parts[5] or "")
+                    freq_match = re.search(r"(\d{4,5})", parts[3] or "")
+                    chan_match = re.search(r"\d{1,3}", parts[2] or "")
+                    sig_match = re.search(r"\d{1,3}", parts[5] or "")
                     frequency = int(freq_match.group(1)) if freq_match else None
                     channel = int(chan_match.group()) if chan_match else _wifi_channel(frequency)
                     signal = int(sig_match.group()) if sig_match else None
