@@ -178,26 +178,46 @@ def write_state(data: dict[str, Any]) -> None:
 
 
 def _clients(ap: str | None) -> list[dict[str, Any]]:
-    if not ap: return []
+    """Collect per-station counters and radio statistics from the AP driver."""
+    if not ap:
+        return []
     r = run(["iw", "dev", ap, "station", "dump"])
-    if not r["ok"]: return []
+    if not r["ok"]:
+        return []
     clients: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
+    numeric_fields = {
+        "rx_bytes", "tx_bytes", "rx_packets", "tx_packets",
+        "tx_retries", "tx_failed", "connected_time", "inactive_time",
+        "expected_throughput",
+    }
     for raw in r["out"].splitlines():
         line = raw.strip()
         if line.startswith("Station "):
-            if current: clients.append(current)
-            current = {"mac": line.split()[1]}
-        elif current and ":" in line:
-            key, value = line.split(":", 1)
-            key = key.strip().lower().replace(" ", "_")
-            value = value.strip()
-            if key in ("signal", "signal_avg"):
-                current[key] = value
-            elif key in ("rx_bytes", "tx_bytes", "connected_time"):
-                try: current[key] = int(value.split()[0])
-                except (ValueError, IndexError): pass
-    if current: clients.append(current)
+            if current:
+                clients.append(current)
+            current = {"mac": line.split()[1].lower()}
+            continue
+        if not current or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip().lower().replace(" ", "_").replace("/", "_")
+        value = value.strip()
+        if key in numeric_fields:
+            match = re.search(r"-?\\d+(?:\\.\\d+)?", value)
+            if match:
+                number = float(match.group())
+                current[key] = int(number) if number.is_integer() else number
+        elif key in ("signal", "signal_avg"):
+            match = re.search(r"-?\\d+(?:\\.\\d+)?", value)
+            if match:
+                current[key] = float(match.group())
+        elif key in ("tx_bitrate", "rx_bitrate", "authorized",
+                     "authenticated", "associated", "preamble",
+                     "wmm_wme", "mfp", "tdls_peer"):
+            current[key] = value
+    if current:
+        clients.append(current)
     return clients
 
 
@@ -747,8 +767,10 @@ def client_status() -> dict[str, Any]:
             fields = line.split()
             if len(fields) >= 4:
                 lease_by_mac[fields[1].lower()] = {
+                    "lease_expiry": int(fields[0]) if fields[0].isdigit() else None,
                     "ip": fields[2],
                     "hostname": fields[3] if fields[3] != "*" else None,
+                    "client_id": fields[4] if len(fields) >= 5 and fields[4] != "*" else None,
                 }
     except OSError:
         pass
@@ -768,7 +790,20 @@ def client_status() -> dict[str, Any]:
         client_mac = str(client.get("mac", "")).lower()
         client["blocked"] = client_mac in blocked
         client["speed_limit"] = limits.get(client_mac)
-    return {"active": bool(status().get("active")), "interface": state.get("interface"), "clients": clients}
+        signal = client.get("signal_avg", client.get("signal"))
+        client["signal_quality_percent"] = (
+            max(0, min(100, round((float(signal) + 100) * 2)))
+            if isinstance(signal, (int, float)) else None
+        )
+        client["radio_details_available"] = any(
+            key in client for key in ("tx_bitrate", "rx_bitrate", "signal", "signal_avg")
+        )
+    return {
+        "active": bool(status().get("active")),
+        "interface": state.get("interface"),
+        "client_count": len(clients),
+        "clients": clients,
+    }
 
 
 def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, Any]:
