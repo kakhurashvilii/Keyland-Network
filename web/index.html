@@ -1388,6 +1388,7 @@ footer{padding:16px;font-size:9px}
                 <div class="client-empty">Hotspot ჯერ არ არის ჩართული ან მოწყობილობები არ არის დაკავშირებული.</div>
             </div>
             <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. თითოეული მოწყობილობის დაბლოკვა და სიჩქარის ლიმიტი დაცული მართვის API-ით იმართება.</p>
+            <p class="muted" id="hotspotPrivacyNotice" role="note">კონფიდენციალურობა: HTTPS კავშირების შიგთავსს, პირად მიმოწერას, პაროლებს ან ვებგვერდების შიდა შიგთავსს Keyland არ კითხულობს და არ იწერს. DNS მონიტორინგი, ჩართვის შემთხვევაში, აჩვენებს მხოლოდ DNS მოთხოვნების მეტამონაცემებს (დომენს, დროსა და მოთხოვნის ტიპს) და მხოლოდ მაშინ, როცა მოწყობილობის DNS მოთხოვნები Keyland-ის DNS სერვერზე გადის. VPN-მა, დაშიფრულმა DNS-მა ან სხვა გარე resolver-მა შეიძლება ეს ხილვადობა შეზღუდოს.</p>
         </section>
 
         <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
@@ -2446,6 +2447,7 @@ const translations = {
  "შესვლა":"Sign in",
  "მხოლოდ ადმინისტრატორისთვის":"Administrators only",
  "გასვლა":"Sign out",
+ "კონფიდენციალურობა: HTTPS კავშირების შიგთავსს, პირად მიმოწერას, პაროლებს ან ვებგვერდების შიდა შიგთავსს Keyland არ კითხულობს და არ იწერს. DNS მონიტორინგი, ჩართვის შემთხვევაში, აჩვენებს მხოლოდ DNS მოთხოვნების მეტამონაცემებს (დომენს, დროსა და მოთხოვნის ტიპს) და მხოლოდ მაშინ, როცა მოწყობილობის DNS მოთხოვნები Keyland-ის DNS სერვერზე გადის. VPN-მა, დაშიფრულმა DNS-მა ან სხვა გარე resolver-მა შეიძლება ეს ხილვადობა შეზღუდოს.":"Privacy: Keyland does not read or record HTTPS content, private messages, passwords, or webpage contents. If enabled, DNS monitoring shows only DNS query metadata (domain, time, and query type), and only when the device sends DNS queries through Keyland’s DNS server. VPNs, encrypted DNS, or other external resolvers may limit this visibility.",
  "მიმოხილვა":"Overview",
  "მობილური ქსელი":"Mobile network",
  "Wi-Fi და ადაპტერები":"Wi-Fi & adapters",
