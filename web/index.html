@@ -1127,6 +1127,7 @@ footer{padding:16px;font-size:9px}
             <div id="internetStatus" class="internet-status unknown">
                 მოწმდება...
             </div>
+            <div id="internetPublicDetails" class="technical-grid" aria-live="polite"></div>
             <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="internetDetails">შედეგის მოლოდინი...</pre>
         </details>
@@ -1832,20 +1833,43 @@ async function loadInterfaces() {
 
 function updateInternet(data) {
     const status = element("internetStatus");
-
     if (data.connected === true) {
         status.textContent = "● Internet connected";
         status.className = "internet-status online";
-
     } else if (data.connected === false) {
         status.textContent = "● Internet unavailable";
         status.className = "internet-status offline";
-
     } else {
         status.textContent = "● Status unknown";
         status.className = "internet-status unknown";
     }
 
+    const panel = element("internetPublicDetails");
+    if (panel) {
+        const fields = [
+            ["გარე IPv4 (Public IP)", data.public_ipv4],
+            ["გარე IPv6", data.public_ipv6],
+            ["WAN წყარო", data.wan_type === "cellular" ? "მობილური ინტერნეტი / LTE" :
+                data.wan_type === "wifi" ? "Wi-Fi" :
+                data.wan_type === "ethernet_or_other" ? "Ethernet / სხვა" : "უცნობია"],
+            ["WAN ინტერფეისი", data.wan_interface],
+            ["ლოკალური IPv4", data.local_ipv4],
+            ["Gateway", data.gateway]
+        ];
+        panel.replaceChildren();
+        fields.forEach(([label, value]) => {
+            const field = document.createElement("div");
+            field.className = "technical-field";
+            const title = document.createElement("span");
+            title.className = "technical-label";
+            title.textContent = label;
+            const content = document.createElement("strong");
+            content.className = "technical-value";
+            content.textContent = value || "—";
+            field.append(title, content);
+            panel.appendChild(field);
+        });
+    }
     showJSON("internetDetails", data);
 }
 
@@ -2537,6 +2561,43 @@ function renderHotspotClients(status) {
             rate.append(document.createElement("br"), policy);
         }
 
+        const extra = document.createElement("details");
+        extra.className = "diagnostic-details";
+        const extraSummary = document.createElement("summary");
+        extraSummary.textContent = "დეტალური ტექნიკური მონაცემები";
+        const extraGrid = document.createElement("div");
+        extraGrid.className = "technical-grid";
+        const extraFields = [
+            ["RX პაკეტები", client.rx_packets],
+            ["TX პაკეტები", client.tx_packets],
+            ["TX retries", client.tx_retries],
+            ["TX failed", client.tx_failed],
+            ["Inactive time", client.inactive_time != null ? client.inactive_time + " ms" : null],
+            ["TX bitrate", client.tx_bitrate],
+            ["RX bitrate", client.rx_bitrate],
+            ["სიგნალის ხარისხი", client.signal_quality_percent != null ? client.signal_quality_percent + "%" : null],
+            ["Authorized", client.authorized],
+            ["Authenticated", client.authenticated],
+            ["Associated", client.associated],
+            ["Client ID", client.client_id],
+            ["Lease expiry", client.lease_expiry],
+            ["Expected throughput", client.expected_throughput != null ? client.expected_throughput + " kbps" : null]
+        ];
+        extraFields.forEach(([label, value]) => {
+            if (value === null || value === undefined || value === "") return;
+            const field = document.createElement("div");
+            field.className = "technical-field";
+            const title = document.createElement("span");
+            title.className = "technical-label";
+            title.textContent = label;
+            const content = document.createElement("strong");
+            content.className = "technical-value";
+            content.textContent = String(value);
+            field.append(title, content);
+            extraGrid.appendChild(field);
+        });
+        extra.append(extraSummary, extraGrid);
+
         const actions = document.createElement("div");
         actions.className = "client-device-actions";
         const block = document.createElement("button");
@@ -2550,7 +2611,7 @@ function renderHotspotClients(status) {
         limit.textContent = tr("სიჩქარის ლიმიტი", "Speed limit");
         limit.addEventListener("click", () => manageHotspotClient(client, "limit"));
         actions.append(block, limit);
-        card.append(head, meta, traffic, rate, actions);
+        card.append(head, meta, traffic, rate, extra, actions);
         return card;
     });
     list.replaceChildren(...cards);
