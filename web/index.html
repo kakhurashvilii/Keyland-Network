@@ -945,6 +945,15 @@ footer{padding:16px;font-size:9px}
 #wifiScan.wifi-results-grid{display:block}
 #wifiScan .wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(max-width:760px){#wifiScan .wifi-results-grid{grid-template-columns:minmax(0,1fr)}}
+.hotspot-saved-settings{margin:4px 0 16px;padding:13px 14px;border:1px solid #365675;border-radius:9px;background:rgba(5,15,27,.55)}
+.hotspot-saved-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;color:#cfe5fb;font-size:12px}
+#hotspotSavedState{color:#7fc9a8;font-size:10px}
+.hotspot-saved-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hotspot-saved-grid>div{min-width:0;padding:8px;border-radius:7px;background:#0d1b2b}
+.hotspot-saved-grid small{display:block;color:#8198b2;font-size:9px;margin-bottom:4px}
+.hotspot-saved-grid b{display:block;overflow-wrap:anywhere;color:#f0f6ff;font-size:12px;font-weight:650}
+@media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
+
 </style>
 </head>
 
@@ -2592,14 +2601,6 @@ async function manageHotspotClient(client, action) {
     }
 }
 
-.hotspot-saved-settings{margin:4px 0 16px;padding:13px 14px;border:1px solid #365675;border-radius:9px;background:rgba(5,15,27,.55)}
-.hotspot-saved-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;color:#cfe5fb;font-size:12px}
-#hotspotSavedState{color:#7fc9a8;font-size:10px}
-.hotspot-saved-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.hotspot-saved-grid>div{min-width:0;padding:8px;border-radius:7px;background:#0d1b2b}
-.hotspot-saved-grid small{display:block;color:#8198b2;font-size:9px;margin-bottom:4px}
-.hotspot-saved-grid b{display:block;overflow-wrap:anywhere;color:#f0f6ff;font-size:12px;font-weight:650}
-@media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
 
 /* Hotspot preflight and guarded controls */
 async function loadHotspotCapabilities() {
