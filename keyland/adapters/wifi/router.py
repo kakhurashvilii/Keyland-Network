@@ -4,6 +4,7 @@ import ipaddress, json, os, re, shutil, signal, subprocess, time
 from pathlib import Path
 from typing import Any
 from keyland.adapters.wifi.capabilities import parse_interface_combinations
+from keyland.adapters.wifi.dns_monitor import parse_dhcp_leases, parse_dns_query_log
 
 ROOT = Path("/run/keyland-router")
 STATE = ROOT / "state.json"
@@ -605,7 +606,23 @@ def start(p: dict[str, Any]) -> dict[str, Any]:
         if first == gateway_ip: first += 1
         if last == gateway_ip: last -= 1
         dconf = ROOT / "dnsmasq.conf"
-        dconf.write_text(f"interface={ap}\nbind-interfaces\nexcept-interface=lo\ndhcp-range={first},{last},{net.netmask},12h\ndhcp-option=3,{cfg['gateway']}\ndhcp-option=6,{','.join(cfg['dns_servers'])}\nno-resolv\n" + "".join(f"server={x}\n" for x in cfg["dns_servers"]) + f"pid-file={ROOT / 'dnsmasq.pid'}\n")
+        dns_monitoring = p.get("dns_monitoring") is True
+        dns_servers = [cfg["gateway"]] if dns_monitoring else cfg["dns_servers"]
+        lease_file = ROOT / "dnsmasq.leases"
+        query_log = ROOT / "dnsmasq-query.log"
+        dconf_text = (
+            f"interface={ap}\nbind-interfaces\nexcept-interface=lo\n"
+            f"dhcp-range={first},{last},{net.netmask},12h\n"
+            f"dhcp-option=3,{cfg['gateway']}\n"
+            f"dhcp-option=6,{','.join(dns_servers)}\n"
+            f"dhcp-leasefile={lease_file}\nno-resolv\n"
+            + "".join(f"server={x}\n" for x in cfg["dns_servers"])
+            + f"pid-file={ROOT / 'dnsmasq.pid'}\n"
+        )
+        if dns_monitoring:
+            dconf_text += f"log-queries=extra\nlog-facility={query_log}\nlog-async=25\n"
+        dconf.write_text(dconf_text)
+        state["dns_monitoring"] = dns_monitoring
         os.chmod(dconf, 0o600)
         dp = subprocess.Popen(["dnsmasq", "--keep-in-foreground", "--conf-file=" + str(dconf)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         state["dnsmasq_pid"] = dp.pid
@@ -760,7 +777,7 @@ def client_status() -> dict[str, Any]:
         return {"active": False, "clients": []}
     clients = _clients(state.get("interface"))
     # dnsmasq lease format: expiry MAC IPv4 hostname client-id
-    leases = Path("/var/lib/misc/dnsmasq.leases")
+    leases = ROOT / "dnsmasq.leases"
     lease_by_mac: dict[str, dict[str, Any]] = {}
     try:
         for line in leases.read_text(errors="replace").splitlines():
@@ -805,6 +822,31 @@ def client_status() -> dict[str, Any]:
         "clients": clients,
     }
 
+
+
+def dns_queries(limit: int = 200) -> dict[str, Any]:
+    """Return domain metadata observed by Keyland's local dnsmasq only."""
+    state = read_state()
+    if not state or not status().get("active"):
+        return {"active": False, "enabled": False, "queries": [], "message": "Hotspot is not active."}
+    if state.get("dns_monitoring") is not True:
+        return {"active": True, "enabled": False, "queries": [], "message": "Enable DNS monitoring in Hotspot settings."}
+    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 1000:
+        raise ValueError("DNS query limit must be between 1 and 1000.")
+    try:
+        log_text = (ROOT / "dnsmasq-query.log").read_text(errors="replace")
+    except OSError:
+        log_text = ""
+    try:
+        lease_text = (ROOT / "dnsmasq.leases").read_text(errors="replace")
+    except OSError:
+        lease_text = ""
+    leases = parse_dhcp_leases(lease_text)
+    queries = parse_dns_query_log(log_text, leases, limit=limit)
+    return {
+        "active": True, "enabled": True, "count": len(queries), "queries": queries,
+        "privacy": "DNS domain metadata only; HTTPS contents, URLs, passwords and messages are not inspected.",
+    }
 
 def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, Any]:
     """Apply per-station shaping on the dedicated AP interface using tc flower."""
