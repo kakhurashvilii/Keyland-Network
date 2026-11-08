@@ -954,6 +954,24 @@ footer{padding:16px;font-size:9px}
 .hotspot-saved-grid b{display:block;overflow-wrap:anywhere;color:#f0f6ff;font-size:12px;font-weight:650}
 @media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
 
+
+/* v0.7.0 SIM SMS + root PTY terminal */
+.sms-list{display:grid;gap:9px;margin-top:12px}
+.sms-item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#0d1929}
+.sms-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+.sms-body{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px;font-size:13px}
+.sms-form{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:14px}
+.sms-form input,.sms-form textarea{width:100%;background:#0b1626;color:var(--text);border:1px solid #34465f;border-radius:8px;padding:10px}
+.sms-form textarea{min-height:100px;resize:vertical}
+.terminal-window{background:#050a12;border:1px solid #26364d;border-radius:10px;padding:12px;min-height:300px;max-height:520px;overflow:auto}
+#terminalOutput{margin:0;max-height:none;min-height:270px;color:#c6f6d5;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.terminal-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+#terminalInput{flex:1;min-width:0;background:#050a12;color:#e7eef9;border:1px solid #34465f;border-radius:8px;padding:12px;font:13px ui-monospace,monospace}
+.terminal-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.terminal-toolbar button{margin:0}
+.terminal-warning{padding:10px;border-left:3px solid var(--orange);background:rgba(251,191,36,.07);border-radius:6px;color:#d9c79f;font-size:12px}
+@media(max-width:600px){.terminal-input-row{align-items:stretch;flex-direction:column}.terminal-window{min-height:240px}#terminalOutput{min-height:210px}}
+
 </style>
 </head>
 
@@ -1205,6 +1223,26 @@ footer{padding:16px;font-size:9px}
         </details>
         </section>
 
+        <section class="card" id="sms-section">
+            <h3>SIM SMS · შემოსული და გაგზავნა</h3>
+            <p class="muted">SMS იკითხება და იგზავნება ModemManager-ის მეშვეობით. LTE, APN, WAN და მარშრუტები არ იცვლება.</p>
+            <div class="button-row">
+                <button type="button" id="smsRefreshButton">SMS-ების განახლება</button>
+                <span id="smsStatus" class="muted" role="status">მოლოდინი...</span>
+            </div>
+            <div id="smsList" class="sms-list" aria-live="polite"><p class="muted">დააჭირე განახლებას შემოსული SMS-ების სანახავად.</p></div>
+            <hr>
+            <h4>ახალი SMS</h4>
+            <form id="smsSendForm" class="sms-form">
+                <label for="smsNumber">ტელეფონის ნომერი</label>
+                <input id="smsNumber" type="tel" maxlength="25" autocomplete="tel" placeholder="+9955XXXXXXXX" required>
+                <label for="smsMessage">შეტყობინება</label>
+                <textarea id="smsMessage" maxlength="1600" placeholder="შეიყვანე SMS ტექსტი..." required></textarea>
+                <div class="muted"><span id="smsLength">0</span>/1600 · ქართული ტექსტიც მხარდაჭერილია</div>
+                <button type="submit" id="smsSendButton">SMS-ის გაგზავნა</button>
+            </form>
+        </section>
+
         <section class="card">
             <h3>ქსელური ტრაფიკი</h3>
 
@@ -1393,9 +1431,35 @@ footer{padding:16px;font-size:9px}
             <p id="dnsMessage" class="muted" role="status"></p>
         </section>
 
+
+        <section class="card" id="terminal-section" style="grid-column:1/-1">
+            <h3>Linux Shell · სრული ადმინისტრატორის ტერმინალი</h3>
+            <p class="terminal-warning">სრული shell მუშაობს Keyland სერვისის უფლებებით (ამ მოწყობილობაზე — root). აქ შესრულებულმა ბრძანებამ შეიძლება შეცვალოს ან წაშალოს სისტემის ფაილები, ქსელის კონფიგურაცია ან შეწყვიტოს Hotspot/LTE. გაუშვი მხოლოდ კარგად გააზრებული ბრძანებები.</p>
+            <div class="button-row">
+                <button type="button" id="terminalConnectButton">ტერმინალთან დაკავშირება</button>
+                <button type="button" id="terminalDisconnectButton" class="secondary" disabled>კავშირის დასრულება</button>
+                <span id="terminalStatus" class="muted" role="status">გამორთულია</span>
+            </div>
+            <div class="terminal-window" id="terminalWindow">
+                <pre id="terminalOutput">Keyland Linux Shell v0.7.0
+დააჭირე „ტერმინალთან დაკავშირებას“.
+</pre>
+            </div>
+            <div class="terminal-input-row">
+                <input id="terminalInput" type="text" autocomplete="off" spellcheck="false" placeholder="ბრძანება..." disabled>
+                <button type="button" id="terminalSendButton" disabled>გაშვება ↵</button>
+            </div>
+            <div class="terminal-toolbar">
+                <button type="button" id="terminalCtrlC" class="secondary" disabled>Ctrl+C</button>
+                <button type="button" id="terminalCtrlD" class="secondary" disabled>Ctrl+D</button>
+                <button type="button" id="terminalClearButton" class="secondary">ეკრანის გასუფთავება</button>
+            </div>
+            <p class="muted">უსაფრთხოება: საჭიროა მოქმედი ადმინისტრატორის სესია; WebSocket იღებს მხოლოდ იმავე საიტის Origin-ს. სესია წყდება 15 წუთი უმოქმედობის ან მაქსიმალური დროის შემდეგ. ჟურნალში ინახება მხოლოდ კავშირის მეტამონაცემები — ბრძანებები და მათი შედეგები არა.</p>
+        </section>
+
         <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
         <section class="card" id="system-power-card">
-            <h3>სისტემის მართვა · v0.6.0</h3>
+            <h3>სისტემის მართვა · v0.7.0</h3>
             <p class="muted">გადატვირთვა და უსაფრთხო აღდგენა. ყველა მოქმედება საჭიროებს ადმინისტრატორის დადასტურებას.</p>
             <div class="button-row">
                 <button type="button" id="restartKeylandButton">Keyland სერვერის გადატვირთვა</button>
@@ -3403,6 +3467,154 @@ window.addEventListener("resize", () => {
         }
     }, 250);
 });
+
+
+/* SIM SMS */
+async function refreshSms() {
+    if (!state.authenticated) return;
+    const status = element("smsStatus");
+    const list = element("smsList");
+    status.textContent = "SMS-ები იტვირთება...";
+    try {
+        const data = await fetchJSON(API + "/cellular/sms/messages");
+        list.replaceChildren();
+        if (!data.messages || !data.messages.length) {
+            list.textContent = "შეტყობინებები ვერ მოიძებნა.";
+        } else {
+            for (const sms of data.messages) {
+                const card = document.createElement("article");
+                card.className = "sms-item";
+                const meta = document.createElement("div");
+                meta.className = "sms-meta";
+                const direction = document.createElement("strong");
+                direction.textContent = sms.direction === "received" ? "შემოსული" : "გაგზავნილი";
+                const number = document.createElement("span");
+                number.textContent = sms.number || "უცნობი ნომერი";
+                const time = document.createElement("span");
+                time.textContent = sms.timestamp || sms.state || "";
+                meta.append(direction, number, time);
+                const body = document.createElement("div");
+                body.className = "sms-body";
+                body.textContent = sms.text || "(ტექსტი მიუწვდომელია)";
+                card.append(meta, body);
+                list.append(card);
+            }
+        }
+        status.textContent = "მოდემი #" + data.modem_id + " · " + data.count + " შეტყობინება";
+    } catch (error) {
+        status.textContent = "შეცდომა: " + error.message;
+    }
+}
+element("smsRefreshButton")?.addEventListener("click", refreshSms);
+element("smsMessage")?.addEventListener("input", event => {
+    element("smsLength").textContent = String(event.target.value.length);
+});
+element("smsSendForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!state.authenticated) return;
+    const number = element("smsNumber").value.trim();
+    const message = element("smsMessage").value;
+    if (!window.confirm("გავაგზავნო SMS ნომერზე " + number + "? ოპერატორმა შეიძლება ჩამოგაჭრას SMS-ის საფასური.")) return;
+    const button = element("smsSendButton");
+    button.disabled = true;
+    element("smsStatus").textContent = "SMS იგზავნება...";
+    try {
+        const response = await apiFetch(API + "/cellular/sms/send", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({number, message})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("smsMessage").value = "";
+        element("smsLength").textContent = "0";
+        element("smsStatus").textContent = "SMS მიღებულია გასაგზავნად · ID " + data.sms_id;
+        refreshSms();
+    } catch (error) {
+        element("smsStatus").textContent = "შეცდომა: " + error.message;
+    } finally {
+        button.disabled = false;
+    }
+});
+
+/* Authenticated PTY terminal */
+let terminalSocket = null;
+let terminalConnected = false;
+function terminalWrite(value) {
+    const output = element("terminalOutput");
+    output.textContent += value;
+    if (output.textContent.length > 150000) output.textContent = output.textContent.slice(-120000);
+    const windowEl = element("terminalWindow");
+    windowEl.scrollTop = windowEl.scrollHeight;
+}
+function terminalSetConnected(connected, label) {
+    terminalConnected = connected;
+    element("terminalStatus").textContent = label;
+    element("terminalConnectButton").disabled = connected;
+    element("terminalDisconnectButton").disabled = !connected;
+    element("terminalInput").disabled = !connected;
+    element("terminalSendButton").disabled = !connected;
+    element("terminalCtrlC").disabled = !connected;
+    element("terminalCtrlD").disabled = !connected;
+}
+function terminalSend(data) {
+    if (terminalSocket && terminalSocket.readyState === WebSocket.OPEN) {
+        terminalSocket.send(JSON.stringify({type:"input", data}));
+    }
+}
+function connectTerminal() {
+    if (!state.authenticated || terminalSocket) return;
+    const scheme = location.protocol === "https:" ? "wss://" : "ws://";
+    const socket = new WebSocket(scheme + location.host + "/api/v1/terminal/ws");
+    terminalSocket = socket;
+    terminalSetConnected(false, "უკავშირდება...");
+    socket.onopen = () => terminalSetConnected(true, "დაკავშირებულია");
+    socket.onmessage = event => {
+        let packet;
+        try { packet = JSON.parse(event.data); } catch (_) { return; }
+        if (packet.type === "ready") {
+            terminalWrite("\n[Keyland PTY] მომხმარებელი: " + packet.username +
+                " · უფლებები: " + packet.privilege + " · სამუშაო დირექტორია: " + packet.cwd + "\n");
+        } else if (packet.type === "output") {
+            terminalWrite(packet.data);
+        } else if (packet.type === "error") {
+            terminalWrite("\n[შეცდომა] " + packet.message + "\n");
+        }
+    };
+    socket.onerror = () => terminalSetConnected(false, "კავშირის შეცდომა");
+    socket.onclose = event => {
+        terminalSocket = null;
+        terminalSetConnected(false, event.code === 1008 ? "ავტორიზაცია/Origin უარყოფილია" : "კავშირი დასრულდა");
+    };
+}
+function disconnectTerminal() {
+    if (terminalSocket) {
+        try { terminalSocket.send(JSON.stringify({type:"close"})); } catch (_) {}
+        terminalSocket.close();
+        terminalSocket = null;
+    }
+    terminalSetConnected(false, "გამორთულია");
+}
+element("terminalConnectButton")?.addEventListener("click", connectTerminal);
+element("terminalDisconnectButton")?.addEventListener("click", disconnectTerminal);
+element("terminalSendButton")?.addEventListener("click", () => {
+    const input = element("terminalInput");
+    if (!input.value || !terminalConnected) return;
+    terminalSend(input.value + "\n");
+    input.value = "";
+});
+element("terminalInput")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        element("terminalSendButton").click();
+    }
+});
+element("terminalCtrlC")?.addEventListener("click", () => terminalSend("\u0003"));
+element("terminalCtrlD")?.addEventListener("click", () => terminalSend("\u0004"));
+element("terminalClearButton")?.addEventListener("click", () => {
+    element("terminalOutput").textContent = "";
+});
+
 
 /* START */
 
