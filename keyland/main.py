@@ -53,7 +53,7 @@ from keyland.api.sms import router as sms_router
 from keyland.api.terminal import router as terminal_router
 
 
-VERSION = "0.8.0"
+VERSION = "0.9.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
