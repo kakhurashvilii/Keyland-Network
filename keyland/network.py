@@ -861,6 +861,23 @@ def get_wifi_scan():
             if not found:
                 scan_error = listed.get("error")
 
+        if found and scan_method == "NetworkManager":
+            # Enrich NetworkManager's quality percentage with driver RSSI when
+            # nl80211 allows a read-only scan. Keep the NMCLI result if it does not.
+            rssi_scan = run_command(["iw", "dev", name, "scan"], timeout=15)
+            if rssi_scan["success"]:
+                measured = {
+                    item.get("bssid", "").lower(): item
+                    for item in _parse_iw_scan(rssi_scan["output"], name)
+                    if item.get("bssid") and item.get("signal_dbm") is not None
+                }
+                for item in found:
+                    actual = measured.get(str(item.get("bssid", "")).lower())
+                    if actual:
+                        item["signal_dbm"] = actual["signal_dbm"]
+                        item["signal_source"] = "iw measured RSSI"
+                        item["distance_m_estimate"] = _wifi_distance_estimate(actual["signal_dbm"])
+
         if not found:
             raw = run_command(["iw", "dev", name, "scan"], timeout=30)
             if raw["success"]:
