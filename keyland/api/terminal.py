@@ -31,7 +31,7 @@ router = APIRouter(tags=["Terminal"])
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT_FILE = ROOT / "data" / "terminal-audit.jsonl"
 IDLE_TIMEOUT = 15 * 60
-MAX_SESSION_SECONDS = 60 * 60
+MAX_SESSION_SECONDS = 25 * 60
 
 
 def _audit(event: str, username: str, peer: str) -> None:
@@ -200,6 +200,11 @@ async def terminal_socket(websocket: WebSocket):
             await websocket.send_text(json.dumps({
                 "type": "error", "message": "Maximum terminal session time reached."
             }))
+        elif input_task in done and isinstance(input_task.exception(), asyncio.TimeoutError):
+            await websocket.send_text(json.dumps({
+                "type": "error", "message": "Terminal disconnected after 15 minutes idle."
+            }))
+        await asyncio.gather(*done, return_exceptions=True)
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)
