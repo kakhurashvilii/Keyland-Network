@@ -4,13 +4,52 @@ from pydantic import BaseModel, Field
 
 from keyland.auth import require_admin
 import json
+import os
+import tempfile
 import subprocess
+from pathlib import Path
 from keyland.adapters.wifi.hotspot import (
     get_hotspot_capabilities, start_hotspot, stop_hotspot,
 )
 from keyland.adapters.wifi.repeater import connect_wifi, disconnect_wifi
 
 router = APIRouter(prefix="/api/v1/wifi/hotspot", tags=["Wi-Fi Hotspot"])
+
+# Last successfully applied dashboard configuration. Keep secrets readable only
+# by the service account (0600); this endpoint is protected by require_admin.
+_SETTINGS_PATH = Path(__file__).resolve().parents[2] / "data" / "hotspot-settings.json"
+
+
+def _save_hotspot_settings(settings: dict) -> None:
+    _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(
+        dir=_SETTINGS_PATH.parent, prefix=".hotspot-settings-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(settings, stream, ensure_ascii=False, indent=2)
+            stream.write("\\n")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, _SETTINGS_PATH)
+    except Exception:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        raise
+
+
+@router.get("/router/settings")
+def router_wifi_saved_settings(user: dict = Depends(require_admin)):
+    try:
+        settings = json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"saved": False, "settings": None}
+    except (OSError, ValueError):
+        raise HTTPException(status_code=500, detail="Saved Hotspot settings could not be read.")
+    if not isinstance(settings, dict):
+        raise HTTPException(status_code=500, detail="Saved Hotspot settings are invalid.")
+    return {"saved": True, "settings": settings}
 
 
 class HotspotRequest(BaseModel):
@@ -175,9 +214,16 @@ def router_wifi_autostart_disable(payload: StopRequest, user: dict = Depends(req
 
 @router.post("/router/start")
 def router_wifi_start(payload: RouterWifiRequest, user: dict = Depends(require_admin)):
-    result = _call_router_helper("start", payload.model_dump())
+    settings = payload.model_dump()
+    result = _call_router_helper("start", settings)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Router start failed."))
+    try:
+        _save_hotspot_settings(settings)
+    except OSError:
+        # Do not report a successful persistent configuration if it could not be saved.
+        _call_router_helper("stop", {"confirmed": True})
+        raise HTTPException(status_code=500, detail="Hotspot started but settings could not be saved; router was stopped.")
     return result
 
 
