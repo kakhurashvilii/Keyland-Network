@@ -1394,6 +1394,19 @@ footer{padding:16px;font-size:9px}
         </section>
 
         <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
+        <section class="card" id="system-power-card">
+            <h3>სისტემის მართვა · v0.6.0</h3>
+            <p class="muted">გადატვირთვა და უსაფრთხო აღდგენა. ყველა მოქმედება საჭიროებს ადმინისტრატორის დადასტურებას.</p>
+            <div class="button-row">
+                <button type="button" id="restartKeylandButton">Keyland სერვერის გადატვირთვა</button>
+                <button type="button" id="rebootDeviceButton" class="danger">მთლიანი მოწყობილობის გადატვირთვა</button>
+            </div>
+            <hr>
+            <h4>ქარხნულ პარამეტრებზე დაბრუნება</h4>
+            <p class="muted">ამჟამინდელი აღდგენა შლის მხოლოდ Keyland-ის შენახულ Hotspot-ის პარამეტრებს. ადმინისტრატორის ანგარიში, კოდი და Kali Linux უცვლელი რჩება. წაშლამდე იქმნება სარეზერვო ასლი.</p>
+            <button type="button" id="factoryResetButton" class="danger">Keyland-ის ქსელის პარამეტრების განულება</button>
+            <p id="systemActionMessage" class="muted" role="status"></p>
+        </section>
         <section class="card"><h3>სისტემის დიაგნოსტიკა</h3><p class="muted">ჩვეულებრივ მართვას ეს მონაცემები არ სჭირდება. გახსენი მხოლოდ პრობლემის შემოწმებისას.</p>
             <details class="diagnostic-details"><summary>მოწყობილობის შესაძლებლობები</summary><pre id="capabilities">მოლოდინი...</pre></details>
             <details class="diagnostic-details"><summary>სერვისები და ხელსაწყოები</summary><pre id="services">მოლოდინი...</pre></details>
@@ -1666,6 +1679,42 @@ async function fetchJSON(endpoint) {
 
     return response.json();
 }
+
+/* SYSTEM POWER & RECOVERY */
+async function submitSystemAction(path, phrase, warning) {
+    if (!state.authenticated) return;
+    if (!window.confirm(warning)) return;
+    const typed = window.prompt("დადასტურებისთვის ზუსტად ჩაწერე: " + phrase);
+    if (typed !== phrase) {
+        element("systemActionMessage").textContent = "დადასტურება არ ემთხვევა. მოქმედება გაუქმებულია.";
+        return;
+    }
+    const output = element("systemActionMessage");
+    output.textContent = "მოთხოვნა იგზავნება...";
+    try {
+        const response = await apiFetch(API + path, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({confirmed:true, confirmation_text:phrase})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        output.textContent = data.message || (data.success ? "მოქმედება დაგეგმილია." : "მოქმედება დასრულდა.");
+    } catch (error) {
+        output.textContent = "შეცდომა: " + error.message;
+    }
+}
+document.addEventListener("DOMContentLoaded", () => {
+    element("restartKeylandButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/power/restart-keyland", "RESTART KEYLAND",
+            "გადაიტვირთება მხოლოდ Keyland-ის სერვისი. ქსელის მოწყობილობები არ უნდა გადაიტვირთოს. გავაგრძელოთ?"));
+    element("rebootDeviceButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/power/reboot-device", "REBOOT DEVICE",
+            "გადაიტვირთება მთელი OnePlus/Kali მოწყობილობა. ყველა კავშირი დროებით შეწყდება. გავაგრძელოთ?"));
+    element("factoryResetButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/factory-reset", "RESET KEYLAND",
+            "წაიშლება Keyland-ის შენახული Hotspot პარამეტრები. ჯერ შეიქმნება სარეზერვო ასლი. გავაგრძელოთ?"));
+});
 
 /* LOGIN */
 
