@@ -785,7 +785,7 @@ def client_status() -> dict[str, Any]:
         if radio_info["ok"]:
             for radio_line in radio_info["out"].splitlines():
                 radio_line = radio_line.strip()
-                match = re.search(r"channel\\s+(\\d+)\\s+\\((\\d+)\\s+MHz\\)", radio_line)
+                match = re.search(r"channel\s+(\d+)\s+\((\d+)\s+MHz\)", radio_line)
                 if match:
                     ap_radio["ap_channel"] = int(match.group(1))
                     ap_radio["ap_frequency_mhz"] = int(match.group(2))
