@@ -21,6 +21,12 @@ The current Hotspot stack already provides:
 
 The implementation must extend this existing `keyland.adapters.wifi.router` path. It must not introduce a competing router controller or change the phone's upstream Wi-Fi, SIM, default routes, Tailscale, or ZeroTier paths.
 
+## Important current DNS-path finding
+
+The current router dnsmasq configuration advertises the selected upstream DNS servers directly to hotspot clients through DHCP option 6, while dnsmasq also forwards to those servers. Therefore, client DNS queries can bypass the local dnsmasq process today. Query logging must not be presented as working until this path is changed.
+
+DNS visibility will be an explicit opt-in setting. When enabled, DHCP option 6 will advertise the AP gateway address, and the Keyland-managed dnsmasq instance will forward queries to the configured upstream servers and log query metadata. When disabled, the existing direct-upstream DNS behavior remains unchanged. Enabling this option may require clients to renew their DHCP lease or reconnect.
+
 ## v0.9.0 goals
 
 ### 1. Per-device DNS query history
