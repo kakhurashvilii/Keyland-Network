@@ -11,6 +11,8 @@ import psutil
 from collections import deque
 from datetime import datetime, timezone
 import re
+import ipaddress
+import urllib.request
 from pathlib import Path
 
 SYSTEM = platform.system().lower()
@@ -185,36 +187,88 @@ def get_traffic_history():
     }
 
 
+def _public_ip(url: str, version: int) -> str | None:
+    """Read the public IP from a small HTTPS response; never change routing."""
+    try:
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Keyland-Network/1.0"},
+        )
+        with urllib.request.urlopen(request, timeout=3) as response:
+            raw = response.read(128).decode("ascii", errors="ignore").strip()
+        # ipify JSON endpoint returns {"ip":"..."}; plain endpoints are also accepted.
+        try:
+            value = json.loads(raw).get("ip")
+        except (ValueError, AttributeError):
+            value = raw
+        address = ipaddress.ip_address(str(value).strip())
+        return str(address) if address.version == version else None
+    except (OSError, ValueError, TypeError, TimeoutError):
+        return None
+
+
 def get_internet_status():
-    """Check external connectivity without modifying network settings."""
-
-    targets = [
-        ("1.1.1.1", 443),
-        ("8.8.8.8", 53),
-    ]
-
+    """Check connectivity and discover the public IP through the active WAN."""
+    targets = [("1.1.1.1", 443), ("8.8.8.8", 53)]
+    connected = False
+    target = None
     for host, port in targets:
         try:
-            with socket.create_connection(
-                (host, port),
-                timeout=2,
-            ):
-                return {
-                    "platform": SYSTEM,
-                    "connected": True,
-                    "target": f"{host}:{port}",
-                    "checked_at": datetime.now(
-                        timezone.utc
-                    ).isoformat(),
-                }
-
+            with socket.create_connection((host, port), timeout=2):
+                connected = True
+                target = f"{host}:{port}"
+                break
         except OSError:
             continue
 
+    routes = get_routes().get("routes", [])
+    default_route = next(
+        (route for route in routes
+         if route.get("dst", "default") in ("default", "0.0.0.0/0")
+         and route.get("dev")),
+        {},
+    )
+    wan_interface = default_route.get("dev")
+    if not wan_interface:
+        gateway = get_default_gateway()
+        wan_interface = None
+
+    if wan_interface and wan_interface.startswith(("rmnet", "qmap", "wwan", "ppp", "cellular")):
+        wan_type = "cellular"
+    elif wan_interface and wan_interface.startswith(("wl", "wifi")):
+        wan_type = "wifi"
+    elif wan_interface:
+        wan_type = "ethernet_or_other"
+    else:
+        wan_type = None
+
+    local_address = None
+    if wan_interface:
+        for interface in get_interfaces():
+            if interface.get("name") == wan_interface:
+                local_address = next(
+                    (item.get("address") for item in interface.get("addresses", [])
+                     if item.get("family") == "IPv4"),
+                    None,
+                )
+                break
+
+    public_ipv4 = _public_ip("https://api.ipify.org?format=json", 4) if connected else None
+    public_ipv6 = _public_ip("https://api6.ipify.org?format=json", 6) if connected else None
     return {
         "platform": SYSTEM,
-        "connected": False,
-        "target": None,
+        "connected": connected,
+        "target": target,
+        "wan_interface": wan_interface,
+        "wan_type": wan_type,
+        "gateway": default_route.get("gateway"),
+        "local_ipv4": local_address,
+        "public_ipv4": public_ipv4,
+        "public_ipv6": public_ipv6,
+        "public_ip_provider": "api.ipify.org",
+        "public_ip_note": None if public_ipv4 or public_ipv6 else (
+            "Public IP lookup unavailable; connectivity may be restricted or the lookup service may be unreachable."
+        ),
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
 
