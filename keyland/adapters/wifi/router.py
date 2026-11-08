@@ -776,6 +776,37 @@ def client_status() -> dict[str, Any]:
     if not state:
         return {"active": False, "clients": []}
     clients = _clients(state.get("interface"))
+    # Every associated station uses the AP's current radio channel/band.
+    # Read the live AP frequency rather than trusting the requested setting.
+    ap_radio = {"ap_frequency_mhz": None, "ap_channel": None, "ap_band": None}
+    ap_name = state.get("interface")
+    if ap_name:
+        radio_info = run(["iw", "dev", ap_name, "info"])
+        if radio_info["ok"]:
+            for radio_line in radio_info["out"].splitlines():
+                radio_line = radio_line.strip()
+                match = re.search(r"channel\\s+(\\d+)\\s+\\((\\d+)\\s+MHz\\)", radio_line)
+                if match:
+                    ap_radio["ap_channel"] = int(match.group(1))
+                    ap_radio["ap_frequency_mhz"] = int(match.group(2))
+                    break
+    frequency = ap_radio["ap_frequency_mhz"]
+    if frequency:
+        ap_radio["ap_band"] = (
+            "6 GHz" if frequency >= 5925
+            else "5 GHz" if frequency >= 4900
+            else "2.4 GHz" if 2400 <= frequency <= 2500
+            else None
+        )
+    # Fall back to configured band only if the driver does not expose frequency.
+    if not ap_radio["ap_band"]:
+        configured_band = str(state.get("band") or "")
+        ap_radio["ap_band"] = (
+            "2.4 GHz" if configured_band.startswith("2.4")
+            else "5 GHz" if configured_band.startswith("5")
+            else "6 GHz" if configured_band.startswith("6")
+            else None
+        )
     # dnsmasq lease format: expiry MAC IPv4 hostname client-id
     leases = ROOT / "dnsmasq.leases"
     lease_by_mac: dict[str, dict[str, Any]] = {}
@@ -864,9 +895,12 @@ def client_status() -> dict[str, Any]:
         client["radio_details_available"] = any(
             key in client for key in ("tx_bitrate", "rx_bitrate", "signal", "signal_avg")
         )
+    for client in clients:
+        client.update(ap_radio)
     return {
         "active": bool(status().get("active")),
         "interface": state.get("interface"),
+        "radio": ap_radio,
         "client_count": len(clients),
         "clients": clients,
     }
