@@ -1446,7 +1446,7 @@ footer{padding:16px;font-size:9px}
 </pre>
             </div>
             <div class="terminal-input-row">
-                <input id="terminalInput" type="text" autocomplete="off" spellcheck="false" placeholder="ბრძანება..." disabled>
+                <input id="terminalInput" type="text" autocomplete="off" spellcheck="false" placeholder="ტერმინალის კლავიატურა · აკრიფე და Enter დააჭირე" disabled>
                 <button type="button" id="terminalSendButton" disabled>გაშვება ↵</button>
             </div>
             <div class="terminal-toolbar">
@@ -3543,7 +3543,11 @@ let terminalSocket = null;
 let terminalConnected = false;
 function terminalWrite(value) {
     const output = element("terminalOutput");
-    output.textContent += value;
+    const readable = String(value)
+        .replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "")
+        .replace(/\x1B\][^\x07]*(?:\x07|\x1B\\)/g, "")
+        .replace(/\r\n/g, "\n");
+    output.textContent += readable;
     if (output.textContent.length > 150000) output.textContent = output.textContent.slice(-120000);
     const windowEl = element("terminalWindow");
     windowEl.scrollTop = windowEl.scrollHeight;
@@ -3598,17 +3602,40 @@ function disconnectTerminal() {
 }
 element("terminalConnectButton")?.addEventListener("click", connectTerminal);
 element("terminalDisconnectButton")?.addEventListener("click", disconnectTerminal);
-element("terminalSendButton")?.addEventListener("click", () => {
-    const input = element("terminalInput");
-    if (!input.value || !terminalConnected) return;
-    terminalSend(input.value + "\n");
-    input.value = "";
-});
+element("terminalSendButton")?.addEventListener("click", () => terminalSend("\r"));
 element("terminalInput")?.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
+    if (!terminalConnected || event.isComposing) return;
+    let data = null;
+    if (event.ctrlKey && !event.altKey && !event.metaKey) {
+        const key = event.key.toLowerCase();
+        const controls = {c:"\u0003", d:"\u0004", z:"\u001a", l:"\u000c", a:"\u0001", e:"\u0005", u:"\u0015", k:"\u000b", w:"\u0017"};
+        data = controls[key] || null;
+    } else if (event.key === "Enter") data = "\r";
+    else if (event.key === "Backspace") data = "\u007f";
+    else if (event.key === "Tab") data = "\t";
+    else if (event.key === "Escape") data = "\u001b";
+    else if (event.key === "ArrowUp") data = "\u001b[A";
+    else if (event.key === "ArrowDown") data = "\u001b[B";
+    else if (event.key === "ArrowRight") data = "\u001b[C";
+    else if (event.key === "ArrowLeft") data = "\u001b[D";
+    else if (event.key === "Home") data = "\u001b[H";
+    else if (event.key === "End") data = "\u001b[F";
+    else if (event.key === "Delete") data = "\u001b[3~";
+    else if (event.key.length === 1 && !event.altKey && !event.metaKey) data = event.key;
+    if (data !== null) {
         event.preventDefault();
-        element("terminalSendButton").click();
+        terminalSend(data);
+        event.target.value = "";
     }
+});
+element("terminalInput")?.addEventListener("paste", event => {
+    if (!terminalConnected) return;
+    event.preventDefault();
+    terminalSend(event.clipboardData.getData("text"));
+});
+element("terminalInput")?.addEventListener("compositionend", event => {
+    if (terminalConnected && event.data) terminalSend(event.data);
+    event.target.value = "";
 });
 element("terminalCtrlC")?.addEventListener("click", () => terminalSend("\u0003"));
 element("terminalCtrlD")?.addEventListener("click", () => terminalSend("\u0004"));
