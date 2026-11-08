@@ -1698,6 +1698,25 @@ footer { color:#7187a4; }
                 მოწმდება...
             </div>
             <div id="internetPublicDetails" class="technical-grid" aria-live="polite"></div>
+            <div class="technical-panel" id="wlan0WanPanel">
+                <div class="technical-panel-title">WAN IPv4 · wlan0 (MAGTI Wi-Fi)</div>
+                <label for="wlan0WanMode">IP მისამართის მიღების რეჟიმი</label>
+                <select id="wlan0WanMode"><option value="dhcp">DHCP / ავტომატური</option><option value="static">Static / ხელით</option></select>
+                <div id="wlan0StaticFields" hidden>
+                    <label for="wlan0Address">IPv4 მისამართი</label>
+                    <input id="wlan0Address" inputmode="decimal" placeholder="192.168.0.24">
+                    <label for="wlan0Prefix">Prefix / CIDR (მაგ. 24)</label>
+                    <input id="wlan0Prefix" type="number" min="1" max="32" value="24">
+                    <label for="wlan0Gateway">Gateway</label>
+                    <input id="wlan0Gateway" inputmode="decimal" placeholder="192.168.0.1">
+                    <label for="wlan0Dns">DNS სერვერები (მძიმით გამოყოფილი)</label>
+                    <input id="wlan0Dns" placeholder="1.1.1.1, 8.8.8.8">
+                </div>
+                <p class="muted" id="wlan0WanCurrent">WAN პარამეტრები იტვირთება...</p>
+                <button id="wlan0WanRefresh" type="button" class="secondary">პარამეტრების განახლება</button>
+                <button id="wlan0WanApply" type="button">WAN პარამეტრების შენახვა / გამოყენება</button>
+                <p id="wlan0WanMessage" class="muted" role="status" aria-live="polite"></p>
+            </div>
             <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
             <pre id="internetDetails">შედეგის მოლოდინი...</pre>
         </details>
@@ -1958,6 +1977,8 @@ footer { color:#7187a4; }
             </div>
             <div class="repeater-actions"><button id="scanButton" type="button">ქსელების ძიება</button><button id="repeaterDisconnectButton" type="button" class="danger secondary" disabled>Wi-Fi-ის გათიშვა</button><button id="repeaterShareButton" type="button" class="secondary" disabled>ამ კავშირის გაზიარება</button></div>
             <p id="repeaterMessage" class="muted" role="status" aria-live="polite">ჯერ მოძებნე ახლომდებარე Wi-Fi ქსელები.</p>
+            <label for="wifiScanFilter">ქსელის ძებნა სახელით ან MAC მისამართით</label>
+            <input id="wifiScanFilter" type="search" maxlength="64" placeholder="მაგ. MAGTI, Marta ან 40:EE:15">
             <div id="wifiScan" class="wifi-results-grid" aria-live="polite"><p class="muted">ქსელების სია ჯერ არ მოძებნილა.</p></div>
             <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
@@ -3981,6 +4002,9 @@ element("dnsResetButton").addEventListener("click", () => {
 element("dnsRefreshButton").addEventListener("click", loadDnsStatus);
 
 /* WI-FI SCAN */
+element("wifiScanFilter")?.addEventListener("input", () => {
+    if (window.lastWifiScanData) renderWifiScan("wifiScan", window.lastWifiScanData);
+});
 
 function renderWifiScan(targetId, data) {
     const target = element(targetId);
@@ -3989,13 +4013,25 @@ function renderWifiScan(targetId, data) {
 
     const allNetworks = Array.isArray(data.networks) ? data.networks : [];
     const selectedInterface = element("repeaterInterface")?.value || "";
-    const networks = targetId === "wifiScan" && selectedInterface
+    const interfaceNetworks = targetId === "wifiScan" && selectedInterface
         ? allNetworks.filter(item => item.interface === selectedInterface)
         : allNetworks;
+    const filterText = targetId === "wifiScan"
+        ? (element("wifiScanFilter")?.value || "").trim().toLowerCase()
+        : "";
+    const networks = filterText
+        ? interfaceNetworks.filter(item =>
+            String(item.ssid || "").toLowerCase().includes(filterText) ||
+            String(item.bssid || "").toLowerCase().includes(filterText) ||
+            String(item.band || "").toLowerCase().includes(filterText) ||
+            String(item.frequency_mhz || "").includes(filterText))
+        : interfaceNetworks;
     if (!networks.length) {
         const empty = document.createElement("p");
         empty.className = "muted";
-        empty.textContent = data.error || "ქსელები ვერ მოიძებნა. შეამოწმე Wi-Fi ინტერფეისი, rfkill და უფლებები.";
+        empty.textContent = filterText
+            ? "ამ საძიებო სიტყვით ქსელი ვერ მოიძებნა."
+            : (data.error || "ქსელები ვერ მოიძებნა. შეამოწმე Wi-Fi ინტერფეისი, rfkill და უფლებები.");
         target.appendChild(empty);
         if (Array.isArray(data.interfaces) && data.interfaces.length) {
             const detail = document.createElement("pre");
@@ -4070,6 +4106,7 @@ async function scanWifi() {
 
     try {
         const data = await fetchJSON(API + "/wifi/scan");
+        window.lastWifiScanData = data;
         if (state.authenticated) renderWifiScan("wifiScan", data);
     } catch (error) {
         if (state.authenticated && target) target.textContent = "სკანირების შეცდომა: " + error.message;
