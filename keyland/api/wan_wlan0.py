@@ -73,8 +73,8 @@ def get_wlan0_wan(user: dict = Depends(require_admin)):
         "saved": {
             "method": saved["ipv4.method"],
             "address": cidr,
-            "gateway": saved["ipv4.gateway"] or None,
-            "dns": _split_values(saved["ipv4.dns"]),
+            "gateway": saved["ipv4.gateway"] or (active["IP4.GATEWAY"] or [None])[0],
+            "dns": _split_values(saved["ipv4.dns"]) or active["IP4.DNS"],
             "ignore_auto_dns": saved["ipv4.ignore-auto-dns"] == "yes",
         },
     }
