@@ -39,10 +39,12 @@ def _profile() -> str:
 
 
 def _values(profile: str) -> dict[str, str]:
-    result = _nmcli("-g", ",".join(_FIELDS), "connection", "show", profile)
-    rows = result.splitlines()
-    rows += [""] * (len(_FIELDS) - len(rows))
-    return dict(zip(_FIELDS, rows))
+    # Query each setting separately: nmcli omits empty fields in some versions,
+    # which would otherwise shift later values into the wrong keys.
+    return {
+        key: _nmcli("-g", key, "connection", "show", profile)
+        for key in _FIELDS
+    }
 
 
 def _split_values(value: str) -> list[str]:
