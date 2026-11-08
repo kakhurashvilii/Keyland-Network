@@ -48,9 +48,10 @@ from keyland.schemas import TokenResponse
 from keyland.initialize import initialize
 from keyland.api.dns import router as dns_router
 from keyland.api.wifi import router as wifi_hotspot_router
+from keyland.api.system import router as system_router
 
 
-VERSION = "0.5.1"
+VERSION = "0.6.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
@@ -66,6 +67,7 @@ app = FastAPI(
 
 app.include_router(dns_router)
 app.include_router(wifi_hotspot_router)
+app.include_router(system_router)
 
 
 @app.middleware("http")
