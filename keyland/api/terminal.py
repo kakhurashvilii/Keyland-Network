@@ -13,9 +13,9 @@ import os
 import pty
 import re
 import signal
+import subprocess
 import struct
 import termios
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -121,13 +121,12 @@ async def terminal_socket(websocket: WebSocket):
 
     master_fd = slave_fd = None
     process = None
-    started = time.monotonic()
     try:
         master_fd, slave_fd = pty.openpty()
         fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 100, 0, 0))
         env = os.environ.copy()
         env.update({"TERM": "xterm-256color", "COLORTERM": "truecolor"})
-        process = __import__("subprocess").Popen(
+        process = subprocess.Popen(
             ["/bin/bash", "--login", "-i"],
             stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
             cwd=str(ROOT), env=env, close_fds=True,
