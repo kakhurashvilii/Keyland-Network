@@ -28,7 +28,7 @@ def _save_hotspot_settings(settings: dict) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
             json.dump(settings, stream, ensure_ascii=False, indent=2)
-            stream.write("\\n")
+            stream.write("\n")
         os.chmod(temporary, 0o600)
         os.replace(temporary, _SETTINGS_PATH)
     except Exception:
