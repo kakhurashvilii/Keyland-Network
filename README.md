@@ -9,3 +9,4 @@ v0.6.0	DHCP / DNS / Firewall / NAT
 v0.7.0	OpenWrt სრული ადაპტერი
 v0.8.0	SIM SMS inbox / sent / delete, დაცული Linux Shell ტერმინალი და განახლებული ადმინისტრატორის პანელი
 v1.0.0	რამდენიმე მოწყობილობის ცენტრალიზებული მართვა
+v1.0.1	DNS მოთხოვნების ისტორია, router helper-ის DNS მხარდაჭერა და უსაფრთხო shutdown/autostart შენარჩუნება
