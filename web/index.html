@@ -1242,6 +1242,17 @@ footer{padding:16px;font-size:9px}
                 </div>
                 <span class="hotspot-control-tag">AP CONTROL</span>
             </div>
+            <div id="hotspotSavedSettings" class="hotspot-saved-settings" aria-live="polite">
+                <div class="hotspot-saved-title"><strong>შენახული Hotspot კონფიგურაცია</strong><span id="hotspotSavedState">იტვირთება...</span></div>
+                <div class="hotspot-saved-grid">
+                    <div><small>SSID</small><b id="savedHotspotSsid">—</b></div>
+                    <div><small>პაროლი</small><b id="savedHotspotPassword">—</b></div>
+                    <div><small>სიხშირე</small><b id="savedHotspotBand">—</b></div>
+                    <div><small>არხი</small><b id="savedHotspotChannel">—</b></div>
+                    <div><small>WAN</small><b id="savedHotspotWan">—</b></div>
+                    <div><small>Gateway</small><b id="savedHotspotGateway">—</b></div>
+                </div>
+            </div>
             <div class="hotspot-grid">
                 <div>
                     <label for="hotspotMode">როუტერის რეჟიმი</label>
@@ -1264,7 +1275,7 @@ footer{padding:16px;font-size:9px}
                 </div>
                 <div>
                     <label for="hotspotPassword">პაროლი (8–63 ASCII სიმბოლო)</label>
-                    <input id="hotspotPassword" type="password" minlength="8" maxlength="63" autocomplete="new-password" placeholder="შეიყვანე ძლიერი პაროლი">
+                    <input id="hotspotPassword" type="text" minlength="8" maxlength="63" autocomplete="new-password" placeholder="შეიყვანე ძლიერი პაროლი">
                 </div>
             </div>
             <div class="hotspot-actions">
@@ -2581,6 +2592,15 @@ async function manageHotspotClient(client, action) {
     }
 }
 
+.hotspot-saved-settings{margin:4px 0 16px;padding:13px 14px;border:1px solid #365675;border-radius:9px;background:rgba(5,15,27,.55)}
+.hotspot-saved-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;color:#cfe5fb;font-size:12px}
+#hotspotSavedState{color:#7fc9a8;font-size:10px}
+.hotspot-saved-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hotspot-saved-grid>div{min-width:0;padding:8px;border-radius:7px;background:#0d1b2b}
+.hotspot-saved-grid small{display:block;color:#8198b2;font-size:9px;margin-bottom:4px}
+.hotspot-saved-grid b{display:block;overflow-wrap:anywhere;color:#f0f6ff;font-size:12px;font-weight:650}
+@media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
+
 /* Hotspot preflight and guarded controls */
 async function loadHotspotCapabilities() {
     const output = element("hotspotPreflight");
@@ -2648,6 +2668,46 @@ source.value = (data.interfaces || []).some(
         if ((stationBand === "2.4" && stationChannel >= 1 && stationChannel <= 11) ||
             (stationBand === "5" && [36,40,44,48].includes(stationChannel))) {
             element("hotspotChannel").value = String(stationChannel);
+        }
+
+        // Restore the last successfully applied configuration from the protected API.
+        const savedResult = await fetchJSON(API + "/wifi/hotspot/router/settings").catch(() => ({saved:false}));
+        const saved = savedResult && savedResult.saved && savedResult.settings
+            ? savedResult.settings : null;
+        const savedState = element("hotspotSavedState");
+        const showSaved = (id, value) => {
+            const node = element(id);
+            if (node) node.textContent = value == null || value === "" ? "—" : String(value);
+        };
+        if (saved) {
+            const fields = {
+                hotspotMode: saved.mode,
+                hotspotInterface: saved.interface,
+                hotspotSourceInterface: saved.source_interface,
+                hotspotUpstream: saved.upstream_interface,
+                hotspotSsid: saved.ssid,
+                hotspotPassword: saved.password,
+                hotspotDns: Array.isArray(saved.dns_servers) ? saved.dns_servers.join(", ") : "",
+                hotspotIpv4: saved.ipv4_cidr,
+                hotspotBand: saved.band,
+                hotspotChannel: saved.channel
+            };
+            Object.entries(fields).forEach(([id, value]) => {
+                const field = element(id);
+                if (field && value != null && value !== "") field.value = String(value);
+            });
+            updateHotspotChannels();
+            if (saved.channel != null) element("hotspotChannel").value = String(saved.channel);
+            showSaved("savedHotspotSsid", saved.ssid);
+            showSaved("savedHotspotPassword", saved.password);
+            showSaved("savedHotspotBand", saved.band ? saved.band + " GHz" : "—");
+            showSaved("savedHotspotChannel", saved.channel);
+            showSaved("savedHotspotWan", saved.upstream_interface);
+            showSaved("savedHotspotGateway", saved.ipv4_cidr);
+            if (savedState) savedState.textContent = "შენახულია · ბოლო წარმატებული გაშვება";
+        } else {
+            ["savedHotspotSsid","savedHotspotPassword","savedHotspotBand","savedHotspotChannel","savedHotspotWan","savedHotspotGateway"].forEach(id => showSaved(id, "—"));
+            if (savedState) savedState.textContent = "შენახული კონფიგურაცია ჯერ არ არის";
         }
 
         if (selectedMode === "repeater" && !wifiWan) {
