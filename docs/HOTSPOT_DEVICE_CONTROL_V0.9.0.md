@@ -27,6 +27,20 @@ The current router dnsmasq configuration advertises the selected upstream DNS se
 
 DNS visibility will be an explicit opt-in setting. When enabled, DHCP option 6 will advertise the AP gateway address, and the Keyland-managed dnsmasq instance will forward queries to the configured upstream servers and log query metadata. When disabled, the existing direct-upstream DNS behavior remains unchanged. Enabling this option may require clients to renew their DHCP lease or reconnect.
 
+## Verified OnePlus 6T runtime baseline (2026-11-08)
+
+Read-only inspection of the target phone confirmed:
+
+- Keyland AP interface: `keyland-ap`, gateway `192.168.88.1/24`.
+- Keyland-managed dnsmasq process is launched with `--conf-file=/run/keyland-router/dnsmasq.conf`.
+- Current upstream DNS: `1.1.1.1`.
+- Current DHCP option 6 advertises `1.1.1.1` directly, so client DNS traffic can bypass the local resolver.
+- dnsmasq version: `2.93`, built with query logging support.
+- Runtime config and state are under `/run/keyland-router/`; the directory and dnsmasq config are root-owned and mode-restricted.
+- Current query logging is not enabled. No DNS configuration or running network service was changed during this inspection.
+
+Implementation must preserve the current behavior when DNS visibility is disabled. Before enabling persistent query logging, implement and test bounded log retention/rotation and a clear-history operation. Do not treat a bounded API response as proof that the underlying log file is bounded.
+
 ## Explicit privacy notice shown in the dashboard
 
 > Keyland does not read or record HTTPS content, private messages, passwords, or webpage contents. If enabled, DNS monitoring shows only DNS query metadata (domain, time, and query type), and only when the device sends DNS queries through Keyland's DNS server. VPNs, encrypted DNS, or other external resolvers may limit this visibility.
