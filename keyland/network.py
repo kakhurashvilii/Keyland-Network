@@ -708,6 +708,8 @@ def _parse_iw_scan(output: str, interface: str) -> list[dict]:
         if current and current.get("ssid"):
             current["interface"] = interface
             current["channel"] = _wifi_channel(current.get("frequency_mhz"))
+            current["signal_source"] = "iw measured RSSI" if current.get("signal_dbm") is not None else None
+            current["distance_m_estimate"] = _wifi_distance_estimate(current.get("signal_dbm"))
             current["security"] = (
                 "WPA3" if current.pop("_wpa3", False)
                 else "WPA2/WPA" if current.pop("_secured", False)
@@ -762,6 +764,21 @@ def _split_nmcli_row(line: str) -> list[str]:
             value.append(char)
     fields.append("".join(value))
     return fields
+
+
+# KEYLAND_WIFI_DISTANCE_ESTIMATE
+def _wifi_distance_estimate(signal_dbm: float | int | None) -> float | None:
+    """Rough indoor range estimate; assumes -40 dBm at 1 m and path-loss n=2.7."""
+    if signal_dbm is None:
+        return None
+    try:
+        value = float(signal_dbm)
+    except (TypeError, ValueError):
+        return None
+    if not -110 <= value <= -1:
+        return None
+    distance = 10 ** ((-40.0 - value) / 27.0)
+    return round(max(0.5, min(distance, 100.0)), 1)
 
 
 def get_wifi_scan():
@@ -826,10 +843,17 @@ def get_wifi_scan():
                         signal = int(parts[5]) if parts[5] else None
                     except ValueError:
                         frequency, channel, signal = None, None, None
+                    # NetworkManager exposes signal quality as percent, not RSSI.
+                    # Convert only to a clearly marked estimate; iw scan below can
+                    # provide the actual dBm value when the driver permits it.
+                    estimated_dbm = round(-100 + (signal * 0.6), 1) if signal is not None else None
                     found.append({
                         "interface": name, "ssid": parts[0], "bssid": parts[1],
                         "channel": channel, "frequency_mhz": frequency,
                         "rate": parts[4], "signal_percent": signal,
+                        "signal_dbm_estimate": estimated_dbm,
+                        "signal_source": "NetworkManager quality estimate" if signal is not None else None,
+                        "distance_m_estimate": _wifi_distance_estimate(estimated_dbm),
                         "security": parts[6] or "Open",
                     })
                 if found:
