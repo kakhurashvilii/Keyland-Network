@@ -16,7 +16,6 @@ import signal
 import struct
 import termios
 import time
-import resource
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -83,12 +82,6 @@ def _same_origin(websocket: WebSocket) -> bool:
         return False
 
 
-def _limit_shell_resources() -> None:
-    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    resource.setrlimit(resource.RLIMIT_NOFILE, (128, 128))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (256 * 1024 * 1024, 256 * 1024 * 1024))
-    resource.setrlimit(resource.RLIMIT_CPU, (3600, 3600))
-
 
 async def _read_pty(fd: int) -> bytes:
     loop = asyncio.get_running_loop()
@@ -138,7 +131,7 @@ async def terminal_socket(websocket: WebSocket):
             ["/bin/bash", "--login", "-i"],
             stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
             cwd=str(ROOT), env=env, close_fds=True,
-            start_new_session=True, preexec_fn=_limit_shell_resources,
+            start_new_session=True,
         )
         os.close(slave_fd)
         slave_fd = None
