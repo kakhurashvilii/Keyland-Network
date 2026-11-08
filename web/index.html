@@ -955,11 +955,17 @@ footer{padding:16px;font-size:9px}
 @media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
 
 
-/* v0.7.0 SIM SMS + root PTY terminal */
+/* v0.8.0 SIM SMS + root PTY terminal */
 .sms-list{display:grid;gap:9px;margin-top:12px}
 .sms-item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#0d1929}
 .sms-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px}
 .sms-body{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px;font-size:13px}
+.sms-filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.sms-filters button{margin:0;background:#26364d}
+.sms-filters button.active{background:var(--blue)}
+.sms-item{display:flex;flex-direction:column;gap:8px}
+.sms-item-actions{display:flex;justify-content:flex-end}
+.sms-delete-button{background:#8b3038;margin:0;padding:7px 11px;font-size:12px}
 .sms-form{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:14px}
 .sms-form input,.sms-form textarea{width:100%;background:#0b1626;color:var(--text);border:1px solid #34465f;border-radius:8px;padding:10px}
 .sms-form textarea{min-height:100px;resize:vertical}
@@ -1230,7 +1236,12 @@ footer{padding:16px;font-size:9px}
                 <button type="button" id="smsRefreshButton">SMS-ების განახლება</button>
                 <span id="smsStatus" class="muted" role="status">მოლოდინი...</span>
             </div>
-            <div id="smsList" class="sms-list" aria-live="polite"><p class="muted">დააჭირე განახლებას შემოსული SMS-ების სანახავად.</p></div>
+            <div class="sms-filters" role="group" aria-label="SMS ფილტრი">
+                <button type="button" class="active" data-sms-filter="all">ყველა</button>
+                <button type="button" data-sms-filter="received">შემოსული</button>
+                <button type="button" data-sms-filter="sent">გაგზავნილი</button>
+            </div>
+            <div id="smsList" class="sms-list" aria-live="polite"><p class="muted">დააჭირე განახლებას SMS-ების სანახავად.</p></div>
             <hr>
             <h4>ახალი SMS</h4>
             <form id="smsSendForm" class="sms-form">
@@ -1441,7 +1452,7 @@ footer{padding:16px;font-size:9px}
                 <span id="terminalStatus" class="muted" role="status">გამორთულია</span>
             </div>
             <div class="terminal-window" id="terminalWindow">
-                <pre id="terminalOutput">Keyland Linux Shell v0.7.0
+                <pre id="terminalOutput">Keyland Linux Shell v0.8.0
 დააჭირე „ტერმინალთან დაკავშირებას“.
 </pre>
             </div>
@@ -1459,7 +1470,7 @@ footer{padding:16px;font-size:9px}
 
         <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
         <section class="card" id="system-power-card">
-            <h3>სისტემის მართვა · v0.7.0</h3>
+            <h3>სისტემის მართვა · v0.8.0</h3>
             <p class="muted">გადატვირთვა და უსაფრთხო აღდგენა. ყველა მოქმედება საჭიროებს ადმინისტრატორის დადასტურებას.</p>
             <div class="button-row">
                 <button type="button" id="restartKeylandButton">Keyland სერვერის გადატვირთვა</button>
@@ -3471,42 +3482,95 @@ window.addEventListener("resize", () => {
 
 
 /* SIM SMS */
+let smsMessagesCache = [];
+let smsActiveFilter = "all";
+
+function renderSmsMessages() {
+    const list = element("smsList");
+    list.replaceChildren();
+    const visible = smsMessagesCache.filter(sms =>
+        smsActiveFilter === "all" || sms.direction === smsActiveFilter
+    );
+    document.querySelectorAll("[data-sms-filter]").forEach(button => {
+        const active = button.dataset.smsFilter === smsActiveFilter;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+    });
+    if (!visible.length) {
+        list.textContent = smsMessagesCache.length
+            ? "ამ ფილტრში შეტყობინებები არ არის."
+            : "შეტყობინებები ვერ მოიძებნა.";
+        return;
+    }
+    for (const sms of visible) {
+        const card = document.createElement("article");
+        card.className = "sms-item";
+        const meta = document.createElement("div");
+        meta.className = "sms-meta";
+        const direction = document.createElement("strong");
+        direction.textContent = sms.direction === "received" ? "შემოსული"
+            : sms.direction === "sent" ? "გაგზავნილი" : "მიმართულება უცნობია";
+        const number = document.createElement("span");
+        number.textContent = sms.number || "უცნობი ნომერი";
+        const time = document.createElement("span");
+        time.textContent = sms.timestamp || sms.state || "";
+        meta.append(direction, number, time);
+        const body = document.createElement("div");
+        body.className = "sms-body";
+        body.textContent = sms.text || "(ტექსტი მიუწვდომელია)";
+        const actions = document.createElement("div");
+        actions.className = "sms-item-actions";
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "sms-delete-button";
+        remove.textContent = "წაშლა";
+        remove.addEventListener("click", () => deleteSmsMessage(sms));
+        actions.append(remove);
+        card.append(meta, body, actions);
+        list.append(card);
+    }
+}
+
 async function refreshSms() {
     if (!state.authenticated) return;
     const status = element("smsStatus");
-    const list = element("smsList");
     status.textContent = "SMS-ები იტვირთება...";
     try {
         const data = await fetchJSON(API + "/cellular/sms/messages");
-        list.replaceChildren();
-        if (!data.messages || !data.messages.length) {
-            list.textContent = "შეტყობინებები ვერ მოიძებნა.";
-        } else {
-            for (const sms of data.messages) {
-                const card = document.createElement("article");
-                card.className = "sms-item";
-                const meta = document.createElement("div");
-                meta.className = "sms-meta";
-                const direction = document.createElement("strong");
-                direction.textContent = sms.direction === "received" ? "შემოსული" : "გაგზავნილი";
-                const number = document.createElement("span");
-                number.textContent = sms.number || "უცნობი ნომერი";
-                const time = document.createElement("span");
-                time.textContent = sms.timestamp || sms.state || "";
-                meta.append(direction, number, time);
-                const body = document.createElement("div");
-                body.className = "sms-body";
-                body.textContent = sms.text || "(ტექსტი მიუწვდომელია)";
-                card.append(meta, body);
-                list.append(card);
-            }
-        }
+        smsMessagesCache = Array.isArray(data.messages) ? data.messages : [];
+        renderSmsMessages();
         status.textContent = "მოდემი #" + data.modem_id + " · " + data.count + " შეტყობინება";
     } catch (error) {
         status.textContent = "შეცდომა: " + error.message;
     }
 }
+
+async function deleteSmsMessage(sms) {
+    if (!state.authenticated) return;
+    const label = sms.number || "უცნობი ნომერი";
+    if (!window.confirm("ნამდვილად წავშალო SMS ნომრიდან/ნომერზე " + label +
+        "? ეს მოქმედება მოდემში შეტყობინებას სამუდამოდ წაშლის.")) return;
+    const status = element("smsStatus");
+    status.textContent = "SMS იშლება...";
+    try {
+        const response = await apiFetch(API + "/cellular/sms/messages/" +
+            encodeURIComponent(sms.id), {method:"DELETE"});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        status.textContent = "SMS წაიშალა · ID " + sms.id;
+        await refreshSms();
+    } catch (error) {
+        status.textContent = "წაშლის შეცდომა: " + error.message;
+    }
+}
+
 element("smsRefreshButton")?.addEventListener("click", refreshSms);
+document.querySelectorAll("[data-sms-filter]").forEach(button => {
+    button.addEventListener("click", () => {
+        smsActiveFilter = button.dataset.smsFilter;
+        renderSmsMessages();
+    });
+});
 element("smsMessage")?.addEventListener("input", event => {
     element("smsLength").textContent = String(event.target.value.length);
 });
