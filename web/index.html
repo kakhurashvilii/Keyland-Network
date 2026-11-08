@@ -1502,6 +1502,11 @@ footer { color:#7187a4; }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
 
 
+
+/* KEYLAND_WIFI_DISTANCE_UI */
+.wifi-result-card .wifi-signal-detail{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wifi-result-card .wifi-signal-detail span{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid rgba(111,151,190,.24);border-radius:6px;background:rgba(25,48,73,.58);color:#c5d9ef;font-size:10px}
+.wifi-result-card .wifi-signal-detail .wifi-distance{color:#8ee0bd;border-color:rgba(69,180,132,.28)}
 </style>
 </head>
 
@@ -4008,14 +4013,21 @@ function renderWifiScan(targetId, data) {
         heading.append(name, security);
         const meta = document.createElement("p");
         meta.className = "muted";
-        const signal = network.signal_percent != null
-            ? network.signal_percent + "%"
-            : network.signal_dbm != null ? network.signal_dbm + " dBm" : "—";
+        const measuredDbm = network.signal_dbm != null ? network.signal_dbm : null;
+        const estimatedDbm = network.signal_dbm_estimate != null ? network.signal_dbm_estimate : null;
+        const signalParts = [];
+        if (network.signal_percent != null) signalParts.push(network.signal_percent + "%");
+        if (measuredDbm != null) signalParts.push(measuredDbm + " dBm");
+        else if (estimatedDbm != null) signalParts.push("≈" + estimatedDbm + " dBm");
+        const distance = network.distance_m_estimate != null
+            ? "≈ " + network.distance_m_estimate + " მ"
+            : "მანძილი —";
         meta.textContent = [
             network.bssid || "",
             network.channel ? "არხი " + network.channel : "",
             network.frequency_mhz ? network.frequency_mhz + " MHz" : "",
-            "სიგნალი " + signal
+            "სიგნალი " + (signalParts.join(" / ") || "—"),
+            distance
         ].filter(Boolean).join(" · ");
         const connect = document.createElement("button");
         connect.type = "button";
