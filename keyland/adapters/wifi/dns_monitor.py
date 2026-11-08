@@ -82,7 +82,7 @@ def parse_dns_query_log(
         lease = lease_map.get(address, {})
         prefix = match.group("prefix").strip()
         # dnsmasq's standard syslog prefix is retained as a display timestamp.
-        timestamp = prefix.rsplit(" ", 1)[0] if prefix else ""
+        timestamp = prefix
         events.append({
             "timestamp": timestamp,
             "query_type": match.group("qtype").upper(),
