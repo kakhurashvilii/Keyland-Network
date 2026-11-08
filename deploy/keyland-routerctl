@@ -23,6 +23,19 @@ from keyland.adapters.wifi import router
 
 def main() -> int:
     try:
+        if sys.argv[1:] == ["--shutdown"]:
+            saved = router._read_autostart()
+            if not router.read_state():
+                result = {"success": True, "active": False, "skipped": True}
+            else:
+                result = router.stop(True)
+                if result.get("success") and saved:
+                    router._write_autostart(saved)
+                    result["autostart"] = True
+                    result["message"] = "Hotspot stopped; automatic startup configuration preserved."
+            print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+            return 0 if result.get("success") else 1
+
         if sys.argv[1:] == ["--restore"]:
             result = router.restore_autostart()
             print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
