@@ -361,12 +361,12 @@ def get_repeater_status() -> dict[str, Any]:
             elif line.startswith("SSID:"):
                 item["ssid"] = line.split(":", 1)[1].strip() or None
             elif line.startswith("freq:"):
-                match = re.search(r"(\\d{4,5})", line)
+                match = re.search(r"(\d{4,5})", line)
                 if match:
                     item["frequency_mhz"] = int(match.group(1))
                     item["channel"] = _frequency_to_channel(item["frequency_mhz"])
             elif line.startswith("signal:"):
-                match = re.search(r"-?\\d+(?:\\.\\d+)?", line)
+                match = re.search(r"-?\d+(?:\.\d+)?", line)
                 if match:
                     item["signal_dbm"] = float(match.group())
 
