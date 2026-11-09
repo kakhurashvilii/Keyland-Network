@@ -1511,6 +1511,32 @@ footer { color:#7187a4; }
 .wifi-result-card .wifi-signal-detail{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .wifi-result-card .wifi-signal-detail span{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid rgba(111,151,190,.24);border-radius:6px;background:rgba(25,48,73,.58);color:#c5d9ef;font-size:10px}
 .wifi-result-card .wifi-signal-detail .wifi-distance{color:#8ee0bd;border-color:rgba(69,180,132,.28)}
+
+/* Device Internet Activity — grouped, compact DNS view */
+.device-activity-group{margin:12px 0;padding:16px;border:1px solid #2b4059;border-radius:12px;background:rgba(7,16,28,.55)}
+.device-activity-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.device-activity-name{display:block;font-size:15px;color:#edf4ff}
+.device-activity-stats{display:flex;gap:7px;flex-wrap:wrap}
+.device-activity-stats span{padding:5px 8px;border:1px solid #304760;border-radius:7px;background:#13243a;color:#9fc8ff;font-size:11px;font-weight:700}
+.device-activity-section-title{margin:17px 0 8px;color:#9db8d8;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.device-activity-services{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
+.device-activity-service{min-width:0;border:1px solid #2a3d54;border-radius:9px;background:#101d2e}
+.device-activity-service summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;cursor:pointer;list-style:none}
+.device-activity-service summary::-webkit-details-marker{display:none}
+.device-activity-service summary::after{content:"＋";color:#77baff;font-size:13px}
+.device-activity-service[open] summary::after{content:"−"}
+.device-activity-service summary strong{font-size:12px;color:#dceaff}
+.device-activity-service summary span{font-size:10px;color:#8fa6c1;text-align:right}
+.device-activity-domain-list{padding:0 10px 9px}
+.device-activity-domain{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 1px;border-top:1px solid rgba(75,100,132,.25)}
+.device-activity-domain strong{min-width:0;overflow-wrap:anywhere;font-size:11px;font-weight:600;color:#c9d8eb}
+.device-activity-domain small{flex:0 0 auto;color:#8fa6c1;font-size:10px}
+.device-activity-history{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:6px}
+.device-activity-history-row{display:flex;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:7px;background:rgba(17,32,50,.75)}
+.device-activity-history-row strong{min-width:0;overflow-wrap:anywhere;font-size:10px;color:#b9cce3}
+.device-activity-history-row small{flex:0 0 auto;font-size:9px;color:#8198b4}
+@media(max-width:520px){.device-activity-group{padding:12px}.device-activity-stats{width:100%}.device-activity-domain{display:block}.device-activity-domain small{display:block;margin-top:2px}.device-activity-history-row{display:block}.device-activity-history-row small{display:block;margin-top:2px}}
+
 </style>
 </head>
 
@@ -3333,6 +3359,27 @@ function formatRate(mbps) {
 
 let hotspotDnsCache = null;
 
+const DNS_SERVICE_RULES = [
+    {label:"WhatsApp", suffixes:["whatsapp.com","whatsapp.net"]},
+    {label:"Facebook / Meta", suffixes:["facebook.com","facebook.net","fbcdn.net","messenger.com","instagram.com","cdninstagram.com"]},
+    {label:"Google", suffixes:["google.com","googleapis.com","googleusercontent.com","gstatic.com","googlevideo.com","youtube.com","ytimg.com","ggpht.com"]},
+    {label:"Apple", suffixes:["apple.com","icloud.com","apple-dns.net","mzstatic.com"]},
+    {label:"TikTok", suffixes:["tiktok.com","tiktokv.com","tiktokcdn.com","byteoversea.com","ibytedtos.com"]},
+    {label:"Microsoft", suffixes:["microsoft.com","microsoftonline.com","live.com","msftconnecttest.com","windows.com","office.com"]},
+    {label:"Telegram", suffixes:["telegram.org","t.me","telegra.ph"]},
+    {label:"Netflix", suffixes:["netflix.com","nflxvideo.net","nflximg.net"]},
+    {label:"Cloudflare", suffixes:["cloudflare.com","cloudflare-dns.com"]},
+    {label:"DNS / Connectivity", suffixes:["one.one.one.one","connectivitycheck.gstatic.com","captive.apple.com"] }
+];
+
+function dnsServiceFor(domain) {
+    const host = String(domain || "").toLowerCase().replace(/\.$/, "");
+    const rule = DNS_SERVICE_RULES.find(item =>
+        item.suffixes.some(suffix => host === suffix || host.endsWith("." + suffix))
+    );
+    return rule ? rule.label : tr("სხვა / დაუჯგუფებელი", "Other / unclassified");
+}
+
 function renderHotspotDnsQueries(data) {
     hotspotDnsCache = data || null;
     const list = element("hotspotDnsQueries");
@@ -3366,25 +3413,45 @@ function renderHotspotDnsQueries(data) {
 
     for (const item of queries) {
         const identity = String(item.mac || item.ip || "unknown").toLowerCase();
-        const searchable = [
-            item.hostname, item.ip, item.mac, item.domain, item.query_type
-        ].filter(Boolean).join(" ").toLowerCase();
-        if (term && !searchable.includes(term)) continue;
-
         if (!devices.has(identity)) {
             devices.set(identity, {
-                hostname: item.hostname || null,
-                ip: item.ip || null,
-                mac: item.mac || null,
-                events: []
+                hostname:item.hostname || null, ip:item.ip || null, mac:item.mac || null,
+                events:[], domains:new Map(), services:new Map()
             });
         }
         const device = devices.get(identity);
         if (!device.hostname && item.hostname) device.hostname = item.hostname;
+        if (!device.ip && item.ip) device.ip = item.ip;
+        if (!device.mac && item.mac) device.mac = item.mac;
         device.events.push(item);
+
+        const domain = String(item.domain || "").toLowerCase();
+        if (!domain) continue;
+        const service = dnsServiceFor(domain);
+        if (!device.domains.has(domain)) {
+            device.domains.set(domain, {domain, count:0, last:item.timestamp || "", types:new Set(), service});
+        }
+        const record = device.domains.get(domain);
+        record.count += 1;
+        if (item.timestamp && (!record.last || String(item.timestamp).localeCompare(String(record.last)) > 0)) record.last = item.timestamp;
+        if (item.query_type) record.types.add(String(item.query_type).toUpperCase());
+        if (!device.services.has(service)) device.services.set(service, new Map());
+        device.services.get(service).set(domain, record);
     }
 
-    if (!devices.size) {
+    const matchingDevices = Array.from(devices.values()).filter(device => {
+        if (!term) return true;
+        const identity = [device.hostname,device.ip,device.mac].filter(Boolean).join(" ").toLowerCase();
+        if (identity.includes(term)) return true;
+        return Array.from(device.domains.keys()).some(domain => domain.includes(term) ||
+            dnsServiceFor(domain).toLowerCase().includes(term));
+    }).sort((a,b) => {
+        const at = a.events[a.events.length - 1]?.timestamp || "";
+        const bt = b.events[b.events.length - 1]?.timestamp || "";
+        return String(bt).localeCompare(String(at));
+    });
+
+    if (!matchingDevices.length) {
         list.replaceChildren();
         const empty = document.createElement("div");
         empty.className = "client-empty";
@@ -3393,53 +3460,94 @@ function renderHotspotDnsQueries(data) {
         return;
     }
 
-    const groups = Array.from(devices.values()).sort((a, b) => {
-        const aTime = a.events[a.events.length - 1]?.timestamp || "";
-        const bTime = b.events[b.events.length - 1]?.timestamp || "";
-        return bTime.localeCompare(aTime);
-    });
-
-    const cards = groups.map(device => {
-        const card = document.createElement("section");
+    const cards = matchingDevices.map(device => {
+        const card = document.createElement("article");
         card.className = "client-device device-activity-group";
 
         const heading = document.createElement("div");
-        heading.className = "cellular-heading";
-
+        heading.className = "device-activity-heading";
         const identity = document.createElement("div");
         const name = document.createElement("strong");
+        name.className = "device-activity-name";
         name.textContent = device.hostname || tr("უცნობი მოწყობილობა", "Unknown device");
         const meta = document.createElement("div");
         meta.className = "muted";
-        meta.textContent = [device.ip, device.mac].filter(Boolean).join(" · ") || tr("მოწყობილობის იდენტიფიკაცია ვერ მოხერხდა", "Device identity unavailable");
-        identity.append(name, meta);
+        meta.textContent = [device.ip,device.mac].filter(Boolean).join(" · ") ||
+            tr("მოწყობილობის იდენტიფიკაცია ვერ მოხერხდა", "Device identity unavailable");
+        identity.append(name,meta);
 
-        const badge = document.createElement("span");
-        badge.className = "cellular-badge";
-        badge.textContent = device.events.length + " " + tr("მოთხოვნა", "queries");
-        heading.append(identity, badge);
+        const stats = document.createElement("div");
+        stats.className = "device-activity-stats";
+        const total = document.createElement("span");
+        total.textContent = device.events.length + " " + tr("მოთხოვნა", "queries");
+        const unique = document.createElement("span");
+        unique.textContent = device.domains.size + " " + tr("უნიკალური დომენი", "unique domains");
+        stats.append(total,unique);
+        heading.append(identity,stats);
+        card.append(heading);
 
-        const domains = document.createElement("div");
-        domains.className = "device-activity-domains";
-        for (const item of device.events.slice().reverse()) {
+        const servicesTitle = document.createElement("h4");
+        servicesTitle.className = "device-activity-section-title";
+        servicesTitle.textContent = tr("აპლიკაციები და სერვისები", "Apps & services");
+        card.append(servicesTitle);
+
+        const services = Array.from(device.services.entries())
+            .sort((a,b) => {
+                const ac = Array.from(a[1].values()).reduce((n,x)=>n+x.count,0);
+                const bc = Array.from(b[1].values()).reduce((n,x)=>n+x.count,0);
+                return bc-ac;
+            });
+
+        const serviceList = document.createElement("div");
+        serviceList.className = "device-activity-services";
+        for (const [label,domainMap] of services) {
+            const group = document.createElement("details");
+            group.className = "device-activity-service";
+            const summary = document.createElement("summary");
+            const serviceName = document.createElement("strong");
+            serviceName.textContent = label;
+            const serviceMeta = document.createElement("span");
+            const records = Array.from(domainMap.values());
+            const requestTotal = records.reduce((n,x)=>n+x.count,0);
+            serviceMeta.textContent = records.length + " " + tr("დომენი", "domains") + " · " + requestTotal + " " + tr("მოთხოვნა", "queries");
+            summary.append(serviceName,serviceMeta);
+            group.append(summary);
+
+            const domainList = document.createElement("div");
+            domainList.className = "device-activity-domain-list";
+            records.sort((a,b)=>b.count-a.count || b.last.localeCompare(a.last));
+            for (const record of records) {
+                const row = document.createElement("div");
+                row.className = "device-activity-domain";
+                const domain = document.createElement("strong");
+                domain.textContent = record.domain;
+                const detail = document.createElement("small");
+                detail.textContent = record.count + "× · " + (record.last || "—");
+                row.append(domain,detail);
+                domainList.append(row);
+            }
+            group.append(domainList);
+            serviceList.append(group);
+        }
+        card.append(serviceList);
+
+        const historyTitle = document.createElement("h4");
+        historyTitle.className = "device-activity-section-title";
+        historyTitle.textContent = tr("ბოლო მოთხოვნები", "Recent queries");
+        card.append(historyTitle);
+        const history = document.createElement("div");
+        history.className = "device-activity-history";
+        for (const item of device.events.slice().reverse().slice(0,8)) {
             const row = document.createElement("div");
-            row.className = "device-activity-row";
-
+            row.className = "device-activity-history-row";
             const domain = document.createElement("strong");
             domain.textContent = item.domain || "—";
-
-            const details = document.createElement("small");
-            details.className = "muted";
-            details.textContent = [item.timestamp, item.query_type].filter(Boolean).join(" · ");
-
-            const entry = document.createElement("div");
-            entry.className = "device-activity-entry";
-            entry.append(domain, details);
-            row.append(entry);
-            domains.append(row);
+            const detail = document.createElement("small");
+            detail.textContent = item.timestamp || "—";
+            row.append(domain,detail);
+            history.append(row);
         }
-
-        card.append(heading, domains);
+        card.append(history);
         return card;
     });
 
@@ -3452,7 +3560,6 @@ if (deviceActivitySearch) {
         if (hotspotDnsCache) renderHotspotDnsQueries(hotspotDnsCache);
     });
 }
-
 function renderHotspotClients(status) {
     const list = element("hotspotClients");
     const count = element("hotspotClientCount");
