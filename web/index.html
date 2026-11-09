@@ -1544,6 +1544,42 @@ footer { color:#7187a4; }
  .notification-panel{position:fixed;z-index:2147483000;top:max(12px,env(safe-area-inset-top));right:10px;left:10px;width:auto;max-width:480px;max-height:calc(100dvh - 24px - env(safe-area-inset-top));margin-left:auto}
 }
 
+
+/* Captive Portal editor */
+.portal-editor-card{border-color:rgba(86,145,198,.36)!important}
+.portal-runtime-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin-bottom:16px;border:1px solid rgba(240,189,98,.25);border-left:3px solid #e4a64e;border-radius:9px;background:rgba(125,82,25,.12);color:#f0d5a8;font-size:11px}
+.portal-runtime-note strong{flex:0 0 auto;color:#ffd18a}
+.portal-runtime-note span{color:#c9b99e;line-height:1.5}
+.portal-editor-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px;align-items:start}
+.portal-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.portal-field-grid>div{min-width:0;padding:9px;border:1px solid rgba(92,116,145,.2);border-radius:8px;background:rgba(5,14,24,.22)}
+.portal-field-grid label{display:block;margin:0 0 6px;text-transform:none;letter-spacing:0}
+.portal-field-grid input,.portal-field-grid textarea,.portal-field-grid select{width:100%;margin:0}
+.portal-field-grid textarea{resize:vertical;min-height:76px;padding:10px;background:#0a1525;color:#e9f2ff;border:1px solid rgba(91,120,159,.42);border-radius:9px;font:inherit;font-size:12px}
+.portal-field-wide{grid-column:1/-1}
+.portal-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.portal-actions button{margin:0}
+#portalSaveStatus{color:#91a4bf;font-size:10px}
+.portal-preview-wrap{position:sticky;top:16px;min-width:0;padding:12px;border:1px solid rgba(91,128,177,.25);border-radius:12px;background:rgba(5,13,24,.28)}
+.portal-preview-heading{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;color:#c9ddf5;font-size:11px}
+.portal-preview-heading span{color:#8298b5;font-size:9px}
+.portal-preview{max-width:390px;min-height:520px;margin:0 auto;padding:24px 18px;display:flex;flex-direction:column;align-items:stretch;gap:13px;border-radius:16px;background:var(--portal-bg);color:#f5f8ff;box-shadow:0 12px 35px rgba(0,0,0,.3)}
+.portal-preview-brand{font-size:11px;font-weight:850;letter-spacing:.18em;color:#fff}
+.portal-preview-icon{display:grid;place-items:center;width:54px;height:54px;margin:22px auto 0;border-radius:16px;background:var(--portal-accent);font-size:27px}
+.portal-preview h3{margin:0;text-align:center;font-size:21px;color:#fff}
+.portal-preview>p{margin:0;text-align:center;color:#c3d0e2;font-size:12px;line-height:1.6}
+.portal-preview-terms{max-height:140px;overflow:auto;padding:12px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.05)}
+.portal-preview-terms strong{font-size:11px}
+.portal-preview-terms p{margin:7px 0 0;color:#c3d0e2;font-size:10px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.portal-preview-check{display:flex;align-items:center;gap:7px;color:#d7e1ef;font-size:10px;text-transform:none;letter-spacing:0}
+.portal-preview-check input{width:auto;margin:0;accent-color:var(--portal-accent)}
+.portal-preview-password{padding:10px;border:1px solid rgba(255,255,255,.18);border-radius:8px;color:#d7e1ef;font-size:11px}
+.portal-preview button{width:100%;margin:0;background:var(--portal-accent);border:0}
+.portal-preview button:disabled{opacity:.45;cursor:not-allowed}
+.portal-preview>small{margin-top:auto;padding-top:18px;text-align:center;color:#8294ab;font-size:9px;letter-spacing:.08em}
+@media(max-width:900px){.portal-editor-layout{grid-template-columns:1fr}.portal-preview-wrap{position:static}.portal-preview{min-height:480px}}
+@media(max-width:560px){.portal-field-grid{grid-template-columns:1fr}.portal-field-wide{grid-column:auto}.portal-runtime-note{display:block}.portal-runtime-note strong{display:block;margin-bottom:4px}.portal-preview{min-height:450px;padding:20px 15px}}
+
 </style>
 </head>
 
@@ -1637,6 +1673,7 @@ footer { color:#7187a4; }
     <div class="nav-group-label">მართვა</div>
     <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
     <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">02</span><span><strong>Hotspot</strong><small>ინტერნეტის გაზიარება</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
+    <a href="#portal-section" class="nav-portal"><span class="nav-index">P1</span><span><strong>Captive Portal</strong><small>სტუმრების წვდომა</small></span></a>
     <a href="#activity-section"><span class="nav-index">A1</span><span><strong>Device Activity</strong><small>საიტების ისტორია</small></span></a>
     <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
     <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
@@ -1996,6 +2033,42 @@ footer { color:#7187a4; }
             </div>
             <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. თითოეული მოწყობილობის დაბლოკვა და სიჩქარის ლიმიტი დაცული მართვის API-ით იმართება.</p>
             <p class="muted" id="hotspotPrivacyNotice" role="note">კონფიდენციალურობა: HTTPS კავშირების შიგთავსს, პირად მიმოწერას, პაროლებს ან ვებგვერდების შიდა შიგთავსს Keyland არ კითხულობს და არ იწერს. DNS მონიტორინგი, ჩართვის შემთხვევაში, აჩვენებს მხოლოდ DNS მოთხოვნების მეტამონაცემებს (დომენს, დროსა და მოთხოვნის ტიპს) და მხოლოდ მაშინ, როცა მოწყობილობის DNS მოთხოვნები Keyland-ის DNS სერვერზე გადის. VPN-მა, დაშიფრულმა DNS-მა ან სხვა გარე resolver-მა შეიძლება ეს ხილვადობა შეზღუდოს.</p>
+        </section>
+        <div id="portal-section" class="section-heading"><div><span class="section-kicker">P1 / GUEST ACCESS</span><h2>Captive Portal · გვერდის რედაქტორი</h2><p>შექმენი Wi-Fi სტუმრის მისასალმებელი გვერდი და ნახე ცვლილებების ცოცხალი წინასწარი დათვალიერება.</p></div></div>
+        <section class="card portal-editor-card" style="grid-column:1/-1" aria-labelledby="portal-editor-title">
+            <div class="portal-runtime-note"><strong>კონფიგურაციის ეტაპი</strong><span>რედაქტორი და შენახვა მზადდება. ქსელზე რეალური გადამისამართება ჯერ არ არის ჩართული — Hotspot-ის მოქმედება უცვლელია.</span></div>
+            <div class="portal-editor-layout">
+                <div class="portal-fields">
+                    <div class="portal-field-grid">
+                        <div><label for="portalLogoText">ლოგოს წარწერა</label><input id="portalLogoText" maxlength="40" value="KEYLAND"></div>
+                        <div><label for="portalTitle">გვერდის სათაური</label><input id="portalTitle" maxlength="100" value="მოგესალმებით!"></div>
+                        <div class="portal-field-wide"><label for="portalWelcome">მისასალმებელი ტექსტი</label><textarea id="portalWelcome" maxlength="500" rows="3">ინტერნეტით სარგებლობის გასაგრძელებლად გაეცანით პირობებს.</textarea></div>
+                        <div class="portal-field-wide"><label for="portalTerms">გამოყენების პირობები</label><textarea id="portalTerms" maxlength="5000" rows="6">ქსელით სარგებლობისას დაიცავით მოქმედი კანონმდებლობა და პატივი ეცით სხვა მომხმარებლებს.</textarea></div>
+                        <div class="portal-field-wide"><label for="portalButtonText">ღილაკის წარწერა</label><input id="portalButtonText" maxlength="70" value="ვეთანხმები და გაგრძელება"></div>
+                        <div><label for="portalAuthMode">ავტორიზაციის მეთოდი</label><select id="portalAuthMode"><option value="consent">მხოლოდ პირობებზე თანხმობა</option><option value="password">სტუმრის პაროლი</option><option value="both">თანხმობა + პაროლი</option></select></div>
+                        <div><label for="portalGuestPassword">სტუმრის პაროლი</label><input id="portalGuestPassword" type="password" maxlength="128" autocomplete="new-password" placeholder="ახალი პაროლი (არასავალდებულო)"></div>
+                        <div><label for="portalSessionMinutes">სესიის ხანგრძლივობა (წუთი)</label><input id="portalSessionMinutes" type="number" min="5" max="10080" value="1440"></div>
+                        <div><label for="portalBackground">გვერდის ფონის ფერი</label><input id="portalBackground" type="color" value="#101827"></div>
+                        <div><label for="portalAccent">ღილაკის / აქცენტის ფერი</label><input id="portalAccent" type="color" value="#2878e8"></div>
+                    </div>
+                    <div class="portal-actions"><button type="button" id="portalSaveButton">პარამეტრების შენახვა</button><button type="button" class="secondary" id="portalReloadButton">შენახული ვერსიის ჩატვირთვა</button><span id="portalSaveStatus" role="status" aria-live="polite">მზად არის რედაქტირებისთვის</span></div>
+                    <p class="muted">სტუმრის პაროლი ინახება ჰეშის სახით. თუ პაროლის ველს ცარიელს დატოვებ, ადრე შენახული პაროლი შენარჩუნდება. პაროლის მნიშვნელობა უკან აღარ გამოისახება.</p>
+                </div>
+                <div class="portal-preview-wrap">
+                    <div class="portal-preview-heading"><strong>ცოცხალი Preview</strong><span>მობილურის ხედვა</span></div>
+                    <div id="portalPreview" class="portal-preview" style="--portal-bg:#101827;--portal-accent:#2878e8">
+                        <div class="portal-preview-brand" id="portalPreviewLogo">KEYLAND</div>
+                        <div class="portal-preview-icon">⌁</div>
+                        <h3 id="portalPreviewTitle">მოგესალმებით!</h3>
+                        <p id="portalPreviewWelcome">ინტერნეტით სარგებლობის გასაგრძელებლად გაეცანით პირობებს.</p>
+                        <div class="portal-preview-terms"><strong>გამოყენების პირობები</strong><p id="portalPreviewTerms">ქსელით სარგებლობისას დაიცავით მოქმედი კანონმდებლობა და პატივი ეცით სხვა მომხმარებლებს.</p></div>
+                        <label class="portal-preview-check"><input type="checkbox" id="portalPreviewAccept"> ვეთანხმები პირობებს</label>
+                        <div class="portal-preview-password" id="portalPreviewPassword" hidden>სტუმრის პაროლი · ••••••••</div>
+                        <button type="button" id="portalPreviewButton" disabled>ვეთანხმები და გაგრძელება</button>
+                        <small>Keyland Network</small>
+                    </div>
+                </div>
+            </div>
         </section>
         <div id="activity-section" class="section-heading"><div><span class="section-kicker">A1 / DEVICE ACTIVITY</span><h2>Device Internet Activity</h2><p>ნახე, რომელ დომენებს უკავშირდებიან Hotspot-ის მოწყობილობები</p></div></div>
         <section class="card" id="hotspotDnsCard" style="grid-column:1 / -1;">
@@ -4876,5 +4949,29 @@ element("terminalClearButton")?.addEventListener("click", () => {
 initializeApp();
 
 </script>
+
+<script>
+/* Captive Portal editor — configuration and local preview only */
+(function(){
+ "use strict";
+ const ids=["portalLogoText","portalTitle","portalWelcome","portalTerms","portalButtonText","portalAuthMode","portalGuestPassword","portalSessionMinutes","portalBackground","portalAccent"];
+ const byId=id=>document.getElementById(id);
+ const defaults={logo_text:"KEYLAND",title:"მოგესალმებით!",welcome_text:"ინტერნეტით სარგებლობის გასაგრძელებლად გაეცანით პირობებს.",terms_text:"ქსელით სარგებლობისას დაიცავით მოქმედი კანონმდებლობა და პატივი ეცით სხვა მომხმარებლებს.",button_text:"ვეთანხმები და გაგრძელება",auth_mode:"consent",session_minutes:1440,background_color:"#101827",accent_color:"#2878e8"};
+ function readForm(){return {logo_text:byId("portalLogoText").value,title:byId("portalTitle").value,welcome_text:byId("portalWelcome").value,terms_text:byId("portalTerms").value,button_text:byId("portalButtonText").value,auth_mode:byId("portalAuthMode").value,guest_password:byId("portalGuestPassword").value||null,session_minutes:Number(byId("portalSessionMinutes").value),background_color:byId("portalBackground").value,accent_color:byId("portalAccent").value,enabled:false};}
+ function writeForm(s){byId("portalLogoText").value=s.logo_text||defaults.logo_text;byId("portalTitle").value=s.title||defaults.title;byId("portalWelcome").value=s.welcome_text||defaults.welcome_text;byId("portalTerms").value=s.terms_text||defaults.terms_text;byId("portalButtonText").value=s.button_text||defaults.button_text;byId("portalAuthMode").value=s.auth_mode||"consent";byId("portalSessionMinutes").value=s.session_minutes||1440;byId("portalBackground").value=s.background_color||defaults.background_color;byId("portalAccent").value=s.accent_color||defaults.accent_color;byId("portalGuestPassword").value="";updatePreview();}
+ function updatePreview(){const s=readForm();byId("portalPreviewLogo").textContent=s.logo_text;byId("portalPreviewTitle").textContent=s.title;byId("portalPreviewWelcome").textContent=s.welcome_text;byId("portalPreviewTerms").textContent=s.terms_text;byId("portalPreviewButton").textContent=s.button_text;byId("portalPreview").style.setProperty("--portal-bg",s.background_color);byId("portalPreview").style.setProperty("--portal-accent",s.accent_color);byId("portalPreviewPassword").hidden=s.auth_mode==="consent";byId("portalPreviewAccept").parentElement.hidden=s.auth_mode==="password";byId("portalPreviewButton").disabled=s.auth_mode!=="password"&&!byId("portalPreviewAccept").checked;}
+ async function loadCaptivePortalSettings(){const status=byId("portalSaveStatus");if(!status)return;status.textContent="იტვირთება...";try{const r=await apiFetch(API+"/captive-portal/config");const d=await r.json();if(!r.ok)throw new Error(d.detail||("HTTP "+r.status));writeForm(d.settings||defaults);status.textContent=d.runtime_ready?"Portal მზად არის":"შენახული კონფიგურაცია ჩაიტვირთა · რეალური Portal ჯერ არ არის გააქტიურებული";}catch(e){status.textContent="ჩატვირთვის შეცდომა: "+e.message;}}
+ window.loadCaptivePortalSettings=loadCaptivePortalSettings;
+ ids.forEach(id=>byId(id)?.addEventListener("input",updatePreview));
+ byId("portalAuthMode")?.addEventListener("change",updatePreview);
+ byId("portalPreviewAccept")?.addEventListener("change",updatePreview);
+ byId("portalReloadButton")?.addEventListener("click",loadCaptivePortalSettings);
+ byId("portalSaveButton")?.addEventListener("click",async()=>{const button=byId("portalSaveButton"),status=byId("portalSaveStatus");button.disabled=true;status.textContent="ინახება...";try{const r=await apiFetch(API+"/captive-portal/config",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(readForm())});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||("HTTP "+r.status));byId("portalGuestPassword").value="";status.textContent="შენახულია. პარამეტრები შენახულია, მაგრამ ქსელზე Portal ჯერ არ მოქმედებს."; }catch(e){status.textContent="შენახვის შეცდომა: "+e.message;}finally{button.disabled=false;}});
+ const originalShowDashboard=window.showDashboard;
+ if(typeof originalShowDashboard==="function"){window.showDashboard=function(username){originalShowDashboard(username);loadCaptivePortalSettings();};}
+ if(document.readyState!=="loading"&&window.state?.authenticated)loadCaptivePortalSettings();
+})();
+</script>
+
 </body>
 </html>
