@@ -11,8 +11,9 @@ from typing import Any
 
 _QUERY = re.compile(
     r"^(?P<prefix>.*?)dnsmasq\[\d+\]:\s+"
+    r"(?:\d+\s+\S+\s+)?"
     r"query\[(?P<qtype>[A-Z0-9-]+)\]\s+"
-    r"(?P<domain>\S+)\s+from\s+(?P<ip>[^\s#]+)(?:#\d+)?\s*$",
+    r"(?P<domain>\S+)\s+from\s+(?P<ip>[^\s/#]+)(?:#\d+)?\s*$",
     re.IGNORECASE,
 )
 
