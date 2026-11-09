@@ -1,6 +1,6 @@
 """Hostapd + dnsmasq + nftables controller for a dedicated Keyland AP."""
 from __future__ import annotations
-import ipaddress, json, os, re, shutil, signal, subprocess, time
+import ipaddress, json, os, re, shutil, signal, socket, subprocess, sys, time
 from pathlib import Path
 from typing import Any
 from keyland.adapters.wifi.capabilities import parse_interface_combinations
@@ -1067,6 +1067,9 @@ def client_limit(mac: str, download_mbps: int, upload_mbps: int) -> dict[str, An
 
 def stop(confirmed: bool) -> dict[str, Any]:
     if confirmed is not True: return {"success": False, "error": "Explicit administrator confirmation is required."}
+    portal_result = captive_disable()
+    if not portal_result.get("success"):
+        return {"success": False, "error": "Captive Portal could not be safely disabled: " + str(portal_result.get("error"))}
     state = read_state()
     if not state: return {"success": False, "error": "Keyland router Wi-Fi is not active."}
     ap, errors = state["interface"], []
@@ -1116,3 +1119,214 @@ def stop(confirmed: bool) -> dict[str, Any]:
             errors.append(disabled.get("error", "Could not disable automatic startup."))
     return {"success": not errors, "active": False, "autostart": AUTOSTART_FILE.exists(), "configured": bool(errors), "errors": errors,
             "message": "AP and NAT stopped; automatic startup disabled; selected upstream was not reconfigured."}
+
+
+CAPTIVE_TABLE = "keyland_captive"
+CAPTIVE_STATE = ROOT / "captive-portal.json"
+
+
+def _portal_process_alive(pid: object) -> bool:
+    try:
+        number = int(pid)
+        if number <= 1:
+            return False
+        cmdline = Path(f"/proc/{number}/cmdline").read_bytes().decode(errors="replace")
+        return "keyland.captive_http" in cmdline
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def captive_status() -> dict[str, Any]:
+    router_state = read_state()
+    router_active = bool(router_state and status().get("active"))
+    firewall = run(["nft", "list", "table", "inet", CAPTIVE_TABLE])
+    try:
+        portal_state = json.loads(CAPTIVE_STATE.read_text())
+    except (OSError, ValueError, TypeError):
+        portal_state = {}
+    server_running = _portal_process_alive(portal_state.get("pid"))
+    enabled = bool(firewall["ok"])
+    return {
+        "enabled": enabled,
+        "active": enabled and server_running,
+        "server_running": server_running,
+        "runtime_ready": router_active,
+        "interface": (router_state or {}).get("interface"),
+        "gateway": (router_state or {}).get("gateway"),
+        "network": (router_state or {}).get("network"),
+        "message": (
+            "Captive Portal is active."
+            if enabled and server_running
+            else "Captive Portal firewall is installed but its HTTP service is not running."
+            if enabled
+            else "Start Keyland Router Wi-Fi before enabling Captive Portal."
+            if not router_active
+            else "Captive Portal runtime is ready."
+        ),
+    }
+
+
+def captive_enable() -> dict[str, Any]:
+    state = read_state()
+    if not state or not status().get("active"):
+        return {"success": False, "error": "Start Keyland Router Wi-Fi before enabling Captive Portal."}
+    ap = state.get("interface")
+    gateway = state.get("gateway")
+    network = state.get("network")
+    if not isinstance(ap, str) or not IFACE.fullmatch(ap):
+        return {"success": False, "error": "The active AP interface is invalid."}
+    try:
+        gateway_ip = ipaddress.ip_address(gateway)
+        ap_network = ipaddress.ip_network(network, strict=False)
+        if gateway_ip.version != 4 or gateway_ip not in ap_network:
+            raise ValueError("invalid gateway")
+    except (ValueError, TypeError):
+        return {"success": False, "error": "The active AP IPv4 configuration is invalid."}
+    settings_path = Path(__file__).resolve().parents[3] / "data" / "captive-portal.json"
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"success": False, "error": "Save valid Captive Portal settings before activation."}
+    if not isinstance(settings, dict):
+        return {"success": False, "error": "Captive Portal settings are invalid."}
+    if settings.get("auth_mode") in ("password", "both") and not settings.get("password_hash"):
+        return {"success": False, "error": "Configure the guest password before activation."}
+    if run(["nft", "list", "table", "inet", CAPTIVE_TABLE])["ok"]:
+        return {"success": False, "error": "Captive Portal firewall already exists; inspect status or disable it first."}
+    if CAPTIVE_STATE.exists():
+        return {"success": False, "error": "A previous Captive Portal runtime state exists. Disable it before retrying."}
+    if not shutil.which("nft") or not shutil.which("ip") or not shutil.which("iw"):
+        return {"success": False, "error": "nftables, iproute2 and iw are required."}
+
+    project_root = Path(__file__).resolve().parents[3]
+    log_path = ROOT / "captive-portal.log"
+    ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    try:
+        log_stream = log_path.open("a")
+        process = subprocess.Popen(
+            [
+                sys.executable, "-m", "keyland.captive_http",
+                "--host", str(gateway_ip), "--port", "8088",
+                "--ap", ap, "--network", str(ap_network),
+                "--gateway", str(gateway_ip),
+            ],
+            cwd=str(project_root),
+            stdin=subprocess.DEVNULL,
+            stdout=log_stream,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        log_stream.close()
+    except OSError as exc:
+        return {"success": False, "error": f"Could not start the captive HTTP service: {exc}"}
+
+    ready = False
+    deadline = time.monotonic() + 6
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            break
+        try:
+            with socket.create_connection((str(gateway_ip), 8088), timeout=0.4):
+                ready = True
+                break
+        except OSError:
+            time.sleep(0.2)
+    if not ready:
+        try:
+            process.terminate()
+            process.wait(timeout=3)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return {"success": False, "error": "Captive HTTP service did not become ready; existing Wi-Fi rules were not changed."}
+
+    rules = f"""table inet {CAPTIVE_TABLE} {{
+ set authorized_clients {{
+  type ipv4_addr . ether_addr
+  flags timeout
+  timeout 24h
+ }}
+ chain prerouting {{
+  type nat hook prerouting priority -110; policy accept;
+  iifname "{ap}" ip protocol tcp tcp dport 80 dnat to {gateway_ip}:8088
+  iifname "{ap}" udp dport 53 dnat to {gateway_ip}:53
+  iifname "{ap}" tcp dport 53 dnat to {gateway_ip}:53
+ }}
+ chain input {{
+  type filter hook input priority -20; policy accept;
+  iifname "{ap}" tcp dport 8088 accept
+  iifname "{ap}" udp dport 53 accept
+  iifname "{ap}" tcp dport 53 accept
+  iifname "{ap}" udp dport 67 accept
+ }}
+ chain forward {{
+  type filter hook forward priority -20; policy accept;
+  iifname "{ap}" ip saddr . ether saddr @authorized_clients accept
+  iifname "{ap}" meta nfproto ipv6 drop
+  iifname "{ap}" drop
+ }}
+}}"""
+    applied = run(["nft", "-f", "-"], stdin=rules)
+    if not applied["ok"]:
+        try:
+            process.terminate()
+            process.wait(timeout=3)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return {"success": False, "error": "Could not install isolated Captive Portal rules: " + str(applied["err"] or applied["out"])}
+    portal_state = {
+        "pid": process.pid,
+        "interface": ap,
+        "gateway": str(gateway_ip),
+        "network": str(ap_network),
+        "port": 8088,
+        "started_at": int(time.time()),
+    }
+    temporary = CAPTIVE_STATE.with_suffix(".tmp")
+    try:
+        temporary.write_text(json.dumps(portal_state))
+        os.chmod(temporary, 0o600)
+        temporary.replace(CAPTIVE_STATE)
+    except OSError as exc:
+        run(["nft", "delete", "table", "inet", CAPTIVE_TABLE])
+        try:
+            process.terminate()
+            process.wait(timeout=3)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return {"success": False, "error": f"Could not persist Captive Portal state: {exc}"}
+    return {
+        "success": True,
+        "enabled": True,
+        "active": True,
+        "interface": ap,
+        "gateway": str(gateway_ip),
+        "network": str(ap_network),
+        "http_redirect_port": 8088,
+        "message": "Captive Portal enabled. New clients must authorize before IPv4 internet forwarding.",
+    }
+
+
+def captive_disable() -> dict[str, Any]:
+    firewall = run(["nft", "list", "table", "inet", CAPTIVE_TABLE])
+    if firewall["ok"]:
+        removed = run(["nft", "delete", "table", "inet", CAPTIVE_TABLE])
+        if not removed["ok"]:
+            return {"success": False, "error": "Could not remove Captive Portal firewall rules: " + str(removed["err"] or removed["out"])}
+    try:
+        portal_state = json.loads(CAPTIVE_STATE.read_text())
+    except (OSError, ValueError, TypeError):
+        portal_state = {}
+    pid = portal_state.get("pid") if isinstance(portal_state, dict) else None
+    if _portal_process_alive(pid):
+        try:
+            os.kill(int(pid), signal.SIGTERM)
+            deadline = time.monotonic() + 4
+            while time.monotonic() < deadline and _portal_process_alive(pid):
+                time.sleep(0.1)
+            if _portal_process_alive(pid):
+                return {"success": False, "enabled": False, "error": "Firewall was removed, but the portal HTTP process did not stop."}
+        except (OSError, ValueError, TypeError) as exc:
+            return {"success": False, "enabled": False, "error": f"Firewall was removed, but the portal HTTP process could not be stopped: {exc}"}
+    CAPTIVE_STATE.unlink(missing_ok=True)
+    return {"success": True, "enabled": False, "active": False, "message": "Captive Portal disabled; only its own firewall rules were removed."}
+
