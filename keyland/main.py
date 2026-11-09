@@ -55,7 +55,7 @@ from keyland.api.wan_wlan0 import router as wan_wlan0_router
 from keyland.api.captive_portal import router as captive_portal_router
 
 
-VERSION = "1.0.3"
+VERSION = "1.1.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
@@ -136,6 +136,7 @@ def health():
         "management": {
             "dns": "/api/v1/network/dns",
             "wifi_hotspot": "/api/v1/wifi/hotspot/capabilities",
+            "captive_portal": "/api/v1/captive-portal/config",
         },
     }
 
