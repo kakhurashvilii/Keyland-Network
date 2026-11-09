@@ -1538,26 +1538,10 @@ footer { color:#7187a4; }
 @media(max-width:520px){.device-activity-group{padding:12px}.device-activity-stats{width:100%}.device-activity-domain{display:block}.device-activity-domain small{display:block;margin-top:2px}.device-activity-history-row{display:block}.device-activity-history-row small{display:block;margin-top:2px}}
 
 
-/* Mobile notification layer: keep alerts above the sticky navigation */
-@media (max-width:760px) {
-  header {
-    position: relative;
-    z-index: 30;
-  }
-  .notification-wrap {
-    position: static;
-  }
-  .notification-panel {
-    position: fixed;
-    z-index: 10000;
-    top: max(12px, env(safe-area-inset-top));
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: 480px;
-    max-height: calc(100dvh - 24px - env(safe-area-inset-top));
-    margin-left: auto;
-  }
+/* Notification dialog is portaled to body by JS to escape stacking contexts */
+.notification-panel{position:fixed;z-index:2147483000;top:74px;right:20px;left:auto;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 90px)}
+@media(max-width:760px){
+ .notification-panel{position:fixed;z-index:2147483000;top:max(12px,env(safe-area-inset-top));right:10px;left:10px;width:auto;max-width:480px;max-height:calc(100dvh - 24px - env(safe-area-inset-top));margin-left:auto}
 }
 
 </style>
@@ -2189,7 +2173,13 @@ function renderNotifications(){
  const stamp=new Date(item.timestamp);time.textContent=Number.isNaN(stamp.getTime())?"":stamp.toLocaleString(uiLanguage==="en"?"en-US":"ka-GE");
  row.append(title,body,time);row.addEventListener("click",()=>{item.read=true;saveNotifications();renderNotifications()});list.append(row)});
 }
-function setNotificationPanel(open){const panel=element("notificationPanel"),button=element("notificationToggle");if(!panel||!button)return;panel.classList.toggle("hidden",!open);button.setAttribute("aria-expanded",String(open))}
+function setNotificationPanel(open){
+ const panel=element("notificationPanel"),button=element("notificationToggle");
+ if(!panel||!button)return;
+ if(open&&panel.parentElement!==document.body)document.body.appendChild(panel);
+ panel.classList.toggle("hidden",!open);
+ button.setAttribute("aria-expanded",String(open));
+}
 element("notificationToggle")?.addEventListener("click",()=>setNotificationPanel(element("notificationPanel")?.classList.contains("hidden")));
 element("notificationReadAll")?.addEventListener("click",()=>{notificationState.items.forEach(x=>x.read=true);saveNotifications();renderNotifications()});
 element("notificationClear")?.addEventListener("click",()=>{notificationState.items.length=0;saveNotifications();renderNotifications()});
