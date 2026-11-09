@@ -1194,7 +1194,22 @@ def captive_enable() -> dict[str, Any]:
     if run(["nft", "list", "table", "inet", CAPTIVE_TABLE])["ok"]:
         return {"success": False, "error": "Captive Portal firewall already exists; inspect status or disable it first."}
     if CAPTIVE_STATE.exists():
-        return {"success": False, "error": "A previous Captive Portal runtime state exists. Disable it before retrying."}
+        try:
+            stale = json.loads(CAPTIVE_STATE.read_text())
+        except (OSError, ValueError, TypeError):
+            stale = {}
+        stale_pid = stale.get("pid") if isinstance(stale, dict) else None
+        if _portal_process_alive(stale_pid):
+            try:
+                os.kill(int(stale_pid), signal.SIGTERM)
+                deadline = time.monotonic() + 4
+                while time.monotonic() < deadline and _portal_process_alive(stale_pid):
+                    time.sleep(0.1)
+            except (OSError, ValueError, TypeError):
+                return {"success": False, "error": "A stale captive HTTP process could not be stopped safely."}
+            if _portal_process_alive(stale_pid):
+                return {"success": False, "error": "A stale captive HTTP process is still running."}
+        CAPTIVE_STATE.unlink(missing_ok=True)
     if not shutil.which("nft") or not shutil.which("ip") or not shutil.which("iw"):
         return {"success": False, "error": "nftables, iproute2 and iw are required."}
 
