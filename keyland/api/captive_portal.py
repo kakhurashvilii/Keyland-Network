@@ -122,6 +122,26 @@ def update_config(payload: PortalSettings, user: dict = Depends(require_admin)):
     return {"success": True, "settings": _public_settings(settings), "runtime_ready": False}
 
 
+@router.post("/enable")
+def enable_portal(user: dict = Depends(require_admin)):
+    # Fail closed until the network interception and authorization runtime is installed.
+    raise HTTPException(
+        status_code=409,
+        detail="Captive Portal-ის ქსელური ავტორიზაცია ჯერ არ არის დაყენებული. ჩართვა უსაფრთხოების მიზნით დაბლოკილია.",
+    )
+
+
+@router.post("/disable")
+def disable_portal(user: dict = Depends(require_admin)):
+    settings = _read_settings()
+    settings["enabled"] = False
+    try:
+        _write_settings(settings)
+    except OSError:
+        raise HTTPException(status_code=500, detail="Captive Portal-ის გამორთვის შენახვა ვერ მოხერხდა.")
+    return {"success": True, "enabled": False, "runtime_ready": False}
+
+
 @router.get("/public/config")
 def get_public_config():
     settings = _read_settings()
