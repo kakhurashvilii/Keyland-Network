@@ -6,6 +6,7 @@ import json
 import os
 import re
 import tempfile
+import subprocess
 from pathlib import Path
 from typing import Literal
 
@@ -64,6 +65,24 @@ def _write_settings(settings: dict) -> None:
         raise
 
 
+def _router_action(action: str) -> dict:
+    try:
+        proc = subprocess.run(
+            ["sudo", "-n", "/usr/local/sbin/keyland-routerctl"],
+            input=json.dumps({"action": action, "payload": {}}),
+            capture_output=True, text=True, timeout=20, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HTTPException(status_code=503, detail=f"Router helper unavailable: {exc}")
+    try:
+        result = json.loads(proc.stdout)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=503, detail="Router helper returned invalid data.")
+    if not isinstance(result, dict):
+        raise HTTPException(status_code=503, detail="Router helper returned an invalid response.")
+    return result
+
+
 def _public_settings(settings: dict) -> dict:
     return {key: settings[key] for key in _DEFAULTS if key != "enabled"} | {
         "enabled": bool(settings.get("enabled", False)),
@@ -88,22 +107,22 @@ class PortalSettings(BaseModel):
 @router.get("/config")
 def get_config(user: dict = Depends(require_admin)):
     settings = _read_settings()
-    return {"settings": _public_settings(settings), "runtime_ready": False}
+    runtime = _router_action("captive_status")
+    settings["enabled"] = bool(runtime.get("enabled"))
+    return {
+        "settings": _public_settings(settings),
+        "runtime_ready": bool(runtime.get("runtime_ready")),
+        "runtime": runtime,
+    }
 
 
 @router.put("/config")
 def update_config(payload: PortalSettings, user: dict = Depends(require_admin)):
-    # The editor is being delivered before the captive network enforcement layer.
-    # Never report an enabled portal while interception/authorization is not installed.
-    if payload.enabled:
-        raise HTTPException(
-            status_code=409,
-            detail="Portal runtime is not installed yet. Settings can be saved, but activation is not available in this build.",
-        )
-
     previous = _read_settings()
+    runtime = _router_action("captive_status")
     settings = payload.model_dump(exclude={"guest_password"})
-    settings["enabled"] = False
+    # Saving the editor must never toggle the live network state.
+    settings["enabled"] = bool(runtime.get("enabled"))
     settings["password_hash"] = previous.get("password_hash")
 
     if payload.guest_password:
@@ -119,27 +138,41 @@ def update_config(payload: PortalSettings, user: dict = Depends(require_admin)):
     except OSError:
         raise HTTPException(status_code=500, detail="Captive Portal settings could not be saved.")
 
-    return {"success": True, "settings": _public_settings(settings), "runtime_ready": False}
+    return {
+        "success": True,
+        "settings": _public_settings(settings),
+        "runtime_ready": bool(runtime.get("runtime_ready")),
+        "runtime": runtime,
+    }
 
 
 @router.post("/enable")
 def enable_portal(user: dict = Depends(require_admin)):
-    # Fail closed until the network interception and authorization runtime is installed.
-    raise HTTPException(
-        status_code=409,
-        detail="Captive Portal-ის ქსელური ავტორიზაცია ჯერ არ არის დაყენებული. ჩართვა უსაფრთხოების მიზნით დაბლოკილია.",
-    )
+    result = _router_action("captive_enable")
+    if not result.get("success"):
+        raise HTTPException(status_code=409, detail=result.get("error", "Captive Portal could not be enabled."))
+    settings = _read_settings()
+    settings["enabled"] = True
+    try:
+        _write_settings(settings)
+    except OSError as exc:
+        _router_action("captive_disable")
+        raise HTTPException(status_code=500, detail=f"Portal was rolled back because settings could not be saved: {exc}")
+    return {"success": True, "enabled": True, "runtime_ready": True, "runtime": result}
 
 
 @router.post("/disable")
 def disable_portal(user: dict = Depends(require_admin)):
+    result = _router_action("captive_disable")
+    if not result.get("success"):
+        raise HTTPException(status_code=503, detail=result.get("error", "Captive Portal could not be disabled."))
     settings = _read_settings()
     settings["enabled"] = False
     try:
         _write_settings(settings)
-    except OSError:
-        raise HTTPException(status_code=500, detail="Captive Portal-ის გამორთვის შენახვა ვერ მოხერხდა.")
-    return {"success": True, "enabled": False, "runtime_ready": False}
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Portal firewall is disabled, but settings could not be saved: {exc}")
+    return {"success": True, "enabled": False, "runtime_ready": bool(_router_action("captive_status").get("runtime_ready")), "runtime": result}
 
 
 @router.get("/public/config")
