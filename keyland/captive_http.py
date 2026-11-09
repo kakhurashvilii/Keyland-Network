@@ -38,7 +38,7 @@ def client_mac(ip: str, ap: str) -> str | None:
         ["ip", "neigh", "show", "to", ip, "dev", ap],
         capture_output=True, text=True, timeout=3, check=False,
     )
-    match = re.search(r"\\blladdr\\s+(" + MAC.pattern + r")\\b", neighbor.stdout, re.I)
+    match = re.search(r"\blladdr\s+(" + MAC.pattern + r")\b", neighbor.stdout, re.I)
     if neighbor.returncode != 0 or not match:
         return None
     mac = match.group(1).lower()
