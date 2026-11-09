@@ -1,4 +1,4 @@
-"""Captive Portal configuration API (editor foundation; no traffic interception yet)."""
+"""Captive Portal configuration and live router integration API."""
 from __future__ import annotations
 
 import hashlib
