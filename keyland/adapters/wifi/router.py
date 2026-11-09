@@ -1326,6 +1326,8 @@ def captive_enable() -> dict[str, Any]:
 
 def captive_disable() -> dict[str, Any]:
     firewall = run(["nft", "list", "table", "inet", CAPTIVE_TABLE])
+    if not firewall["ok"] and "No such file" not in str(firewall.get("err") or ""):
+        return {"success": False, "error": "Could not inspect Captive Portal firewall state: " + str(firewall.get("err") or firewall.get("out"))}
     if firewall["ok"]:
         removed = run(["nft", "delete", "table", "inet", CAPTIVE_TABLE])
         if not removed["ok"]:
