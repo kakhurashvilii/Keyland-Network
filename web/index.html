@@ -3031,7 +3031,6 @@ async function loadData() {
         ["repeaterStatus", API + "/wifi/repeater/status"],
         ["hotspotStatus", API + "/wifi/hotspot/router/status"],
         ["hotspotClients", API + "/wifi/hotspot/router/clients"],
-        ["hotspotDnsQueries", API + "/wifi/hotspot/router/dns/queries?limit=200"],
         ["services", API + "/services"],
         ["resources", API + "/system/resources"],
         ["power", API + "/system/power"],
@@ -3559,6 +3558,19 @@ if (deviceActivitySearch) {
     deviceActivitySearch.addEventListener("input", () => {
         if (hotspotDnsCache) renderHotspotDnsQueries(hotspotDnsCache);
     });
+}
+
+let hotspotDnsPollingTimer = null;
+
+async function refreshHotspotDnsActivity() {
+    if (!state.authenticated) return;
+    try {
+        const data = await fetchJSON(API + "/wifi/hotspot/router/dns/queries?limit=200");
+        if (state.authenticated) renderHotspotDnsQueries(data);
+    } catch (error) {
+        const count = element("hotspotDnsCount");
+        if (count && !hotspotDnsCache) count.textContent = tr("API შეცდომა", "API error");
+    }
 }
 function renderHotspotClients(status) {
     const list = element("hotspotClients");
@@ -4571,6 +4583,7 @@ function startPolling() {
     if (!state.authenticated) return;
 
     loadData();
+    refreshHotspotDnsActivity();
     loadDnsStatus();
     loadHotspotCapabilities();
     refreshSms(true);
@@ -4578,12 +4591,17 @@ function startPolling() {
     state.pollingTimer = setInterval(() => {
         if (state.authenticated) loadData();
     }, 15000);
+    hotspotDnsPollingTimer = setInterval(refreshHotspotDnsActivity, 5000);
     state.smsPollingTimer = setInterval(() => {
         if (state.authenticated) refreshSms(true);
     }, 30000);
 }
 
 function stopPolling() {
+    if (hotspotDnsPollingTimer !== null) {
+        clearInterval(hotspotDnsPollingTimer);
+        hotspotDnsPollingTimer = null;
+    }
     if (state.pollingTimer !== null) {
         clearInterval(state.pollingTimer);
         state.pollingTimer = null;
