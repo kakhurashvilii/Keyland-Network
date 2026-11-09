@@ -1537,6 +1537,29 @@ footer { color:#7187a4; }
 .device-activity-history-row small{flex:0 0 auto;font-size:9px;color:#8198b4}
 @media(max-width:520px){.device-activity-group{padding:12px}.device-activity-stats{width:100%}.device-activity-domain{display:block}.device-activity-domain small{display:block;margin-top:2px}.device-activity-history-row{display:block}.device-activity-history-row small{display:block;margin-top:2px}}
 
+
+/* Mobile notification layer: keep alerts above the sticky navigation */
+@media (max-width:760px) {
+  header {
+    position: relative;
+    z-index: 30;
+  }
+  .notification-wrap {
+    position: static;
+  }
+  .notification-panel {
+    position: fixed;
+    z-index: 10000;
+    top: max(12px, env(safe-area-inset-top));
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: 480px;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top));
+    margin-left: auto;
+  }
+}
+
 </style>
 </head>
 
