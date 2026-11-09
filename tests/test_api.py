@@ -48,7 +48,7 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "0.8.0"
+    assert response.json()["version"] == "1.0.3"
     assert response.json()["api"] == "v1"
     assert response.json()["management"]["dns"] == "/api/v1/network/dns"
 
