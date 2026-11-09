@@ -103,6 +103,18 @@ def _parse_iw_dev(output: str) -> list[dict[str, Any]]:
     return interfaces
 
 
+def _frequency_to_channel(frequency: int) -> int | None:
+    if frequency == 2484:
+        return 14
+    if 2412 <= frequency <= 2472:
+        return (frequency - 2407) // 5
+    if 5000 <= frequency <= 5895:
+        return (frequency - 5000) // 5
+    if 5955 <= frequency <= 7115:
+        return (frequency - 5950) // 5
+    return None
+
+
 def _read_ip_forward() -> int | None:
     try:
         value = Path(
@@ -320,6 +332,43 @@ def get_repeater_status() -> dict[str, Any]:
         }
 
     interfaces = _parse_iw_dev(iw_result["output"])
+
+    # "iw dev" often omits the SSID for managed client interfaces.
+    # Read the live association from "iw dev <interface> link" so
+    # the repeater UI reflects the actual upstream connection.
+    for item in interfaces:
+        if item.get("type") not in ("managed", "P2P-client"):
+            continue
+
+        link = _run(["iw", "dev", item["name"], "link"])
+        if not link.get("success"):
+            continue
+
+        link_output = link.get("output", "")
+        if link_output.lower().startswith("not connected"):
+            item["ssid"] = None
+            continue
+
+        for raw_line in link_output.splitlines():
+            line = raw_line.strip()
+            if line.startswith("Connected to "):
+                match = re.search(
+                    r"Connected to ([0-9a-fA-F:]{17})",
+                    line,
+                )
+                if match:
+                    item["bssid"] = match.group(1).lower()
+            elif line.startswith("SSID:"):
+                item["ssid"] = line.split(":", 1)[1].strip() or None
+            elif line.startswith("freq:"):
+                match = re.search(r"(\\d{4,5})", line)
+                if match:
+                    item["frequency_mhz"] = int(match.group(1))
+                    item["channel"] = _frequency_to_channel(item["frequency_mhz"])
+            elif line.startswith("signal:"):
+                match = re.search(r"-?\\d+(?:\\.\\d+)?", line)
+                if match:
+                    item["signal_dbm"] = float(match.group())
 
     ap_interfaces = [
         item for item in interfaces
