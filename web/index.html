@@ -410,6 +410,10 @@ footer { font-size:12px; }
 .hotspot-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 button.danger { background:#7f2939; border-color:#a33c51; }
 .hotspot-card { border-color:#365273; }
+.device-activity-group{display:block;margin:10px 0;padding:14px;border:1px solid var(--border);border-radius:12px;background:rgba(8,17,30,.38)}
+.device-activity-domains{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:7px;margin-top:12px}
+.device-activity-row{min-width:0;padding:9px 10px;border:1px solid rgba(68,88,116,.35);border-radius:8px;background:rgba(15,27,44,.55)}
+.device-activity-entry{display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
 #hotspotPreflight { max-height:240px; }
 @media(max-width:700px) { .hotspot-grid { grid-template-columns:1fr; } .hotspot-wide { grid-column:auto; } .header-actions { margin-left:auto; } }
 
@@ -1600,6 +1604,7 @@ footer { color:#7187a4; }
     <div class="nav-group-label">მართვა</div>
     <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
     <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">02</span><span><strong>Hotspot</strong><small>ინტერნეტის გაზიარება</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
+    <a href="#activity-section"><span class="nav-index">A1</span><span><strong>Device Activity</strong><small>საიტების ისტორია</small></span></a>
     <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
     <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
     <div class="nav-group-label">მოწყობილობა</div>
@@ -1959,13 +1964,17 @@ footer { color:#7187a4; }
             <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. თითოეული მოწყობილობის დაბლოკვა და სიჩქარის ლიმიტი დაცული მართვის API-ით იმართება.</p>
             <p class="muted" id="hotspotPrivacyNotice" role="note">კონფიდენციალურობა: HTTPS კავშირების შიგთავსს, პირად მიმოწერას, პაროლებს ან ვებგვერდების შიდა შიგთავსს Keyland არ კითხულობს და არ იწერს. DNS მონიტორინგი, ჩართვის შემთხვევაში, აჩვენებს მხოლოდ DNS მოთხოვნების მეტამონაცემებს (დომენს, დროსა და მოთხოვნის ტიპს) და მხოლოდ მაშინ, როცა მოწყობილობის DNS მოთხოვნები Keyland-ის DNS სერვერზე გადის. VPN-მა, დაშიფრულმა DNS-მა ან სხვა გარე resolver-მა შეიძლება ეს ხილვადობა შეზღუდოს.</p>
         </section>
+        <div id="activity-section" class="section-heading"><div><span class="section-kicker">A1 / DEVICE ACTIVITY</span><h2>Device Internet Activity</h2><p>ნახე, რომელ დომენებს უკავშირდებიან Hotspot-ის მოწყობილობები</p></div></div>
         <section class="card" id="hotspotDnsCard" style="grid-column:1 / -1;">
             <div class="cellular-heading">
-                <h3>DNS მოთხოვნების ისტორია — რომელი დომენები მოითხოვეს</h3>
+                <h3>საიტების ისტორია მოწყობილობების მიხედვით</h3>
                 <span class="cellular-badge" id="hotspotDnsCount">0 მოთხოვნა</span>
             </div>
-            <p class="muted">ჩანს მხოლოდ Keyland DNS-ზე მისული დომენური მოთხოვნები. ეს არ ადასტურებს, რომ ვებგვერდი სრულად ჩაიტვირთა; URL-ის კონკრეტული გვერდი ან HTTPS შიგთავსი არ ჩანს.</p>
+            <label for="deviceActivitySearch">მოწყობილობის ან დომენის ძებნა</label>
+            <input id="deviceActivitySearch" type="search" placeholder="მაგ. 192.168.88.101, phone ან youtube.com" autocomplete="off">
+            <p class="muted">ჩანს მხოლოდ Keyland DNS-ზე დაფიქსირებული დომენური მოთხოვნები. ეს არ ადასტურებს, რომ საიტი სრულად ჩაიტვირთა; სრული URL, HTTPS შიგთავსი და პაროლები არ იკითხება.</p>
             <div id="hotspotDnsQueries" class="client-list" aria-live="polite"><div class="client-empty">DNS მონიტორინგი გამორთულია ან მოთხოვნები ჯერ არ არის.</div></div>
+            <p class="muted">მოწყობილობის ამოცნობა ხდება DHCP lease-ის IP/MAC/hostname მონაცემებით. VPN-მა ან დაშიფრულმა DNS-მა შეიძლება ისტორია არასრული გახადოს.</p>
         </section>
 
         <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
@@ -3322,12 +3331,18 @@ function formatRate(mbps) {
 }
 
 
+let hotspotDnsCache = null;
+
 function renderHotspotDnsQueries(data) {
+    hotspotDnsCache = data || null;
     const list = element("hotspotDnsQueries");
     const count = element("hotspotDnsCount");
+    const search = element("deviceActivitySearch");
     if (!list || !count) return;
+
     const queries = Array.isArray(data?.queries) ? data.queries : [];
     count.textContent = queries.length + " " + tr("მოთხოვნა", "queries");
+
     if (!data?.enabled) {
         list.replaceChildren();
         const empty = document.createElement("div");
@@ -3336,6 +3351,7 @@ function renderHotspotDnsQueries(data) {
         list.append(empty);
         return;
     }
+
     if (!queries.length) {
         list.replaceChildren();
         const empty = document.createElement("div");
@@ -3344,21 +3360,97 @@ function renderHotspotDnsQueries(data) {
         list.append(empty);
         return;
     }
-    const rows = queries.slice().reverse().map(item => {
-        const row = document.createElement("article");
-        row.className = "client-device";
-        const title = document.createElement("strong");
-        title.textContent = item.domain || "—";
+
+    const term = (search?.value || "").trim().toLowerCase();
+    const devices = new Map();
+
+    for (const item of queries) {
+        const identity = String(item.mac || item.ip || "unknown").toLowerCase();
+        const searchable = [
+            item.hostname, item.ip, item.mac, item.domain, item.query_type
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (term && !searchable.includes(term)) continue;
+
+        if (!devices.has(identity)) {
+            devices.set(identity, {
+                hostname: item.hostname || null,
+                ip: item.ip || null,
+                mac: item.mac || null,
+                events: []
+            });
+        }
+        const device = devices.get(identity);
+        if (!device.hostname && item.hostname) device.hostname = item.hostname;
+        device.events.push(item);
+    }
+
+    if (!devices.size) {
+        list.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "client-empty";
+        empty.textContent = tr("ამ ძებნით ჩანაწერი ვერ მოიძებნა.", "No activity matches this search.");
+        list.append(empty);
+        return;
+    }
+
+    const groups = Array.from(devices.values()).sort((a, b) => {
+        const aTime = a.events[a.events.length - 1]?.timestamp || "";
+        const bTime = b.events[b.events.length - 1]?.timestamp || "";
+        return bTime.localeCompare(aTime);
+    });
+
+    const cards = groups.map(device => {
+        const card = document.createElement("section");
+        card.className = "client-device device-activity-group";
+
+        const heading = document.createElement("div");
+        heading.className = "cellular-heading";
+
+        const identity = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = device.hostname || tr("უცნობი მოწყობილობა", "Unknown device");
         const meta = document.createElement("div");
         meta.className = "muted";
-        meta.textContent = [item.hostname || item.ip || "უცნობი მოწყობილობა", item.mac || "", item.query_type || ""].filter(Boolean).join(" · ");
-        const time = document.createElement("small");
-        time.className = "muted";
-        time.textContent = item.timestamp || "";
-        row.append(title, meta, time);
-        return row;
+        meta.textContent = [device.ip, device.mac].filter(Boolean).join(" · ") || tr("მოწყობილობის იდენტიფიკაცია ვერ მოხერხდა", "Device identity unavailable");
+        identity.append(name, meta);
+
+        const badge = document.createElement("span");
+        badge.className = "cellular-badge";
+        badge.textContent = device.events.length + " " + tr("მოთხოვნა", "queries");
+        heading.append(identity, badge);
+
+        const domains = document.createElement("div");
+        domains.className = "device-activity-domains";
+        for (const item of device.events.slice().reverse()) {
+            const row = document.createElement("div");
+            row.className = "device-activity-row";
+
+            const domain = document.createElement("strong");
+            domain.textContent = item.domain || "—";
+
+            const details = document.createElement("small");
+            details.className = "muted";
+            details.textContent = [item.timestamp, item.query_type].filter(Boolean).join(" · ");
+
+            const entry = document.createElement("div");
+            entry.className = "device-activity-entry";
+            entry.append(domain, details);
+            row.append(entry);
+            domains.append(row);
+        }
+
+        card.append(heading, domains);
+        return card;
     });
-    list.replaceChildren(...rows);
+
+    list.replaceChildren(...cards);
+}
+
+const deviceActivitySearch = element("deviceActivitySearch");
+if (deviceActivitySearch) {
+    deviceActivitySearch.addEventListener("input", () => {
+        if (hotspotDnsCache) renderHotspotDnsQueries(hotspotDnsCache);
+    });
 }
 
 function renderHotspotClients(status) {
