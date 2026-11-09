@@ -155,7 +155,44 @@ def interfaces() -> list[dict[str, Any]]:
             else:
                 m = re.search(r"\bchannel\s+(\d+)\s+\((\d+)\s+MHz\)", line)
                 if m: cur["channel"] = int(m.group(1))
-    if cur: out.append(cur)
+    if cur:
+        out.append(cur)
+
+    # "iw dev" may omit the SSID for managed interfaces.
+    # Read the live association so repeater validation sees the real upstream.
+    for item in out:
+        if item.get("type") not in ("managed", "P2P-client"):
+            continue
+
+        link = run(["iw", "dev", item["name"], "link"])
+        if not link["ok"]:
+            continue
+
+        link_output = link["out"]
+        if link_output.lower().startswith("not connected"):
+            item["ssid"] = None
+            item["channel"] = None
+            continue
+
+        for raw_line in link_output.splitlines():
+            line = raw_line.strip()
+
+            if line.startswith("SSID:"):
+                item["ssid"] = line.split(":", 1)[1].strip() or None
+
+            elif line.startswith("freq:"):
+                match = re.search(r"(\d{4,5})", line)
+                if match:
+                    frequency = int(match.group(1))
+                    if frequency == 2484:
+                        item["channel"] = 14
+                    elif 2412 <= frequency <= 2472:
+                        item["channel"] = (frequency - 2407) // 5
+                    elif 5000 <= frequency <= 5895:
+                        item["channel"] = (frequency - 5000) // 5
+                    elif 5955 <= frequency <= 7115:
+                        item["channel"] = (frequency - 5950) // 5
+
     return out
 
 
@@ -411,7 +448,18 @@ def _validate(p: dict[str, Any]) -> dict[str, Any]:
     band = p.get("band", "2.4")
     if band not in ("2.4", "5"):
         raise ValueError("Wi-Fi band must be 2.4 or 5 GHz.")
+
     station_channel = (station or {}).get("channel")
+
+    # In repeater mode, follow the connected upstream channel automatically.
+    # AP and managed client share one PHY and may be limited to one channel.
+    if mode == "repeater" and station:
+        if not isinstance(station_channel, int):
+            raise ValueError("Could not determine the connected Wi-Fi channel.")
+        band = "2.4" if station_channel <= 14 else "5"
+        p["band"] = band
+        p["channel"] = station_channel
+
     default_channel = 36 if band == "5" else (station_channel if station_channel in range(1, 12) else 1)
     try:
         requested_channel = int(p.get("channel") or default_channel)

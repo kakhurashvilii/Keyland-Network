@@ -1,0 +1,3653 @@
+
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10141d">
+<meta name="robots" content="noindex, nofollow">
+<title>Keyland Network — ქსელის მართვა</title>
+
+<style>
+:root {
+    color-scheme: dark;
+    --bg: #10141d;
+    --header: #171e2b;
+    --card: #1a2230;
+    --border: #30394a;
+    --text: #e8edf5;
+    --muted: #8d9bb0;
+    --blue: #2869d8;
+    --blue-light: #78aaff;
+    --green: #50d69b;
+    --red: #ff7070;
+    --orange: #ffbd69;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+}
+
+body.login-active { overflow: hidden; }
+
+header {
+    padding: 22px;
+    background: var(--header);
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 { margin: 0; font-size: 24px; }
+header p { color: var(--muted); }
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+main {
+    max-width: 1250px;
+    margin: auto;
+    padding: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 15px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.card h3 {
+    margin-top: 0;
+    color: var(--blue-light);
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: #b9c8dc;
+    font-size: 12px;
+    max-height: 420px;
+    overflow: auto;
+}
+
+.status { color: var(--green); }
+.muted { color: var(--muted); font-size: 12px; }
+
+button, select {
+    background: var(--blue);
+    border: 0;
+    padding: 10px 16px;
+    color: white;
+    border-radius: 7px;
+    cursor: pointer;
+    margin: 4px 4px 14px 0;
+    font-size: 14px;
+}
+
+button:hover { filter: brightness(1.12); }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--blue-light);
+    outline-offset: 2px;
+}
+
+button:disabled { opacity: .5; cursor: wait; }
+
+.metric {
+    font-size: 25px;
+    font-weight: bold;
+    margin: 8px 0;
+}
+
+.metric-label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 7px;
+}
+
+.bar > div {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width .3s ease;
+}
+
+.internet-status {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 12px 0;
+}
+
+.online { color: var(--green); }
+.offline { color: var(--red); }
+.unknown { color: var(--muted); }
+
+.traffic-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.traffic-value {
+    font-size: 21px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.rx-color { color: var(--green); }
+.tx-color { color: var(--blue-light); }
+
+.chart-container {
+    width: 100%;
+    height: 220px;
+    position: relative;
+}
+
+#trafficChart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.cellular-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cellular-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #26364e;
+    color: var(--blue-light);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.cellular-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 15px;
+}
+
+.cellular-item {
+    min-width: 0;
+    padding: 12px;
+    background: #141c28;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.cellular-value {
+    margin-top: 6px;
+    font-size: 17px;
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+.signal-bar {
+    height: 9px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.signal-bar > div {
+    height: 100%;
+    width: 0;
+    background: var(--green);
+    transition: width .3s ease;
+}
+
+.cellular-interfaces {
+    margin-top: 15px;
+}
+
+footer {
+    color: #78869b;
+    text-align: center;
+    padding: 30px;
+}
+
+/* Login */
+
+.login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg);
+}
+
+.login-box {
+    width: 100%;
+    max-width: 390px;
+    padding: 30px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 20px 70px rgba(0,0,0,.35);
+}
+
+.login-logo {
+    color: var(--blue-light);
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 25px;
+}
+
+.login-box label {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 7px;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 18px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+.login-box button {
+    width: 100%;
+    margin: 5px 0 0;
+    padding: 12px;
+}
+
+.login-error {
+    min-height: 20px;
+    margin-bottom: 8px;
+    color: var(--red);
+    font-size: 13px;
+}
+
+.login-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+    header { padding: 16px; }
+    main { padding: 12px; }
+    .login-box { padding: 22px; }
+    .metric { font-size: 22px; }
+    .cellular-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Keyland Network — refined router console */
+:root {
+    --bg: #0b1220;
+    --header: #101a2b;
+    --card: #121e30;
+    --border: #26364d;
+    --text: #e7eef9;
+    --muted: #93a4bc;
+    --blue: #2563eb;
+    --blue-light: #8bb8ff;
+    --green: #34d399;
+    --red: #fb7185;
+    --orange: #fbbf24;
+    --surface: #0e1929;
+}
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; }
+header { position: relative; padding: 24px max(20px, calc((100vw - 1320px)/2)); background: linear-gradient(120deg,#111e32,#0d1727 70%); }
+header h1 { letter-spacing: .08em; font-size: 21px; font-weight: 800; }
+header p { margin: 5px 0 10px; font-size: 13px; }
+main { max-width: 1320px; padding: 22px 24px 42px; }
+.grid { grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr)); gap: 18px; align-items: stretch; }
+.card { background: linear-gradient(160deg,rgba(20,34,54,.98),rgba(15,27,44,.98)); border: 1px solid var(--border); border-radius: 15px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.13); transition: border-color .18s ease, transform .18s ease; }
+.card:hover { border-color: #3c5678; transform: translateY(-1px); }
+.card h3 { display:flex; align-items:center; gap:9px; color:#b5d0ff; font-size:15px; font-weight:700; letter-spacing:.01em; margin:0 0 14px; scroll-margin-top:95px; }
+.card h3::before { content:""; width:4px; height:17px; border-radius:4px; background:var(--blue); flex:0 0 4px; }
+.metric { font-size:28px; letter-spacing:-.04em; }
+.metric-label,.muted { color:var(--muted); }
+pre { padding:12px 13px; border:1px solid rgba(68,88,116,.35); border-radius:9px; background:rgba(5,12,22,.36); line-height:1.55; }
+button,select { border:1px solid transparent; border-radius:9px; padding:10px 14px; font-weight:650; transition:filter .15s ease,background .15s ease,border-color .15s ease; }
+button { box-shadow:0 3px 10px rgba(0,0,0,.15); }
+button:active { transform:translateY(1px); }
+button.secondary { background:#24354d; border-color:#3b506c; color:#dce9fb; }
+input,select,textarea { max-width:100%; }
+input:not(.login-box input), select { background:#0b1626; color:var(--text); border:1px solid #34465f; border-radius:8px; padding:10px 12px; }
+input:not(.login-box input) { width:100%; margin:6px 0 12px; }
+label { display:block; color:#b6c5d9; font-size:12px; font-weight:650; margin-top:8px; }
+.primary-nav { position:sticky; top:0; z-index:100; display:flex; gap:8px; align-items:center; overflow-x:auto; padding:10px max(16px,calc((100vw - 1320px)/2)); background:rgba(10,18,31,.94); border-bottom:1px solid var(--border); backdrop-filter:blur(14px); }
+.primary-nav a { flex:0 0 auto; text-decoration:none; color:#b5c5db; border:1px solid #2a3b53; background:#142238; border-radius:999px; padding:7px 13px; font-size:12px; font-weight:650; }
+.primary-nav a:hover { color:white; border-color:#5b83bb; background:#1b3150; }
+#dashboard > #refreshButton { margin-top:2px; }
+#dnsStatus { min-height:90px; max-height:260px; }
+#dnsMessage { min-height:20px; padding:8px 10px; border-radius:8px; background:rgba(6,14,25,.32); }
+.cellular-item { background:#0e1a2b; border-color:#293c55; border-radius:10px; }
+.login-box { background:#121f32; border-color:#30445f; }
+.login-logo { letter-spacing:.08em; }
+footer { font-size:12px; }
+@media (max-width:700px) {
+  header { padding:18px 16px; }
+  main { padding:14px 12px 30px; }
+  .grid { grid-template-columns:1fr; gap:12px; }
+  .card { padding:16px; }
+  .primary-nav { padding:9px 12px; }
+  .cellular-grid { grid-template-columns:1fr 1fr; }
+}
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; scroll-behavior:auto !important; } }
+
+
+.header-actions { display:flex; gap:8px; align-items:center; }
+.hotspot-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 18px; }
+.hotspot-wide { grid-column:1/-1; }
+.hotspot-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+button.danger { background:#7f2939; border-color:#a33c51; }
+.hotspot-card { border-color:#365273; }
+#hotspotPreflight { max-height:240px; }
+@media(max-width:700px) { .hotspot-grid { grid-template-columns:1fr; } .hotspot-wide { grid-column:auto; } .header-actions { margin-left:auto; } }
+
+
+/* KEYLAND PROFESSIONAL INTERFACE */
+:root {
+    color-scheme: dark;
+    --bg:#0b1120; --header:#0f1728; --card:#111c30; --border:#26354d;
+    --text:#edf3fc; --muted:#8fa2bd; --blue:#3978ed; --blue-light:#8eb7ff;
+    --green:#39d6a0; --red:#ff6f7d; --orange:#f4b860;
+    --surface:#0e192b; --surface-soft:#16243a; --shadow:0 14px 38px rgba(0,0,0,.18);
+}
+html { scroll-behavior:smooth; scroll-padding-top:24px; }
+body { background:radial-gradient(ellipse at 80% -10%,rgba(43,91,160,.15),transparent 38%),var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; letter-spacing:.01em; }
+header { position:relative; z-index:5; padding:20px 30px; background:rgba(12,20,35,.94); border-bottom:1px solid var(--border); backdrop-filter:blur(16px); }
+header h1 { font-size:19px; letter-spacing:.13em; font-weight:800; }
+header p { margin:6px 0 10px; color:var(--muted); font-size:13px; }
+.header-status { gap:10px; } .header-actions { display:flex; align-items:center; gap:8px; }
+.app-layout { display:grid; grid-template-columns:238px minmax(0,1fr); gap:30px; max-width:1740px; margin:0 auto; padding:26px 30px 40px; align-items:start; }
+.primary-nav { position:sticky; top:22px; display:flex; flex-direction:column; gap:7px; min-height:calc(100vh - 44px); padding:17px 12px; border:1px solid var(--border); border-radius:18px; background:linear-gradient(180deg,rgba(19,31,51,.98),rgba(13,23,39,.98)); box-shadow:var(--shadow); }
+.nav-brand { display:flex; align-items:center; gap:11px; padding:8px 8px 22px; border-bottom:1px solid var(--border); margin-bottom:10px; }
+.brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:linear-gradient(145deg,#4c8cff,#2457c7); color:white; font-size:20px; font-weight:900; box-shadow:0 8px 20px rgba(48,112,232,.3); }
+.nav-brand strong { display:block; font-size:13px; letter-spacing:.13em; } .nav-brand small { display:block; margin-top:3px; color:var(--muted); font-size:9px; letter-spacing:.17em; }
+.nav-group-label { padding:13px 10px 5px; color:#7085a4; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.primary-nav a { display:flex; align-items:center; gap:12px; min-height:54px; padding:8px 10px; border:1px solid transparent; border-radius:11px; color:#b9c8dd; text-decoration:none; transition:background .18s,border-color .18s,color .18s,transform .18s; }
+.primary-nav a:hover,.primary-nav a:focus-visible { background:var(--surface-soft); border-color:#314967; color:white; transform:translateX(2px); outline:none; }
+.primary-nav a strong { display:block; font-size:12px; font-weight:700; } .primary-nav a small { display:block; margin-top:3px; color:#7f93af; font-size:10px; }
+.nav-index { display:grid; place-items:center; width:30px; height:30px; flex:0 0 30px; border-radius:9px; background:#1b2b43; color:#8eb7ff; font-size:10px; font-weight:800; }
+.nav-footer { display:flex; align-items:center; gap:8px; margin-top:auto; padding:14px 9px 4px; border-top:1px solid var(--border); color:#91a4bf; font-size:10px; }
+.nav-status-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(57,214,160,.1); }
+main { width:100%; max-width:none; margin:0; padding:0; min-width:0; }
+#dashboard > button { margin:0 8px 18px 0; } #updated { display:inline-block; margin:0 0 18px 4px; }
+.grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:17px; align-items:stretch; }
+.grid > .card { grid-column:span 6; min-width:0; padding:21px; border:1px solid var(--border); border-radius:16px; background:linear-gradient(155deg,rgba(20,34,56,.98),rgba(15,26,44,.98)); box-shadow:var(--shadow); transition:border-color .2s,transform .2s; }
+.grid > .card:hover { border-color:#3a5274; }
+.grid > .card[style*="grid-column: 1 / -1"],.grid > .hotspot-card { grid-column:1 / -1; }
+.section-heading { grid-column:1 / -1; display:flex; align-items:flex-end; justify-content:space-between; margin:18px 0 0; padding:15px 2px 2px; border-bottom:1px solid var(--border); scroll-margin-top:22px; }
+.section-heading h2 { margin:5px 0; color:#f0f5ff; font-size:21px; font-weight:750; letter-spacing:-.025em; }
+.section-heading p { margin:0 0 13px; color:var(--muted); font-size:12px; }
+.section-kicker { color:#76a8ff; font-size:9px; font-weight:800; letter-spacing:.18em; }
+.card h3 { margin:0 0 14px; color:#dce9fb; font-size:14px; font-weight:700; } .card p { line-height:1.65; }
+pre { padding:13px 14px; border:1px solid rgba(65,86,117,.45); border-radius:10px; background:rgba(7,14,26,.48); color:#b9c9df; font-size:11px; line-height:1.65; }
+button,select { min-height:39px; margin:4px 6px 8px 0; padding:9px 14px; border:1px solid transparent; border-radius:9px; background:linear-gradient(135deg,#3e83f4,#2d65d4); color:white; font-size:12px; font-weight:700; transition:filter .18s,transform .18s,border-color .18s; }
+button:hover { filter:brightness(1.12); transform:translateY(-1px); } button.secondary { border-color:#354b69; background:#1a2b44; color:#d8e6fa; }
+button.danger { border-color:rgba(255,111,125,.35); background:rgba(145,48,62,.22); color:#ff9ba5; }
+input,select,textarea { width:100%; min-height:41px; padding:10px 12px; border:1px solid #30435f; border-radius:9px; background:#0c1729; color:var(--text); font:inherit; font-size:12px; }
+label { display:block; margin:10px 0 7px; color:#b8c8df; font-size:11px; font-weight:650; }
+button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--blue-light); outline-offset:2px; }
+.metric { font-size:27px; letter-spacing:-.04em; } .metric-label,.muted { color:var(--muted); } .metric-grid { gap:18px; }
+.cellular-item { padding:15px; border:1px solid var(--border); border-radius:11px; background:rgba(8,17,31,.42); } .cellular-value { font-size:15px; }
+.hotspot-grid { gap:16px; } .hotspot-card { border-color:#34517a !important; background:linear-gradient(145deg,rgba(24,43,70,.98),rgba(15,27,46,.98)) !important; }
+.repeater-card { border-color:#314a68 !important; background:linear-gradient(145deg,rgba(18,31,50,.98),rgba(14,24,40,.98)) !important; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
+#hotspotIpv4 { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.02em; }
+.login-overlay { background:radial-gradient(ellipse at 50% 0%,rgba(48,103,187,.2),transparent 45%),var(--bg); }
+.login-box { border-radius:18px; border-color:var(--border); background:#111e32; box-shadow:0 28px 90px rgba(0,0,0,.45); } .login-box input { margin-bottom:12px; }
+footer { padding:24px; color:#7185a2; font-size:10px; letter-spacing:.12em; }
+@media (max-width:1100px) { .app-layout { grid-template-columns:205px minmax(0,1fr); gap:20px; padding:20px; } .grid > .card { grid-column:1 / -1; } }
+@media (max-width:760px) {
+ header { padding:16px 18px; } .app-layout { display:block; padding:12px 14px 28px; }
+ .primary-nav { position:sticky; top:0; z-index:10; min-height:0; height:auto; margin-bottom:18px; padding:9px; border-radius:13px; flex-direction:row; overflow-x:auto; gap:5px; backdrop-filter:blur(14px); }
+ .nav-brand,.nav-group-label,.nav-footer { display:none; } .primary-nav a { flex:0 0 auto; min-height:42px; padding:7px 10px; }
+ .primary-nav a small { display:none; } .nav-index { width:24px; height:24px; flex-basis:24px; }
+ .grid { grid-template-columns:minmax(0,1fr); gap:12px; } .grid > .card { grid-column:1 / -1; padding:17px; }
+ .section-heading { margin-top:13px; } .section-heading h2 { font-size:18px; } .cellular-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .header-row { align-items:flex-start; }
+}
+@media (max-width:420px) { .cellular-grid,.metric-grid,.traffic-stats { grid-template-columns:1fr 1fr; gap:9px; } .header-status { gap:6px; } .section-heading p { font-size:11px; } }
+
+
+/* KEYLAND ROUTER CONSOLE — RouterOS density + OpenWrt clarity */
+:root{
+ --bg:#080e18;--header:#0d1725;--card:#101d2d;--border:#26384d;
+ --text:#eaf1f8;--muted:#8ea2b9;--blue:#2386d9;--blue-light:#70c4ff;
+ --green:#25c78a;--red:#f06470;--orange:#f0a43b;
+ --surface:#0b1624;--surface-soft:#17283b;--shadow:0 12px 34px rgba(0,0,0,.22);
+}
+body{background:linear-gradient(145deg,#0b1422 0%,#080e18 56%,#0d1928 100%);font-size:13px}
+header{padding:15px 28px;background:rgba(8,16,27,.96);border-bottom:1px solid #263b51}
+header h1{font-size:17px;letter-spacing:.16em}
+header p{font-size:11px;margin:3px 0 8px}
+.header-status{gap:8px}
+.header-status>*{padding:5px 9px;border:1px solid #263c54;border-radius:6px;background:#101e2e;font-size:10px}
+.app-layout{grid-template-columns:248px minmax(0,1fr);gap:22px;max-width:1840px;padding:20px 24px 36px}
+.primary-nav{top:16px;min-height:calc(100vh - 32px);padding:13px 10px;border-radius:12px;background:#0d1928;border:1px solid #293d53;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.nav-brand{padding:7px 8px 17px;margin-bottom:5px}
+.brand-mark{border-radius:8px;background:linear-gradient(145deg,#ed9d32,#c56d20);box-shadow:none}
+.nav-brand strong{letter-spacing:.17em}
+.nav-group-label{padding:12px 10px 4px;color:#718aa4;font-size:9px;letter-spacing:.16em}
+.primary-nav a{min-height:43px;padding:6px 8px;border-radius:7px;gap:10px}
+.primary-nav a:hover,.primary-nav a:focus-visible{transform:none;background:#172a3f;border-color:#2f5273}
+.nav-index{width:25px;height:25px;flex-basis:25px;border-radius:6px;background:#1a2c40;color:#83c9ff;font-size:9px}
+.primary-nav a strong{font-size:11px}.primary-nav a small{font-size:9px}
+.nav-footer{font-size:9px}
+main{min-width:0}
+#dashboard>#refreshButton{margin:0 7px 14px 0}
+.grid{gap:13px}
+.grid>.card{padding:18px;border-radius:11px;background:linear-gradient(145deg,#132237,#0e1a2a);border:1px solid #293e56;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+.grid>.card:hover{border-color:#42627f;transform:none}
+.section-heading{margin:15px 0 0;padding:12px 2px 4px;border-bottom:1px solid #263b51}
+.section-heading h2{font-size:19px;letter-spacing:-.02em}
+.section-heading p{font-size:11px}
+.section-kicker{color:#f0a94b;font-size:9px;letter-spacing:.2em}
+.card h3{font-size:13px;color:#c6ddf4}
+.metric{font-size:25px}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+pre{background:#091321;border:1px solid #263b50;border-radius:7px;font-size:10px}
+button,select{min-height:35px;padding:8px 12px;border-radius:7px;font-size:11px}
+button{background:linear-gradient(135deg,#248bd8,#1766ae)}
+button.secondary{background:#1a2d42;border-color:#35516d;color:#dceaf7}
+button.danger{background:#48222d;border-color:#85404c;color:#ffabb2}
+input,select,textarea{min-height:37px;border-radius:7px;background:#091625;border-color:#314a64;font-size:12px}
+label{font-size:10px;text-transform:uppercase;letter-spacing:.045em;color:#a9bfd4}
+.cellular-item{border-radius:8px;background:#0c1928}
+.hotspot-card{border-color:#42658a!important;background:linear-gradient(145deg,#172b43,#101d30)!important}
+.repeater-card{background:linear-gradient(145deg,#132337,#0e1928)!important}
+#hotspotPreflight{max-height:260px}
+.login-box{border-radius:12px}
+.login-logo{color:#f0a94b}
+footer{letter-spacing:.1em}
+@media(max-width:1100px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}}
+@media(max-width:760px){.app-layout{padding:10px}.primary-nav{border-radius:9px}.primary-nav a{min-height:39px}.nav-index{display:none}header{padding:13px 15px}}
+
+
+/* Final layout corrections: stable WinBox-style sidebar and aligned sections */
+.app-layout{display:grid;grid-template-columns:238px minmax(0,1fr);gap:24px;max-width:1740px;margin:0 auto;padding:22px 26px 40px;align-items:start}
+.primary-nav{position:sticky;top:18px;z-index:20;display:flex;flex-direction:column;align-items:stretch;gap:7px;overflow:visible;min-height:calc(100vh - 36px);padding:16px 11px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(180deg,#111e31,#0d1727);box-shadow:var(--shadow);backdrop-filter:none}
+.primary-nav a{display:flex;flex:0 0 auto;align-items:center;gap:10px;min-height:48px;padding:7px 9px;border:1px solid transparent;border-radius:9px;background:transparent;color:#b8c8de;font-size:12px}
+.primary-nav a:hover,.primary-nav a:focus-visible{background:#1a2b43;border-color:#344e70;color:#fff}
+.nav-index{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:7px;background:#1c304b;color:#8fc0ff;font-size:10px;font-weight:800}
+.nav-footer{margin-top:auto;padding:14px 8px 4px;border-top:1px solid var(--border);color:var(--muted);font-size:10px}
+main#dashboard{min-width:0;width:100%;max-width:none;margin:0;padding:0}
+#dashboard>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+#dashboard>.grid>.section-heading{grid-column:1/-1;width:100%;margin:12px 0 0;padding:14px 4px 3px}
+#dashboard>.grid>.card{min-width:0;width:100%;height:100%;padding:18px;border:1px solid #293c55;border-radius:12px;background:linear-gradient(155deg,#14243a,#101b2c);box-shadow:0 8px 22px rgba(0,0,0,.14)}
+#dashboard>.grid>.card[style*="grid-column"]{grid-column:1/-1}
+#dashboard>#refreshButton,#dashboard>#scanButton{margin:0 7px 12px 0}
+#dashboard>#updated{display:inline-block;margin:0 0 12px;color:var(--muted)}
+.section-heading h2{font-size:20px}
+.repeater-scan-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 8px;padding:12px;border:1px solid #2a405b;border-radius:10px;background:#0d1929}
+.repeater-scan-toolbar p{margin:4px 0 0}
+.wifi-results{margin-top:10px}
+.wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.wifi-result-card{min-width:0;padding:12px;border:1px solid #2b405b;border-radius:9px;background:#0c1828}
+.wifi-result-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wifi-result-heading strong{min-width:0;overflow-wrap:anywhere;color:#e7f0fc;font-size:12px}
+.wifi-security{flex:0 0 auto;padding:3px 7px;border-radius:5px;background:#1b3049;color:#9fc9ff;font-size:9px}
+.wifi-result-card p{margin:7px 0 0;font-size:10px;overflow-wrap:anywhere}
+#repeaterStatus{max-height:210px}
+@media(max-width:1050px){.app-layout{grid-template-columns:205px minmax(0,1fr);gap:15px;padding:16px}.primary-nav{top:12px}}
+@media(max-width:760px){.app-layout{display:block;padding:10px}.primary-nav{position:relative;top:auto;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:14px;padding:9px}.nav-brand,.nav-group-label,.nav-footer{grid-column:1/-1}.primary-nav a{min-height:40px;font-size:10px}.nav-index{width:23px;height:23px;flex-basis:23px}main#dashboard{padding:0}#dashboard>.grid{grid-template-columns:1fr;gap:11px}.wifi-results-grid{grid-template-columns:1fr}.repeater-scan-toolbar{align-items:flex-start;flex-direction:column}.repeater-scan-toolbar button{width:100%}}
+
+
+/* Mobile-first compact router console */
+@media (max-width:760px) {
+ body{font-size:12px;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+ header{padding:10px 12px} header h1{font-size:14px} header p{display:none}
+ .header-row{align-items:center;gap:8px}.header-status{gap:5px}.header-status>*{padding:3px 6px;font-size:9px}
+ .header-actions{gap:5px}.header-actions button{min-height:32px;padding:6px 8px;margin:0;font-size:10px}
+ .app-layout{display:block;padding:8px 9px 16px}
+ .primary-nav{position:fixed;inset:auto 0 0;z-index:1000;display:flex;flex-direction:row;gap:2px;width:100%;min-height:0;height:calc(58px + env(safe-area-inset-bottom));margin:0;padding:5px 4px calc(5px + env(safe-area-inset-bottom));overflow-x:auto;overflow-y:hidden;border:0;border-top:1px solid #2a4058;border-radius:0;background:rgba(7,15,26,.97);box-shadow:0 -8px 24px rgba(0,0,0,.3);backdrop-filter:blur(18px);scrollbar-width:none}
+ .primary-nav::-webkit-scrollbar{display:none}.nav-brand,.nav-group-label,.nav-footer{display:none!important}
+ .primary-nav a{flex:1 0 56px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;min-width:56px;min-height:46px;padding:4px 3px;border:0;border-radius:8px;background:transparent;text-align:center}
+ .primary-nav a strong{font-size:9px;line-height:1.2;white-space:nowrap}.primary-nav a small,.nav-index{display:none}
+ main#dashboard{min-width:0;padding:0}
+ #dashboard>#refreshButton,#dashboard>#scanButton{min-height:35px;margin:0 4px 8px 0;padding:7px 9px;font-size:10px}
+ #dashboard>#updated{display:block;margin:0 0 8px;font-size:9px}
+ #dashboard>.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+ #dashboard>.grid>.section-heading{margin:9px 0 0;padding:9px 2px 3px}
+ .section-heading h2{font-size:16px}.section-heading p{margin-bottom:6px;font-size:10px}
+ #dashboard>.grid>.card{padding:12px;border-radius:10px}
+ .card h3{margin-bottom:9px;font-size:12px}.metric{font-size:21px}
+ .metric-grid,.traffic-stats{gap:8px}.cellular-grid{gap:7px;margin-top:9px}.cellular-item{padding:9px}.cellular-value{font-size:13px}
+ pre{max-height:180px;padding:9px;font-size:9px;line-height:1.45}
+ button,select{min-height:35px;padding:7px 9px;font-size:10px}
+ input,select,textarea{min-height:37px;padding:8px 9px;font-size:12px}
+ label{margin:7px 0 5px;font-size:9px}.hotspot-grid{gap:8px}.hotspot-actions{gap:5px}
+ .hotspot-actions button{flex:1 1 130px}.repeater-scan-toolbar{padding:9px}
+ .wifi-results-grid{grid-template-columns:1fr}.chart-container{height:160px}
+ footer{padding:12px;font-size:9px}
+}
+@media(max-width:380px){.primary-nav a{flex-basis:51px;min-width:51px}.primary-nav a strong{font-size:8px}.header-status .status{display:none}}
+.client-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px}
+.client-device{min-width:0;padding:12px;border:1px solid #2b425d;border-radius:9px;background:#0b1726}
+.client-device-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.client-device-head strong{min-width:0;overflow-wrap:anywhere;font-size:11px}
+.client-signal{color:var(--green);white-space:nowrap;font-size:10px}
+.client-traffic{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.client-traffic div{padding:7px;border-radius:7px;background:#122238}
+.client-traffic small{display:block;color:var(--muted);font-size:9px}
+.client-traffic b{display:block;margin-top:3px;font-size:12px}
+.client-rate{margin-top:7px;color:#9fcaff;font-size:10px}
+.client-empty{padding:12px;border:1px dashed #344a64;border-radius:8px;color:var(--muted);font-size:11px}
+
+
+.client-device-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.client-device-actions button{flex:1 1 90px;min-height:32px;margin:0;padding:6px 8px;font-size:10px}
+
+
+/* Collapsible technical diagnostics */
+.diagnostic-details{margin-top:10px;border:1px solid #263b50;border-radius:8px;background:rgba(7,14,26,.22);padding:8px 10px}
+.diagnostic-details>summary{cursor:pointer;color:#91b9e8;font-size:11px;font-weight:650;user-select:none}
+.diagnostic-details[open]>summary{margin-bottom:8px}
+.diagnostic-details pre{margin:0;max-height:260px}
+
+/* Mobile refinement */
+html,body{max-width:100%;overflow-x:hidden}
+.app-layout,main,.grid,.card{min-width:0}
+.diagnostic-details{overflow:hidden}
+.diagnostic-details>summary{min-height:34px;display:flex;align-items:center}
+@media(max-width:760px){header{padding:14px}header h1{font-size:16px;letter-spacing:.1em}.header-row{gap:10px;align-items:center}.header-actions{gap:6px}.header-actions button{min-height:40px;min-width:42px;margin:0;padding:8px 11px}.header-status{display:flex;flex-wrap:wrap;gap:5px}.app-layout{padding:9px 10px 24px}.primary-nav{margin:0 -10px 14px;padding:8px 10px;border-radius:0;border-left:0;border-right:0}.primary-nav a{min-height:44px;gap:7px;padding:6px 9px}.grid{gap:10px}.grid>.card{padding:14px;border-radius:12px}.section-heading h2{font-size:17px}.metric{font-size:23px}.cellular-grid{gap:8px}.cellular-item{padding:10px}.cellular-value{font-size:14px}button,select{min-height:42px}.hotspot-grid{grid-template-columns:minmax(0,1fr);gap:10px}.hotspot-wide{grid-column:1}.chart-container{height:180px}pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.client-device-actions button{min-height:40px}}
+@media(max-width:380px){.cellular-grid{grid-template-columns:minmax(0,1fr)}.section-heading h2{font-size:16px}}
+
+/* FINAL LAYOUT PASS — consistent technical console and small-screen controls */
+.section-heading {
+  grid-column: 1 / -1;
+  padding: 18px 18px 10px;
+  margin: 10px 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(100deg,rgba(20,38,60,.82),rgba(12,23,39,.55));
+}
+.section-heading h2 { margin: 3px 0 4px; }
+.section-heading p { margin: 0 0 5px; max-width: 70ch; }
+.diagnostic-details {
+  margin-top: 12px;
+  border: 1px solid rgba(74,98,128,.42);
+  border-radius: 9px;
+  background: rgba(5,13,24,.28);
+}
+.diagnostic-details > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  color: #a9c8ee;
+  font-size: 12px;
+  font-weight: 700;
+}
+.diagnostic-details > summary::-webkit-details-marker { display:none; }
+.diagnostic-details > summary::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  margin-right: 8px;
+  border-radius: 5px;
+  background: #1b3450;
+  color: #8fc5ff;
+}
+.diagnostic-details[open] > summary::before { content: "−"; }
+.diagnostic-details pre { margin: 0 10px 10px; }
+.card > .muted { max-width: 78ch; }
+.hotspot-grid > div { min-width: 0; }
+.hotspot-actions { align-items: center; }
+.client-list { min-width: 0; }
+#trafficChart { max-width: 100%; }
+#wifiScan { min-width: 0; }
+@media (min-width:1101px) {
+  .grid > .card { grid-column: span 6; }
+  .grid > .card.hotspot-card,
+  .grid > #hotspotClientsCard,
+  .grid > .repeater-card { grid-column: 1 / -1; }
+}
+@media (max-width:760px) {
+  html { scroll-padding-top: 72px; }
+  header { padding: 13px 14px; }
+  .header-row { align-items: center; }
+  header h1 { font-size: 15px; }
+  header p { font-size: 11px; }
+  .header-status { max-width: 100%; }
+  .header-status > * { font-size: 9px; }
+  .header-actions { flex: 0 0 auto; }
+  .app-layout { padding: 8px 10px 24px; }
+  .primary-nav {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    width: calc(100% + 20px);
+    margin: 0 -10px 13px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    background: rgba(8,16,27,.97);
+  }
+  .primary-nav a { flex: 0 0 auto; white-space: nowrap; }
+  .primary-nav a strong { font-size: 11px; }
+  .grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .grid > .card { grid-column: 1 / -1; padding: 14px; }
+  .section-heading { padding: 13px 12px 8px; margin-top: 8px; }
+  .section-heading h2 { font-size: 17px; }
+  .section-heading p { font-size: 11px; }
+  .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .cellular-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .cellular-item { padding: 10px; }
+  .cellular-value { font-size: 13px; }
+  .hotspot-grid { grid-template-columns: minmax(0,1fr); }
+  .hotspot-wide { grid-column: 1 / -1; }
+  .hotspot-actions button, .card > p > button { min-height: 42px; }
+  input, select, textarea { min-width: 0; font-size: 16px; }
+  button { min-height: 42px; }
+  .traffic-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .chart-container { height: 170px; }
+  pre { max-width: 100%; overflow-x: auto; font-size: 11px; }
+  footer { padding: 18px 12px; }
+}
+@media (max-width:390px) {
+  .header-status { gap: 4px; }
+  .header-status > * { padding: 4px 6px; }
+  .header-actions button { min-width: 38px; padding: 7px 8px; }
+  .cellular-grid { grid-template-columns: minmax(0,1fr); }
+  .metric-grid { gap: 8px; }
+  .metric { font-size: 21px; }
+  .section-kicker { font-size: 8px; }
+}
+
+
+/* Visible technical panels */
+.technical-panel{display:block;min-width:0;margin:12px 0 2px;padding:12px;border:1px solid rgba(89,116,148,.34);border-radius:11px;background:linear-gradient(145deg,rgba(18,31,48,.76),rgba(9,18,31,.68))}
+.technical-panel:empty{display:none}
+.technical-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;color:#9fc8f2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.technical-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.technical-field{min-width:0;padding:9px 10px;border:1px solid rgba(92,116,145,.24);border-radius:8px;background:rgba(4,12,22,.38)}
+.technical-field.wide{grid-column:1/-1}
+.technical-label{display:block;margin-bottom:5px;color:#8397b1;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+.technical-value{display:block;color:#e2ebf7;font-size:12px;line-height:1.45;font-weight:600;overflow-wrap:anywhere;word-break:break-word}
+.technical-value.boolean{display:inline-flex;width:max-content;max-width:100%;padding:3px 8px;border-radius:20px;background:rgba(91,129,166,.17);color:#b9d8fa}
+.technical-array{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.technical-object{min-width:0;padding:10px;border:1px solid rgba(92,116,145,.27);border-radius:9px;background:rgba(4,12,22,.3)}
+.technical-object-title{margin:0 0 8px;color:#c4d8ef;font-size:11px;font-weight:750;overflow-wrap:anywhere}
+.technical-empty{color:#8191a7;font-size:11px}
+@media(max-width:760px){.technical-panel{padding:10px;margin-top:10px}.technical-grid,.technical-array{grid-template-columns:minmax(0,1fr)}.technical-field{padding:9px}.technical-value{font-size:12px}}
+
+
+/* COMPACT VISUAL SYSTEM — tighter spacing, clearer hierarchy */
+:root{
+  --shadow:0 5px 18px rgba(0,0,0,.16);
+  --surface:#0b1624;
+}
+body{font-size:12px;line-height:1.45;letter-spacing:0}
+header{padding:12px 22px}
+header h1{font-size:16px;letter-spacing:.12em}
+header p{margin:3px 0 6px;font-size:11px}
+.header-row{gap:8px}
+.header-status{gap:6px}
+.header-status>*{padding:4px 7px;font-size:9px}
+.app-layout{grid-template-columns:210px minmax(0,1fr);gap:16px;max-width:1640px;padding:16px 18px 28px}
+.primary-nav{top:12px;min-height:calc(100vh - 24px);gap:4px;padding:10px 8px;border-radius:11px}
+.nav-brand{gap:8px;padding:5px 6px 12px;margin-bottom:2px}
+.brand-mark{width:31px;height:31px;font-size:16px}
+.nav-brand strong{font-size:11px}
+.nav-brand small{font-size:8px}
+.nav-group-label{padding:9px 8px 3px;font-size:8px}
+.primary-nav a{min-height:39px;gap:8px;padding:5px 7px;border-radius:7px}
+.primary-nav a strong{font-size:10px}
+.primary-nav a small{font-size:8px}
+.nav-index{width:23px;height:23px;flex-basis:23px;font-size:9px}
+.nav-footer{padding:10px 7px 2px;font-size:9px}
+#dashboard>.grid{gap:10px}
+#dashboard>.grid>.card{padding:14px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.card h3{margin-bottom:9px;font-size:12px}
+.card p{margin-top:6px;margin-bottom:8px;line-height:1.5}
+.section-heading{margin:7px 0 0;padding:10px 12px 7px;border-radius:9px}
+.section-heading h2{font-size:17px;margin:2px 0 3px}
+.section-heading p{font-size:10px;margin:0 0 3px}
+.section-kicker{font-size:8px}
+.metric{font-size:23px}
+.metric-grid{gap:10px}
+.metric-label{font-size:9px}
+.traffic-stats{gap:9px;margin-bottom:9px}
+.traffic-value{font-size:18px}
+.chart-container{height:175px}
+.cellular-grid{gap:8px;margin-top:10px}
+.cellular-item{padding:9px;border-radius:8px}
+.cellular-value{margin-top:4px;font-size:13px}
+.cellular-badge{padding:3px 7px;font-size:10px}
+.hotspot-grid{gap:9px 12px}
+.hotspot-actions{gap:6px;margin-top:8px}
+button,select{min-height:33px;margin:2px 4px 6px 0;padding:7px 10px;border-radius:7px;font-size:10px}
+input,select,textarea{min-height:35px;padding:8px 9px;font-size:12px}
+label{margin:7px 0 4px;font-size:9px}
+pre{padding:9px 10px;font-size:10px;line-height:1.45}
+.diagnostic-details{margin-top:8px;border-radius:7px}
+.diagnostic-details>summary{min-height:30px;padding:7px 9px;font-size:10px}
+.diagnostic-details>summary::before{width:16px;height:16px;margin-right:7px}
+.diagnostic-details pre{margin:0 8px 8px}
+.technical-panel{margin:8px 0 1px;padding:9px;border-radius:9px}
+.technical-panel-title{margin-bottom:7px;font-size:9px}
+.technical-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.technical-field{padding:7px 8px;border-radius:7px}
+.technical-label{margin-bottom:3px;font-size:9px}
+.technical-value{font-size:11px;line-height:1.35}
+.technical-array{gap:6px}
+.technical-object{padding:8px;border-radius:7px}
+.technical-object-title{margin-bottom:6px;font-size:10px}
+.client-list{gap:7px}
+.client-device{padding:9px;border-radius:8px}
+.client-traffic{gap:5px;margin-top:7px}
+.client-traffic div{padding:6px}
+.client-traffic b{font-size:11px}
+.wifi-results-grid{gap:7px}
+.wifi-result-card{padding:9px;border-radius:8px}
+.wifi-result-heading strong{font-size:11px}
+.wifi-result-card p{font-size:9px}
+.login-box{max-width:360px;padding:24px}
+.login-logo{font-size:21px}
+.login-subtitle{margin-bottom:18px}
+footer{padding:16px;font-size:9px}
+@media(max-width:1100px){
+ .app-layout{grid-template-columns:185px minmax(0,1fr);gap:12px;padding:12px}
+ .primary-nav{padding:8px 6px}
+ .grid>.card{padding:12px}
+ .technical-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ header{padding:10px 12px}
+ header h1{font-size:14px}
+ header p{display:none}
+ .header-row{align-items:center}
+ .header-status{gap:4px}
+ .header-status>*{padding:3px 6px;font-size:9px}
+ .header-actions{gap:5px}
+ .header-actions button{min-height:36px;margin:0;padding:6px 8px;font-size:10px}
+ .app-layout{display:block;padding:7px 9px 20px}
+ .primary-nav{position:sticky;top:0;z-index:100;display:flex;flex-direction:row;min-height:0;height:auto;width:calc(100% + 18px);margin:0 -9px 9px;padding:6px 8px;gap:4px;overflow-x:auto;border:0;border-bottom:1px solid var(--border);border-radius:0;background:rgba(8,16,27,.97);box-shadow:0 4px 12px rgba(0,0,0,.16)}
+ .nav-brand,.nav-group-label,.nav-footer{display:none!important}
+ .primary-nav a{flex:0 0 auto;min-height:34px;padding:5px 8px;gap:5px}
+ .primary-nav a strong{font-size:10px}
+ .primary-nav a small,.nav-index{display:none}
+ #dashboard>.grid{grid-template-columns:minmax(0,1fr);gap:8px}
+ #dashboard>.grid>.card{padding:11px;border-radius:9px}
+ .section-heading{margin-top:6px;padding:8px 10px 6px}
+ .section-heading h2{font-size:15px}
+ .section-heading p{font-size:10px}
+ .metric{font-size:21px}
+ .metric-grid,.traffic-stats{gap:7px}
+ .cellular-grid{gap:6px}
+ .cellular-item{padding:8px}
+ .cellular-value{font-size:12px}
+ .hotspot-grid{gap:8px}
+ .hotspot-actions button{min-height:39px}
+ button{min-height:39px}
+ input,select,textarea{min-height:39px;font-size:16px}
+ .chart-container{height:145px}
+ .technical-panel{padding:8px;margin-top:7px}
+ .technical-grid,.technical-array{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .technical-field{padding:7px}
+ .technical-label{font-size:9px}
+ .technical-value{font-size:11px}
+ pre{max-height:170px;font-size:9px}
+ footer{padding:12px}
+}
+@media(max-width:390px){
+ .header-status>*{font-size:8px}
+ .header-actions button{min-width:34px}
+ .primary-nav a{padding:5px 7px}
+ .primary-nav a strong{font-size:9px}
+ .technical-grid,.technical-array,.cellular-grid{grid-template-columns:minmax(0,1fr)}
+ .technical-field.wide{grid-column:auto}
+ .metric{font-size:20px}
+}
+
+
+/* Dedicated Hotspot navigation and refined access-point workspace */
+#hotspot-section{scroll-margin-top:22px}
+.primary-nav a.active{background:linear-gradient(100deg,rgba(38,111,169,.22),rgba(22,48,75,.48));border-color:rgba(91,157,213,.38);color:#f2f7ff}
+.primary-nav a.active .nav-index{background:#24517a;color:#d8edff}
+.primary-nav a.nav-hotspot{position:relative}
+.primary-nav a.nav-hotspot .nav-index{background:rgba(30,119,160,.2);color:#82d6ee}
+.primary-nav a.nav-hotspot.active{background:linear-gradient(100deg,rgba(20,111,145,.25),rgba(17,44,67,.55));border-color:rgba(77,178,204,.4)}
+.nav-link-indicator{width:6px;height:6px;flex:0 0 6px;margin-left:auto;border-radius:50%;background:#4bbbd1;box-shadow:0 0 0 3px rgba(75,187,209,.1)}
+.hotspot-card{position:relative;overflow:hidden;border-color:rgba(70,145,184,.45)!important;background:linear-gradient(145deg,#14283c 0%,#0e1c2c 72%)!important}
+.hotspot-card:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,#50c4d7,#3189c9);opacity:.85}
+.hotspot-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(103,139,171,.2)}
+.hotspot-heading h3{margin:3px 0 4px;font-size:16px;letter-spacing:-.02em;color:#eff7ff}
+.hotspot-heading p{max-width:68ch;margin:0;font-size:11px}
+.hotspot-kicker{color:#69c5d6;font-size:8px;font-weight:800;letter-spacing:.16em}
+.hotspot-control-tag{flex:0 0 auto;padding:5px 8px;border:1px solid rgba(83,163,192,.32);border-radius:6px;background:rgba(23,93,119,.18);color:#8ed8e7;font-size:8px;font-weight:800;letter-spacing:.1em}
+.hotspot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+.hotspot-grid>div{min-width:0;padding:8px 9px;border:1px solid rgba(93,123,153,.18);border-radius:8px;background:rgba(5,14,24,.24)}
+.hotspot-grid label{display:block;margin:0 0 5px;color:#9fb5ca;font-size:9px;font-weight:650;letter-spacing:.025em;text-transform:none}
+.hotspot-grid input,.hotspot-grid select{width:100%;margin:0}
+.hotspot-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.hotspot-actions button{min-width:125px;margin:0}
+.hotspot-wide{min-width:0}
+.hotspot-card>details.hotspot-wide{margin-top:12px;padding:0 10px;border:1px solid rgba(85,119,151,.26);border-radius:8px;background:rgba(5,14,24,.22)}
+.hotspot-card>details.hotspot-wide>summary{min-height:36px;display:flex;align-items:center;cursor:pointer;color:#b5cbe0;font-size:10px;font-weight:700;list-style:none}
+.hotspot-card>details.hotspot-wide>summary::-webkit-details-marker{display:none}
+.hotspot-card>details.hotspot-wide>summary:after{content:"+";margin-left:auto;color:#83bce4;font-size:15px}
+.hotspot-card>details.hotspot-wide[open]>summary:after{content:"−"}
+.hotspot-card>details.hotspot-wide[open]>summary{margin-bottom:8px;border-bottom:1px solid rgba(85,119,151,.2)}
+.hotspot-card .diagnostic-details{margin:8px 0 10px}
+#hotspotMessage{min-height:16px;margin:9px 0 0;font-size:10px}
+@media(max-width:760px){
+ #hotspot-section{scroll-margin-top:62px}
+ .hotspot-heading{gap:8px;margin-bottom:10px;padding-bottom:9px}
+ .hotspot-heading h3{font-size:14px}
+ .hotspot-heading p{font-size:10px}
+ .hotspot-control-tag{padding:4px 6px;font-size:7px}
+ .hotspot-grid{grid-template-columns:minmax(0,1fr);gap:6px}
+ .hotspot-grid>div{padding:7px 8px}
+ .hotspot-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .hotspot-actions button{min-width:0;width:100%;padding:7px 6px;font-size:10px}
+ .primary-nav a.nav-hotspot .nav-link-indicator{display:none}
+}
+@media(max-width:390px){
+ .hotspot-heading{align-items:flex-start}
+ .hotspot-control-tag{max-width:72px;text-align:center;white-space:normal}
+ .hotspot-actions{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Simple, action-first Repeater workspace */
+.repeater-status-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.repeater-status-row h3{margin:0 0 5px}
+.repeater-connection{font-size:14px;font-weight:750}
+.repeater-connection.online{color:var(--green)}
+.repeater-connection.offline{color:var(--orange)}
+.repeater-connection.unknown{color:var(--muted)}
+.repeater-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.repeater-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.repeater-actions button{margin:0}
+#wifiScan.wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.wifi-result-card{min-width:0;padding:11px;border:1px solid var(--border);border-radius:9px;background:rgba(5,14,24,.3)}
+.wifi-result-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.wifi-result-heading strong{overflow-wrap:anywhere}
+.wifi-result-card p{margin:6px 0;color:var(--muted);font-size:10px}
+.repeater-connect-button{margin:2px 0 0}
+@media(max-width:760px){.repeater-controls{grid-template-columns:minmax(0,1fr)}#wifiScan.wifi-results-grid{grid-template-columns:minmax(0,1fr)}.repeater-actions{display:grid;grid-template-columns:1fr}.repeater-actions button{width:100%}}
+
+/* Scan results: the outer container stacks the result grid and summary. */
+#wifiScan.wifi-results-grid{display:block}
+#wifiScan .wifi-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(max-width:760px){#wifiScan .wifi-results-grid{grid-template-columns:minmax(0,1fr)}}
+.hotspot-saved-settings{margin:4px 0 16px;padding:13px 14px;border:1px solid #365675;border-radius:9px;background:rgba(5,15,27,.55)}
+.hotspot-saved-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;color:#cfe5fb;font-size:12px}
+#hotspotSavedState{color:#7fc9a8;font-size:10px}
+.hotspot-saved-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hotspot-saved-grid>div{min-width:0;padding:8px;border-radius:7px;background:#0d1b2b}
+.hotspot-saved-grid small{display:block;color:#8198b2;font-size:9px;margin-bottom:4px}
+.hotspot-saved-grid b{display:block;overflow-wrap:anywhere;color:#f0f6ff;font-size:12px;font-weight:650}
+@media(max-width:760px){.hotspot-saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hotspot-saved-settings{padding:10px}}
+
+
+/* v0.7.0 SIM SMS + root PTY terminal */
+.sms-list{display:grid;gap:9px;margin-top:12px}
+.sms-item{padding:12px;border:1px solid var(--border);border-radius:9px;background:#0d1929}
+.sms-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+.sms-body{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px;font-size:13px}
+.sms-form{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:14px}
+.sms-form input,.sms-form textarea{width:100%;background:#0b1626;color:var(--text);border:1px solid #34465f;border-radius:8px;padding:10px}
+.sms-form textarea{min-height:100px;resize:vertical}
+.terminal-window{background:#050a12;border:1px solid #26364d;border-radius:10px;padding:12px;min-height:300px;max-height:520px;overflow:auto}
+#terminalOutput{margin:0;max-height:none;min-height:270px;color:#c6f6d5;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.terminal-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+#terminalInput{flex:1;min-width:0;background:#050a12;color:#e7eef9;border:1px solid #34465f;border-radius:8px;padding:12px;font:13px ui-monospace,monospace}
+.terminal-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.terminal-toolbar button{margin:0}
+.terminal-warning{padding:10px;border-left:3px solid var(--orange);background:rgba(251,191,36,.07);border-radius:6px;color:#d9c79f;font-size:12px}
+@media(max-width:600px){.terminal-input-row{align-items:stretch;flex-direction:column}.terminal-window{min-height:240px}#terminalOutput{min-height:210px}}
+
+</style>
+</head>
+
+<body class="login-active">
+
+<!-- LOGIN -->
+
+<div id="loginOverlay" class="login-overlay">
+    <form id="loginForm" class="login-box" method="post" action="/api/v1/auth/login">
+        <div class="login-logo">KEYLAND NETWORK</div>
+        <div class="login-subtitle">
+            ქსელის მართვის ერთიანი პანელი
+        </div>
+
+        <label for="loginUsername">ადმინისტრატორის სახელი</label>
+        <input
+            id="loginUsername"
+            name="username"
+            type="text"
+            autocomplete="username"
+            minlength="3"
+            maxlength="32"
+            required
+            autofocus
+        >
+
+        <label for="loginპაროლი">პაროლი</label>
+        <input
+            id="loginპაროლი"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+        >
+
+        <div id="loginError" class="login-error"
+             role="alert" aria-live="polite"></div>
+
+        <button id="loginButton" type="submit">შესვლა</button>
+
+        <div class="login-footer">
+            მხოლოდ ადმინისტრატორისთვის
+        </div>
+    </form>
+</div>
+
+<!-- HEADER -->
+
+<header>
+    <div class="header-row">
+        <div>
+            <h1>KEYLAND NETWORK</h1>
+            <p>ქსელის მართვის ერთიანი პანელი</p>
+
+            <div class="header-status">
+                <span class="status">● სისტემის მართვის პანელი</span>
+                <span class="muted" id="connection"
+                      aria-live="polite">სესიის შემოწმება...</span>
+                <span class="cellular-badge" id="serverVersion">API · --</span>
+                <span class="cellular-badge" id="wifiLiveStatus" aria-live="polite">Wi-Fi · ამოწმებს...</span>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button id="languageToggle" type="button" class="secondary" aria-label="Change language">EN</button>
+            <button id="logoutButton" type="button" class="hidden">გასვლა</button>
+        </div>
+    </div>
+</header>
+
+<div class="app-layout">
+<aside class="primary-nav" aria-label="ძირითადი განყოფილებები">
+    <div class="nav-brand"><span class="brand-mark">K</span><div><strong>KEYLAND</strong><small>NETWORK CONTROL</small></div></div>
+    <div class="nav-group-label">მართვა</div>
+    <a href="#overview-section"><span class="nav-index">01</span><span><strong>მიმოხილვა</strong><small>სისტემის მდგომარეობა</small></span></a>
+    <a href="#hotspot-section" class="nav-hotspot"><span class="nav-index">02</span><span><strong>Hotspot</strong><small>ინტერნეტის გაზიარება</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
+    <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
+    <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
+    <div class="nav-group-label">მოწყობილობა</div>
+    <a href="#system-section"><span class="nav-index">05</span><span><strong>სისტემა</strong><small>მდგომარეობა და დიაგნოსტიკა</small></span></a>
+    <div class="nav-footer"><span class="nav-status-dot"></span><span>ადმინისტრატორის პანელი</span></div>
+</aside>
+
+<!-- DASHBOARD -->
+
+<main id="dashboard" class="hidden">
+
+    <button id="refreshButton" type="button">
+        მონაცემების განახლება
+    </button>
+
+    <span class="muted" id="updated">ჯერ არ განახლებულა</span>
+
+    <div class="grid">
+        <div id="overview-section" class="section-heading"><div><span class="section-kicker">01 / OVERVIEW</span><h2>სისტემის მიმოხილვა</h2><p>მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა</p></div></div>
+
+        <section class="card">
+            <h3 id="device-title">მოწყობილობა</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="device">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <section class="card">
+            <h3>სისტემური რესურსები</h3>
+
+            <div class="metric-grid">
+                <div>
+                    <div class="metric" id="cpu">--%</div>
+                    <div class="metric-label">პროცესორის დატვირთვა</div>
+                    <div class="bar"><div id="cpuBar"></div></div>
+                </div>
+
+                <div>
+                    <div class="metric" id="ram">--%</div>
+                    <div class="metric-label">ოპერატიული მეხსიერება</div>
+                    <div class="bar"><div id="ramBar"></div></div>
+                </div>
+
+                <div>
+                    <div class="metric" id="disk">--%</div>
+                    <div class="metric-label">დისკის გამოყენება</div>
+                    <div class="bar"><div id="diskBar"></div></div>
+                </div>
+
+                <div>
+                    <div class="metric" id="cores">--</div>
+                    <div class="metric-label">პროცესორის ნაკადები</div>
+                </div>
+            </div>
+
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="resources">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        
+        <section class="card" style="grid-column: 1 / -1;">
+            <div class="cellular-heading">
+                <h3>ელემენტი და კვება</h3>
+                <span id="batteryStatus" class="cellular-badge">მოწმდება...</span>
+            </div>
+            <div class="metric-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px;margin:14px 0;">
+                <div>
+                    <div class="metric" id="batteryLevel">--%</div>
+                    <div class="metric-label">ელემენტის დონე</div>
+                    <div class="bar"><div id="batteryLevelBar"></div></div>
+                </div>
+                <div><div class="metric" id="batteryVoltage">-- V</div><div class="metric-label">ელემენტის ძაბვა</div></div>
+                <div><div class="metric" id="batteryTemperature">-- °C</div><div class="metric-label">ტემპერატურა</div></div>
+                <div><div class="metric" id="batteryCurrent">-- mA</div><div class="metric-label">ელემენტის დენი</div></div>
+            </div>
+            <div class="cellular-grid">
+                <div class="cellular-item"><div class="metric-label">დამტენი</div><div class="cellular-value" id="chargerType">--</div></div>
+                <div class="cellular-item"><div class="metric-label">დამტენის ძაბვა</div><div class="cellular-value" id="chargerVoltage">--</div></div>
+                <div class="cellular-item"><div class="metric-label">დამტენის დენი</div><div class="cellular-value" id="chargerCurrent">--</div></div>
+                <div class="cellular-item"><div class="metric-label">შეყვანის სიმძლავრე</div><div class="cellular-value" id="chargerPower">--</div></div>
+                <div class="cellular-item"><div class="metric-label">მიმდინარე დამუხტვა</div><div class="cellular-value" id="batteryChargeNow">--</div></div>
+                <div class="cellular-item"><div class="metric-label">სრული ტევადობა / ქარხნული</div><div class="cellular-value" id="batteryChargeFull">--</div></div>
+                <div class="cellular-item"><div class="metric-label">ელემენტის ჯანმრთელობა</div><div class="cellular-value" id="batteryHealth">მონაცემი არ არის</div></div>
+                <div class="cellular-item"><div class="metric-label">ქიმია / მწარმოებელი</div><div class="cellular-value" id="batteryTechnology">--</div></div>
+            </div>
+            <details class="diagnostic-details" style="margin-top:12px;">
+                <summary>ელემენტისა და დამტენის ტექნიკური დეტალები</summary>
+                <pre id="batteryDetails">მონაცემების მოლოდინი...</pre>
+            </details>
+        </section>
+
+<section class="card">
+            <h3>ინტერნეტის მდგომარეობა</h3>
+            <div id="internetStatus" class="internet-status unknown">
+                მოწმდება...
+            </div>
+            <div id="internetPublicDetails" class="technical-grid" aria-live="polite"></div>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="internetDetails">შედეგის მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <!-- CELLULAR / SIM / LTE -->
+
+        <section class="card" style="grid-column: 1 / -1;">
+            <div class="cellular-heading">
+                <h3 id="cellular-title">SIM / მობილური ქსელი</h3>
+                <span id="cellularTechnology" class="cellular-badge">
+                    UNKNOWN
+                </span>
+            </div>
+
+            <p class="muted">
+                SIM, ModemManager, LTE/4G/5G and mobile interface monitoring.
+            </p>
+
+            <div class="cellular-grid">
+
+                <div class="cellular-item">
+                    <div class="metric-label">SIM STATUS</div>
+                    <div class="cellular-value" id="simStatus">მოწმდება...</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">OPERATOR</div>
+                    <div class="cellular-value" id="cellularOperator">--</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">MODEM STATUS</div>
+                    <div class="cellular-value" id="modemStatus">--</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">REGISTRATION</div>
+                    <div class="cellular-value" id="registrationStatus">--</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">SIGNAL QUALITY</div>
+                    <div class="cellular-value" id="cellularSignal">--</div>
+                    <div class="signal-bar">
+                        <div id="cellularSignalBar"></div>
+                    </div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">MOBILE CONNECTION</div>
+                    <div class="cellular-value" id="cellularConnection">--</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">MOBILE DOWNLOAD</div>
+                    <div class="cellular-value rx-color" id="cellularRx">--</div>
+                </div>
+
+                <div class="cellular-item">
+                    <div class="metric-label">MOBILE UPLOAD</div>
+                    <div class="cellular-value tx-color" id="cellularTx">--</div>
+                </div>
+            </div>
+
+            <div class="cellular-interfaces">
+                <div class="metric-label">CELLULAR INTERFACES / IP ADDRESSES</div>
+                <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="cellularInterfaces">მოლოდინი...</pre>
+        </details>
+            </div>
+
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="cellularDetails">Waiting for cellular modem...</pre>
+        </details>
+        </section>
+
+        <section class="card" id="sms-section">
+            <h3>SIM SMS · შემოსული და გაგზავნა</h3>
+            <p class="muted">SMS იკითხება და იგზავნება ModemManager-ის მეშვეობით. LTE, APN, WAN და მარშრუტები არ იცვლება.</p>
+            <div class="button-row">
+                <button type="button" id="smsRefreshButton">SMS-ების განახლება</button>
+                <span id="smsStatus" class="muted" role="status">მოლოდინი...</span>
+            </div>
+            <div id="smsList" class="sms-list" aria-live="polite"><p class="muted">დააჭირე განახლებას შემოსული SMS-ების სანახავად.</p></div>
+            <hr>
+            <h4>ახალი SMS</h4>
+            <form id="smsSendForm" class="sms-form">
+                <label for="smsNumber">ტელეფონის ნომერი</label>
+                <input id="smsNumber" type="tel" maxlength="25" autocomplete="tel" placeholder="+9955XXXXXXXX" required>
+                <label for="smsMessage">შეტყობინება</label>
+                <textarea id="smsMessage" maxlength="1600" placeholder="შეიყვანე SMS ტექსტი..." required></textarea>
+                <div class="muted"><span id="smsLength">0</span>/1600 · ქართული ტექსტიც მხარდაჭერილია</div>
+                <button type="submit" id="smsSendButton">SMS-ის გაგზავნა</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h3>ქსელური ტრაფიკი</h3>
+
+            <div class="traffic-stats">
+                <div>
+                    <div class="metric-label">ჩამოტვირთვა RX</div>
+                    <div class="traffic-value rx-color" id="totalRx">
+                        0 Mbps
+                    </div>
+                </div>
+
+                <div>
+                    <div class="metric-label">ატვირთვა TX</div>
+                    <div class="traffic-value tx-color" id="totalTx">
+                        0 Mbps
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="trafficChart"></canvas>
+            </div>
+
+            <div class="chart-legend">
+                <span class="rx-color">● მიღება RX</span>
+                <span class="tx-color">● გაგზავნა TX</span>
+                <span>ბოლო 60 ჩანაწერი</span>
+            </div>
+
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="traffic">Waiting for first sample...</pre>
+        </details>
+        </section>
+
+        
+
+        
+
+        <section class="card hotspot-card" id="hotspot-section" style="grid-column: 1 / -1;" aria-labelledby="hotspot-title">
+            <div class="hotspot-heading">
+                <div>
+                    <span class="hotspot-kicker">WIRELESS ACCESS POINT</span>
+                    <h3 id="hotspot-title">Wi-Fi Hotspot</h3>
+                    <p class="muted">მართე უსადენო წვდომის წერტილი, ინტერნეტის წყარო და დაკავშირებული მოწყობილობები.</p>
+                </div>
+                <span class="hotspot-control-tag">AP CONTROL</span>
+            </div>
+            <div id="hotspotSavedSettings" class="hotspot-saved-settings" aria-live="polite">
+                <div class="hotspot-saved-title"><strong>შენახული Hotspot კონფიგურაცია</strong><span id="hotspotSavedState">იტვირთება...</span></div>
+                <div class="hotspot-saved-grid">
+                    <div><small>SSID</small><b id="savedHotspotSsid">—</b></div>
+                    <div><small>პაროლი</small><b id="savedHotspotPassword">—</b></div>
+                    <div><small>სიხშირე</small><b id="savedHotspotBand">—</b></div>
+                    <div><small>არხი</small><b id="savedHotspotChannel">—</b></div>
+                    <div><small>WAN</small><b id="savedHotspotWan">—</b></div>
+                    <div><small>Gateway</small><b id="savedHotspotGateway">—</b></div>
+                </div>
+            </div>
+            <div class="hotspot-grid">
+                <div>
+                    <label for="hotspotMode">როუტერის რეჟიმი</label>
+                    <select id="hotspotMode">
+                        <option value="hotspot">SIM Mobile Hotspot</option>
+                        <option value="repeater">Wi-Fi Repeater</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="hotspotUpstream">ინტერნეტის წყარო (WAN)</label>
+                    <select id="hotspotUpstream"><option value="">ქსელის შემოწმება...</option></select>
+                </div>
+                <div>
+                    <label for="hotspotInterface">AP ინტერფეისი</label>
+                    <select id="hotspotInterface" aria-describedby="hotspotPreflight"><option value="keyland-ap">keyland-ap</option></select>
+                </div>
+                <div>
+                    <label for="hotspotSsid">Hotspot-ის სახელი</label>
+                    <input id="hotspotSsid" type="text" maxlength="32" value="Keyland-Hotspot" autocomplete="off">
+                </div>
+                <div>
+                    <label for="hotspotPassword">პაროლი (8–63 ASCII სიმბოლო)</label>
+                    <input id="hotspotPassword" type="text" minlength="8" maxlength="63" autocomplete="new-password" placeholder="შეიყვანე ძლიერი პაროლი">
+                </div>
+            </div>
+            <div class="hotspot-actions">
+                <button id="hotspotStartButton" type="button" disabled>Hotspot-ის ჩართვა</button>
+                <button id="hotspotStopButton" type="button" class="danger secondary" disabled>გამორთვა</button>
+                <button id="hotspotAutostartDisableButton" type="button" class="secondary" disabled>ავტომატური გაშვების გამორთვა</button>
+                <button id="hotspotAutostartEnableButton" type="button" class="secondary" disabled>ავტომატური გაშვების ჩართვა</button>
+            </div>
+            <details class="hotspot-wide">
+                <summary>დამატებითი პარამეტრები და დიაგნოსტიკა</summary>
+                <div class="hotspot-grid">
+                    <div>
+                        <label for="hotspotBand">სიხშირე</label>
+                        <select id="hotspotBand"><option value="2.4">2.4 GHz</option><option value="5">5 GHz</option></select>
+                    </div>
+                    <div>
+                        <label for="hotspotChannel">Wi-Fi არხი</label>
+                        <select id="hotspotChannel"></select>
+                    </div>
+                    <div>
+                        <label for="hotspotIpv4">Hotspot Gateway / CIDR</label>
+                        <input id="hotspotIpv4" type="text" value="192.168.88.1/24" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="hotspotDns">DNS სერვერები</label>
+                        <input id="hotspotDns" type="text" placeholder="1.1.1.1, 8.8.8.8">
+                    </div>
+                    <div class="hotspot-wide">
+                        <label for="hotspotSourceInterface">საწყისი Wi-Fi ინტერფეისი (AP-ის შესაქმნელად)</label>
+                        <select id="hotspotSourceInterface"><option value="">აირჩიე Wi-Fi ინტერფეისი</option></select>
+                    </div>
+                </div>
+                <div class="hotspot-actions">
+                    <button id="hotspotCreateInterfaceButton" type="button" class="secondary" disabled>ცალკე AP ინტერფეისის შექმნა</button>
+                    <button id="hotspotCheckButton" type="button" class="secondary">შესაძლებლობების შემოწმება</button>
+                </div>
+                <details class="diagnostic-details"><summary>შესაძლებლობების დეტალური ანგარიში</summary>
+            <pre id="hotspotPreflight">მოწყობილობის შესაძლებლობები ჯერ არ შემოწმებულა.</pre>
+        </details>
+            </details>
+            <p id="hotspotMessage" class="muted" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="card" id="hotspotClientsCard" style="grid-column:1 / -1;">
+            <div class="cellular-heading">
+                <h3>Hotspot-ის დაკავშირებული მოწყობილობები</h3>
+                <span class="cellular-badge" id="hotspotClientCount">0 მოწყობილობა</span>
+            </div>
+            <p class="muted">RX — მოწყობილობის ატვირთვა; TX — ჩამოტვირთვა. სიჩქარე ითვლება ბოლო ორ გაზომვას შორის.</p>
+            <div id="hotspotClients" class="client-list" aria-live="polite">
+                <div class="client-empty">Hotspot ჯერ არ არის ჩართული ან მოწყობილობები არ არის დაკავშირებული.</div>
+            </div>
+            <p class="muted" id="hotspotClientNote">ნაჩვენებია hostapd/iw-ის რეალური მრიცხველები. თითოეული მოწყობილობის დაბლოკვა და სიჩქარის ლიმიტი დაცული მართვის API-ით იმართება.</p>
+        </section>
+
+        <div id="repeater-section" class="section-heading"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
+        <section class="card repeater-card" style="grid-column:1 / -1;">
+            <div class="repeater-status-row"><div><h3>Wi-Fi კავშირი</h3><div id="repeaterConnection" class="repeater-connection unknown" role="status" aria-live="polite">კავშირის მდგომარეობა მოწმდება...</div></div><span class="cellular-badge">UPSTREAM</span></div>
+            <div class="repeater-controls">
+                <div><label for="repeaterInterface">Wi-Fi ადაპტერი</label><select id="repeaterInterface"><option value="wlan0">wlan0</option></select></div>
+                <div><label for="repeaterPassword">არჩეული ქსელის პაროლი</label><input id="repeaterPassword" type="password" maxlength="63" autocomplete="off" placeholder="ღია ქსელისთვის ცარიელი დატოვე"></div>
+            </div>
+            <div class="repeater-actions"><button id="scanButton" type="button">ქსელების ძიება</button><button id="repeaterDisconnectButton" type="button" class="danger secondary" disabled>Wi-Fi-ის გათიშვა</button><button id="repeaterShareButton" type="button" class="secondary" disabled>ამ კავშირის გაზიარება</button></div>
+            <p id="repeaterMessage" class="muted" role="status" aria-live="polite">ჯერ მოძებნე ახლომდებარე Wi-Fi ქსელები.</p>
+            <div id="wifiScan" class="wifi-results-grid" aria-live="polite"><p class="muted">ქსელების სია ჯერ არ მოძებნილა.</p></div>
+            <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
+            <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
+        </section>
+        <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
+
+        <section class="card">
+            <h3>ქსელის ინტერფეისები</h3>
+            <label for="interfaceFilter" class="muted">
+                ინტერფეისის ფილტრი:
+            </label>
+            <select id="interfaceFilter">
+                <option value="all">ყველა ინტერფეისი</option>
+                <option value="active">მხოლოდ აქტიური</option>
+            </select>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="interfaces">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <section class="card">
+            <h3>მარშრუტიზაციის ცხრილი</h3>
+            <details class="diagnostic-details"><summary>ტექნიკური დეტალები</summary>
+            <pre id="routes">მოლოდინი...</pre>
+        </details>
+        </section>
+
+        <section class="card">
+            <h3 id="dns-title">DNS-ის მართვა</h3>
+            <p class="muted">ამჟამად ხელმისაწვდომია systemd-resolved-ის დროებითი DNS მართვა. მუდმივი პარამეტრები ქსელის მენეჯერის მიხედვით დაემატება.</p>
+            <label for="dnsInterface">ქსელის ინტერფეისი</label>
+            <input id="dnsInterface" type="text" maxlength="15" placeholder="მაგ. wlan0">
+            <label for="dnsServers">DNS სერვერები (მძიმით გამოყოფილი)</label>
+            <input id="dnsServers" type="text" placeholder="1.1.1.1, 8.8.8.8">
+            <p><button id="dnsApplyButton" type="button">DNS-ის გამოყენება</button>
+            <button id="dnsResetButton" type="button">ავტომატურზე დაბრუნება</button>
+            <button id="dnsRefreshButton" type="button">მდგომარეობის ნახვა</button></p>
+            <details class="diagnostic-details"><summary>DNS-ის დეტალური მდგომარეობა</summary>
+            <pre id="dnsStatus">DNS-ის მდგომარეობა იტვირთება...</pre>
+        </details>
+            <p id="dnsMessage" class="muted" role="status"></p>
+        </section>
+
+
+        <section class="card" id="terminal-section" style="grid-column:1/-1">
+            <h3>Linux Shell · სრული ადმინისტრატორის ტერმინალი</h3>
+            <p class="terminal-warning">სრული shell მუშაობს Keyland სერვისის უფლებებით (ამ მოწყობილობაზე — root). აქ შესრულებულმა ბრძანებამ შეიძლება შეცვალოს ან წაშალოს სისტემის ფაილები, ქსელის კონფიგურაცია ან შეწყვიტოს Hotspot/LTE. გაუშვი მხოლოდ კარგად გააზრებული ბრძანებები.</p>
+            <div class="button-row">
+                <button type="button" id="terminalConnectButton">ტერმინალთან დაკავშირება</button>
+                <button type="button" id="terminalDisconnectButton" class="secondary" disabled>კავშირის დასრულება</button>
+                <span id="terminalStatus" class="muted" role="status">გამორთულია</span>
+            </div>
+            <div class="terminal-window" id="terminalWindow">
+                <pre id="terminalOutput">Keyland Linux Shell v0.7.0
+დააჭირე „ტერმინალთან დაკავშირებას“.
+</pre>
+            </div>
+            <div class="terminal-input-row">
+                <input id="terminalInput" type="text" autocomplete="off" spellcheck="false" placeholder="ტერმინალის კლავიატურა · აკრიფე და Enter დააჭირე" disabled>
+                <button type="button" id="terminalSendButton" disabled>გაშვება ↵</button>
+            </div>
+            <div class="terminal-toolbar">
+                <button type="button" id="terminalCtrlC" class="secondary" disabled>Ctrl+C</button>
+                <button type="button" id="terminalCtrlD" class="secondary" disabled>Ctrl+D</button>
+                <button type="button" id="terminalClearButton" class="secondary">ეკრანის გასუფთავება</button>
+            </div>
+            <p class="muted">უსაფრთხოება: საჭიროა მოქმედი ადმინისტრატორის სესია; WebSocket იღებს მხოლოდ იმავე საიტის Origin-ს. სესია წყდება 15 წუთი უმოქმედობის ან მაქსიმალური დროის შემდეგ. ჟურნალში ინახება მხოლოდ კავშირის მეტამონაცემები — ბრძანებები და მათი შედეგები არა.</p>
+        </section>
+
+        <div id="system-section" class="section-heading"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
+        <section class="card" id="system-power-card">
+            <h3>სისტემის მართვა · v0.7.0</h3>
+            <p class="muted">გადატვირთვა და უსაფრთხო აღდგენა. ყველა მოქმედება საჭიროებს ადმინისტრატორის დადასტურებას.</p>
+            <div class="button-row">
+                <button type="button" id="restartKeylandButton">Keyland სერვერის გადატვირთვა</button>
+                <button type="button" id="rebootDeviceButton" class="danger">მთლიანი მოწყობილობის გადატვირთვა</button>
+            </div>
+            <hr>
+            <h4>ქარხნულ პარამეტრებზე დაბრუნება</h4>
+            <p class="muted">ამჟამინდელი აღდგენა შლის მხოლოდ Keyland-ის შენახულ Hotspot-ის პარამეტრებს. ადმინისტრატორის ანგარიში, კოდი და Kali Linux უცვლელი რჩება. წაშლამდე იქმნება სარეზერვო ასლი.</p>
+            <button type="button" id="factoryResetButton" class="danger">Keyland-ის ქსელის პარამეტრების განულება</button>
+            <p id="systemActionMessage" class="muted" role="status"></p>
+        </section>
+        <section class="card"><h3>სისტემის დიაგნოსტიკა</h3><p class="muted">ჩვეულებრივ მართვას ეს მონაცემები არ სჭირდება. გახსენი მხოლოდ პრობლემის შემოწმებისას.</p>
+            <details class="diagnostic-details"><summary>მოწყობილობის შესაძლებლობები</summary><pre id="capabilities">მოლოდინი...</pre></details>
+            <details class="diagnostic-details"><summary>სერვისები და ხელსაწყოები</summary><pre id="services">მოლოდინი...</pre></details>
+        </section>
+    </div>
+</main>
+</div>
+
+<footer>
+    KEYLAND NETWORK · LOCAL ADMIN CONSOLE
+</footer>
+
+<script>
+"use strict";
+
+/* APPLICATION STATE */
+
+const state = {
+    authenticated: false,
+    loading: false,
+    scanLoading: false,
+    interfaceLoading: false,
+    pollingTimer: null,
+    sessionCheckInProgress: false
+};
+
+const hotspotClientSamples = new Map();
+
+const API = "/api/v1";
+
+/* DOM HELPERS */
+
+function element(id) {
+    return document.getElementById(id);
+}
+
+const technicalLabels = {
+ platform:"პლატფორმა",system:"სისტემა",release:"ბირთვის ვერსია",architecture:"არქიტექტურა",hostname:"მოწყობილობის სახელი",python:"Python ვერსია",
+ cpu_percent:"პროცესორის დატვირთვა",cpu_logical_cores:"ლოგიკური ბირთვები",cpu_physical_cores:"ფიზიკური ბირთვები",memory:"მეხსიერება",total_bytes:"სრული მოცულობა",available_bytes:"თავისუფალი მოცულობა",used_bytes:"გამოყენებული",percent:"გამოყენება",disk:"დისკი",path:"მონტაჟის წერტილი",free:"თავისუფალი",
+ interfaces:"ინტერფეისები",interface:"ინტერფეისი",name:"სახელი",state:"მდგომარეობა",status:"სტატუსი",is_up:"აქტიურია",operstate:"ოპერაციული მდგომარეობა",mtu:"MTU",mac:"MAC მისამართი",mac_address:"MAC მისამართი",ipv4:"IPv4 მისამართები",ipv6:"IPv6 მისამართები",address:"მისამართი",netmask:"ქსელის ნიღაბი",gateway:"Gateway",gateways:"Gateway-ები",routes:"მარშრუტები",destination:"დანიშნულება",metric:"მეტრიკა",table:"ცხრილი",protocol:"პროტოკოლი",default:"ნაგულისხმევი მარშრუტი",
+ driver:"დრაივერი",chipset:"ჩიპსეტი",vendor:"მწარმოებელი",product:"მოდელი",bus:"მიერთების ტიპი",phy:"PHY",phy_name:"PHY სახელი",bands:"სიხშირის დიაპაზონები",channels:"არხები",modes:"რეჟიმები",supported_modes:"მხარდაჭერილი რეჟიმები",frequencies:"სიხშირეები",channel:"არხი",frequency:"სიხშირე",ssid:"ქსელის სახელი (SSID)",bssid:"BSSID",signal:"სიგნალი",signal_dbm:"სიგნალი (dBm)",signal_percent:"სიგნალი (%)",security:"დაცვა",connected:"დაკავშირებულია",available:"ხელმისაწვდომია",enabled:"ჩართულია",disabled:"გამორთულია",read_only:"მხოლოდ წაკითხვა",
+ assessment:"შეფასება",message:"შეტყობინება",error:"შეცდომა",access_points:"წვდომის წერტილები (AP)",clients:"Wi-Fi კლიენტები",concurrent_ap_client_observed:"AP + Client ერთდროულად",shared_phy_observed:"საერთო PHY",same_channel_observed:"ერთი არხი",forwarding:"ტრაფიკის გადაცემა",prerequisites:"წინაპირობები",ip_forward_enabled:"IP forwarding",firewall_tool:"Firewall სისტემა",firewall_tool_available:"Firewall ხელმისაწვდომია",dnsmasq_available:"dnsmasq ხელმისაწვდომია",rx_bytes:"მიღებული მონაცემები",tx_bytes:"გაგზავნილი მონაცემები",rx_packets:"მიღებული პაკეტები",tx_packets:"გაგზავნილი პაკეტები",total_rx_mbps:"ჩამოტვირთვის სიჩქარე",total_tx_mbps:"ატვირთვის სიჩქარე",technology:"ქსელის ტექნოლოგია",registration_state:"რეგისტრაციის მდგომარეობა",operator:"ოპერატორი",sim:"SIM ბარათი",modem:"მოდემი",modems:"მოდემები",network:"ქსელი",quality_percent:"სიგნალის ხარისხი",version:"ვერსია",service:"სერვისი",active_state:"აქტიური მდგომარეობა",sub_state:"ქვემდგომი მდგომარეობა",description:"აღწერა",manager:"მართვის სისტემა",dns_by_link:"DNS ინტერფეისების მიხედვით",dns_servers:"DNS სერვერები",type:"ტიპი",count:"რაოდენობა",boot_time:"ჩართვის დრო",uptime:"მუშაობის დრო"
+};
+Object.assign(technicalLabels, {
+    device:"მოწყობილობა",resources:"სისტემური რესურსები",internetDetails:"ინტერნეტის ტექნიკური მონაცემები",
+    cellularInterfaces:"მობილური ინტერფეისები",cellularDetails:"მოდემისა და SIM-ის მონაცემები",
+    traffic:"ქსელური ტრაფიკი",capabilities:"მოწყობილობის შესაძლებლობები",interfaces:"ქსელის ინტერფეისები",
+    wifiCapabilities:"Wi-Fi ადაპტერის შესაძლებლობები",routes:"მარშრუტიზაციის ცხრილი",wifi:"Wi-Fi კავშირი",
+    hotspotPreflight:"Hotspot-ის შესაძლებლობები",repeaterStatus:"Repeater-ის დიაგნოსტიკა",
+    dnsStatus:"DNS-ის მდგომარეობა",services:"სერვისები და ხელსაწყოები"
+});
+function technicalLabel(key) {
+    const clean=String(key).replace(/_/g," ");
+    return technicalLabels[key] || clean.charAt(0).toUpperCase()+clean.slice(1);
+}
+function technicalValue(value) {
+    if(value===null || value===undefined || value==="") return "—";
+    if(typeof value==="boolean") return value ? "დიახ" : "არა";
+    if(typeof value==="number") return Number.isFinite(value) ? String(value) : "—";
+    return String(value);
+}
+function buildTechnicalNode(value,depth) {
+    if(Array.isArray(value)) {
+        const wrap=document.createElement("div");
+        wrap.className="technical-array";
+        if(!value.length) {
+            const empty=document.createElement("span");
+            empty.className="technical-empty";
+            empty.textContent="მონაცემები არ არის";
+            wrap.appendChild(empty);
+            return wrap;
+        }
+        value.forEach((item,index)=>{
+            const card=document.createElement("article");
+            card.className="technical-object";
+            if(item && typeof item==="object") {
+                const heading=document.createElement("h4");
+                heading.className="technical-object-title";
+                heading.textContent=item.name || item.interface || item.ssid || ("ჩანაწერი "+(index+1));
+                card.append(heading,buildTechnicalNode(item,depth+1));
+            } else {
+                const val=document.createElement("span");
+                val.className="technical-value";
+                val.textContent=technicalValue(item);
+                card.appendChild(val);
+            }
+            wrap.appendChild(card);
+        });
+        return wrap;
+    }
+    if(value && typeof value==="object") {
+        const grid=document.createElement("div");
+        grid.className="technical-grid";
+        Object.entries(value).forEach(([key,item])=>{
+            const field=document.createElement("div");
+            field.className="technical-field";
+            if(item && typeof item==="object") field.classList.add("wide");
+            const label=document.createElement("span");
+            label.className="technical-label";
+            label.textContent=technicalLabel(key);
+            field.appendChild(label);
+            if(item && typeof item==="object" && depth<4) {
+                field.appendChild(buildTechnicalNode(item,depth+1));
+            } else {
+                const val=document.createElement("span");
+                val.className="technical-value";
+                val.textContent=item && typeof item==="object" ? "[მონაცემები]" : technicalValue(item);
+                if(typeof item==="boolean") val.classList.add("boolean");
+                field.appendChild(val);
+            }
+            grid.appendChild(field);
+        });
+        return grid;
+    }
+    const val=document.createElement("span");
+    val.className="technical-value";
+    val.textContent=technicalValue(value);
+    return val;
+}
+function showJSON(id,data) {
+    const target=element(id);
+    if(!target) return;
+    target.textContent=typeof data==="string" ? data : JSON.stringify(data,null,2);
+    const details=target.closest("details");
+    if(!details) return;
+    const viewId=id+"TechnicalView";
+    let view=element(viewId);
+    if(!view) {
+        view=document.createElement("div");
+        view.id=viewId;
+        view.className="technical-panel";
+        details.insertBefore(view,target);
+    }
+    target.classList.add("hidden");
+    view.replaceChildren();
+    const heading=document.createElement("div");
+    heading.className="technical-panel-title";
+    heading.textContent=technicalLabel(id);
+    view.appendChild(heading);
+    let parsed=data;
+    if(typeof data==="string") {
+        try { parsed=JSON.parse(data); } catch(_) { parsed=data; }
+    }
+    view.appendChild(buildTechnicalNode(parsed,0));
+}
+
+let repeaterCurrentConnection = null;
+
+function renderRepeaterStatus(data) {
+    showJSON("repeaterStatus", data);
+    const interfaces = Array.isArray(data?.radio?.interfaces) ? data.radio.interfaces : [];
+    const managed = interfaces.filter(item => item.type === "managed");
+    const select = element("repeaterInterface");
+    if (select) {
+        const previous = select.value;
+        select.replaceChildren(...managed.map(item => new Option(
+            item.name + (item.ssid ? " · " + item.ssid : ""),
+            item.name
+        )));
+        if (managed.some(item => item.name === previous)) select.value = previous;
+        else if (managed.length) select.value = managed[0].name;
+    }
+    repeaterCurrentConnection = managed.find(item => item.ssid) || null;
+    const status = element("repeaterConnection");
+    const disconnect = element("repeaterDisconnectButton");
+    const share = element("repeaterShareButton");
+    if (status) {
+        status.textContent = repeaterCurrentConnection
+            ? tr("დაკავშირებულია: ", "Connected: ") + repeaterCurrentConnection.ssid
+            : tr("Wi-Fi ქსელთან დაკავშირებული არ არის", "Not connected to a Wi-Fi network");
+        status.className = "repeater-connection " + (repeaterCurrentConnection ? "online" : "offline");
+    }
+    if (disconnect) disconnect.disabled = !repeaterCurrentConnection;
+    if (share) share.disabled = !repeaterCurrentConnection;
+}
+
+
+function setMetric(id, value, barId) {
+    const safe = Math.max(0, Math.min(100, Number(value) || 0));
+    element(id).textContent = safe.toFixed(1) + "%";
+    element(barId).style.width = safe + "%";
+}
+
+function formatBytes(value) {
+    const bytes = Number(value) || 0;
+
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 ** 2) return (bytes / 1024).toFixed(2) + " KB";
+    if (bytes < 1024 ** 3) return (bytes / 1024 ** 2).toFixed(2) + " MB";
+
+    return (bytes / 1024 ** 3).toFixed(2) + " GB";
+}
+
+/* CSRF */
+
+function getCookie(name) {
+    const prefix = name + "=";
+    const item = document.cookie.split("; ")
+        .find(value => value.startsWith(prefix));
+
+    if (!item) return null;
+
+    return decodeURIComponent(item.substring(prefix.length));
+}
+
+/* AUTHENTICATION UI */
+
+function showLogin(message = "") {
+    if (typeof disconnectTerminal === "function") disconnectTerminal();
+    state.authenticated = false;
+    stopPolling();
+
+    document.body.classList.add("login-active");
+
+    element("loginOverlay").classList.remove("hidden");
+    element("dashboard").classList.add("hidden");
+    element("logoutButton").classList.add("hidden");
+
+    element("connection").textContent = "● Authentication required";
+    element("loginError").textContent = message;
+}
+
+function showDashboard(username) {
+    state.authenticated = true;
+
+    document.body.classList.remove("login-active");
+
+    element("loginOverlay").classList.add("hidden");
+    element("dashboard").classList.remove("hidden");
+    element("logoutButton").classList.remove("hidden");
+
+    element("connection").textContent = "● Connected: " + username;
+}
+
+/* AUTHENTICATED FETCH */
+
+async function apiFetch(endpoint, options = {}) {
+    const headers = new Headers(options.headers || {});
+    const method = (options.method || "GET").toUpperCase();
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+        const csrfToken = getCookie("keyland_csrf");
+
+        if (csrfToken) {
+            headers.set("X-CSRF-Token", csrfToken);
+        }
+    }
+
+    const response = await fetch(endpoint, {
+        ...options,
+        method,
+        headers,
+        credentials: "same-origin",
+        cache: "no-store"
+    });
+
+    if (response.status === 401) {
+        showLogin("Your session has expired. Please sign in again.");
+        throw new Error("Authentication required");
+    }
+
+    return response;
+}
+
+async function fetchJSON(endpoint) {
+    const response = await apiFetch(endpoint);
+
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+    }
+
+    return response.json();
+}
+
+/* SYSTEM POWER & RECOVERY */
+async function submitSystemAction(path, phrase, warning) {
+    if (!state.authenticated) return;
+    if (!window.confirm(warning)) return;
+    const typed = window.prompt("დადასტურებისთვის ზუსტად ჩაწერე: " + phrase);
+    if (typed !== phrase) {
+        element("systemActionMessage").textContent = "დადასტურება არ ემთხვევა. მოქმედება გაუქმებულია.";
+        return;
+    }
+    const output = element("systemActionMessage");
+    output.textContent = "მოთხოვნა იგზავნება...";
+    try {
+        const response = await apiFetch(API + path, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({confirmed:true, confirmation_text:phrase})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        output.textContent = data.message || (data.success ? "მოქმედება დაგეგმილია." : "მოქმედება დასრულდა.");
+    } catch (error) {
+        output.textContent = "შეცდომა: " + error.message;
+    }
+}
+document.addEventListener("DOMContentLoaded", () => {
+    element("restartKeylandButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/power/restart-keyland", "RESTART KEYLAND",
+            "გადაიტვირთება მხოლოდ Keyland-ის სერვისი. ქსელის მოწყობილობები არ უნდა გადაიტვირთოს. გავაგრძელოთ?"));
+    element("rebootDeviceButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/power/reboot-device", "REBOOT DEVICE",
+            "გადაიტვირთება მთელი OnePlus/Kali მოწყობილობა. ყველა კავშირი დროებით შეწყდება. გავაგრძელოთ?"));
+    element("factoryResetButton")?.addEventListener("click", () =>
+        submitSystemAction("/system/factory-reset", "RESET KEYLAND",
+            "წაიშლება Keyland-ის შენახული Hotspot პარამეტრები. ჯერ შეიქმნება სარეზერვო ასლი. გავაგრძელოთ?"));
+});
+
+/* LOGIN */
+
+async function performLogin(username, password) {
+    const body = new URLSearchParams();
+    body.set("username", username);
+    body.set("password", password);
+
+    const response = await fetch(API + "/auth/login", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error("Incorrect username or password");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Login request rejected by security policy");
+        }
+
+        throw new Error("Login failed: HTTP " + response.status);
+    }
+
+    return response.json();
+}
+
+element("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    if (state.sessionCheckInProgress) return;
+
+    const button = element("loginButton");
+    const error = element("loginError");
+
+    button.disabled = true;
+    error.textContent = "";
+
+    const username = element("loginUsername").value.trim();
+    const password = element("loginპაროლი").value;
+
+    try {
+        const result = await performLogin(username, password);
+
+        element("loginპაროლი").value = "";
+        showDashboard(result.username);
+        startPolling();
+
+    } catch (err) {
+        error.textContent = err.message;
+
+    } finally {
+        button.disabled = false;
+    }
+});
+
+/* LOGOUT */
+
+async function logout() {
+    const button = element("logoutButton");
+    button.disabled = true;
+
+    try {
+        const response = await apiFetch(API + "/auth/logout", {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("გასვლა failed: HTTP " + response.status);
+        }
+
+        showLogin("You have been logged out.");
+
+    } catch (error) {
+        console.error("გასვლა error:", error);
+
+        if (state.authenticated) {
+            element("connection").textContent = "გასვლა error";
+        }
+
+    } finally {
+        button.disabled = false;
+    }
+}
+
+element("logoutButton").addEventListener("click", logout);
+
+/* SESSION CHECK */
+
+
+async function loadServerVersion() {
+    try {
+        const health = await fetchJSON(API + "/health");
+        element("serverVersion").textContent = "Keyland v" + (health.version || "—");
+    } catch (_) {
+        element("serverVersion").textContent = "API · offline";
+    }
+}
+async function initializeApp() {
+    if (state.sessionCheckInProgress) return;
+
+    state.sessionCheckInProgress = true;
+    loadServerVersion();
+
+    try {
+        const response = await fetch(API + "/auth/me", {
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            showLogin();
+            return;
+        }
+
+        const user = await response.json();
+
+        showDashboard(user.username);
+        startPolling();
+
+    } catch (error) {
+        console.error("Session check:", error);
+        showLogin("Cannot connect to the server.");
+
+    } finally {
+        state.sessionCheckInProgress = false;
+    }
+}
+
+/* NETWORK INTERFACES */
+
+async function loadInterfaces() {
+    if (!state.authenticated || state.interfaceLoading) return;
+
+    state.interfaceLoading = true;
+
+    const filter = element("interfaceFilter").value;
+
+    const endpoint = filter === "active"
+        ? API + "/network/interfaces?active_only=true"
+        : API + "/network/interfaces";
+
+    try {
+        const data = await fetchJSON(endpoint);
+        showJSON("interfaces", data);
+
+    } catch (error) {
+        if (state.authenticated) {
+            element("interfaces").textContent =
+                "Interface error: " + error.message;
+        }
+
+    } finally {
+        state.interfaceLoading = false;
+    }
+}
+
+/* INTERNET */
+
+function updateInternet(data) {
+    const status = element("internetStatus");
+    if (data.connected === true) {
+        status.textContent = "● Internet connected";
+        status.className = "internet-status online";
+    } else if (data.connected === false) {
+        status.textContent = "● Internet unavailable";
+        status.className = "internet-status offline";
+    } else {
+        status.textContent = "● Status unknown";
+        status.className = "internet-status unknown";
+    }
+
+    const panel = element("internetPublicDetails");
+    if (panel) {
+        const fields = [
+            ["გარე IPv4 (Public IP)", data.public_ipv4],
+            ["გარე IPv6", data.public_ipv6],
+            ["WAN წყარო", data.wan_type === "cellular" ? "მობილური ინტერნეტი / LTE" :
+                data.wan_type === "wifi" ? "Wi-Fi" :
+                data.wan_type === "ethernet_or_other" ? "Ethernet / სხვა" : "უცნობია"],
+            ["WAN ინტერფეისი", data.wan_interface],
+            ["ლოკალური IPv4", data.local_ipv4],
+            ["Gateway", data.gateway]
+        ];
+        panel.replaceChildren();
+        fields.forEach(([label, value]) => {
+            const field = document.createElement("div");
+            field.className = "technical-field";
+            const title = document.createElement("span");
+            title.className = "technical-label";
+            title.textContent = label;
+            const content = document.createElement("strong");
+            content.className = "technical-value";
+            content.textContent = value || "—";
+            field.append(title, content);
+            panel.appendChild(field);
+        });
+    }
+    showJSON("internetDetails", data);
+}
+
+/* GENERAL TRAFFIC */
+
+function updateTraffic(data) {
+    element("totalRx").textContent =
+        Number(data.total_rx_mbps || 0).toFixed(4) + " Mbps";
+
+    element("totalTx").textContent =
+        Number(data.total_tx_mbps || 0).toFixed(4) + " Mbps";
+
+    showJSON("traffic", data);
+}
+
+/* CELLULAR */
+
+function updateCellular(status, usage) {
+    const technology = element("cellularTechnology");
+    const modems = status.modems || [];
+    const modem = modems.find(item => item.available) || modems[0];
+
+    if (!status.available) {
+        technology.textContent = "UNAVAILABLE";
+        element("simStatus").textContent = "Unavailable";
+        element("modemStatus").textContent =
+            status.error || "ModemManager unavailable";
+        element("cellularOperator").textContent = "--";
+        element("registrationStatus").textContent = "--";
+        element("cellularSignal").textContent = "--";
+        element("cellularSignalBar").style.width = "0%";
+        element("cellularConnection").textContent = "--";
+        showJSON("cellularInterfaces", status.interfaces || []);
+        showJSON("cellularDetails", { ...status, usage });
+        element("cellularRx").textContent = "--";
+        element("cellularTx").textContent = "--";
+        return;
+    }
+
+    if (!modem) {
+        technology.textContent = "NO MODEM";
+        element("simStatus").textContent = "Not detected";
+        element("modemStatus").textContent = "No modem detected";
+        element("cellularOperator").textContent = "--";
+        element("registrationStatus").textContent = "--";
+        element("cellularSignal").textContent = "--";
+        element("cellularSignalBar").style.width = "0%";
+    } else {
+        const sim = modem.sim || {};
+        const network = modem.network || {};
+        const signal = modem.signal || {};
+        const operator = modem.operator || {};
+
+        technology.textContent =
+            network.technology || "UNKNOWN";
+
+        element("simStatus").textContent =
+            sim.detected
+                ? (sim.state || "Detected")
+                : "Not detected";
+
+        element("modemStatus").textContent =
+            modem.state || "Unknown";
+
+        element("cellularOperator").textContent =
+            operator.name || operator.code || "Unknown";
+
+        element("registrationStatus").textContent =
+            network.registration_state || "Unknown";
+
+        const quality = signal.quality_percent;
+
+        if (quality !== null && quality !== undefined) {
+            const safe = Math.max(0, Math.min(100, Number(quality)));
+            element("cellularSignal").textContent =
+                safe.toFixed(0) + "%";
+
+            element("cellularSignalBar").style.width =
+                safe + "%";
+        } else {
+            element("cellularSignal").textContent = "Unknown";
+            element("cellularSignalBar").style.width = "0%";
+        }
+    }
+
+    const interfaces = status.interfaces || [];
+
+    const connected = interfaces.some(item =>
+        item.is_up === true &&
+        ((item.ipv4 || []).length > 0)
+    );
+
+    element("cellularConnection").textContent =
+        connected ? "Interface active" : "Not confirmed";
+
+    showJSON("cellularInterfaces", interfaces);
+
+    const usageInterfaces = usage.interfaces || [];
+
+    const rx = usageInterfaces.reduce(
+        (sum, item) => sum + (Number(item.rx_bytes) || 0), 0
+    );
+
+    const tx = usageInterfaces.reduce(
+        (sum, item) => sum + (Number(item.tx_bytes) || 0), 0
+    );
+
+    element("cellularRx").textContent = formatBytes(rx);
+    element("cellularTx").textContent = formatBytes(tx);
+
+    showJSON("cellularDetails", { ...status, usage });
+}
+
+/* TRAFFIC CHART */
+
+function drawTrafficChart(samples) {
+    const canvas = element("trafficChart");
+    const rect = canvas.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return;
+
+    const ratio = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(rect.width * ratio);
+    canvas.height = Math.round(rect.height * ratio);
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    const left = 48;
+    const right = 10;
+    const top = 12;
+    const bottom = 25;
+
+    const chartWidth = width - left - right;
+    const chartHeight = height - top - bottom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.font = "11px Arial";
+    ctx.fillStyle = "#8d9bb0";
+    ctx.strokeStyle = "#30394a";
+    ctx.lineWidth = 1;
+
+    const values = samples.flatMap(sample => [
+        Number(sample.rx_mbps) || 0,
+        Number(sample.tx_mbps) || 0
+    ]);
+
+    const maxValue = Math.max(0.1, ...values) * 1.2;
+
+    for (let i = 0; i <= 4; i++) {
+        const y = top + chartHeight * i / 4;
+        const label = (maxValue * (1 - i / 4)).toFixed(3);
+
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(width - right, y);
+        ctx.stroke();
+
+        ctx.fillText(label, 2, y + 4);
+    }
+
+    if (!samples.length) {
+        ctx.fillStyle = "#8d9bb0";
+        ctx.fillText(
+            "Waiting for traffic samples...",
+            left + 10,
+            top + chartHeight / 2
+        );
+        return;
+    }
+
+    function drawLine(key, color) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+
+        samples.forEach((sample, index) => {
+            const x = samples.length === 1
+                ? left + chartWidth
+                : left + index / (samples.length - 1) * chartWidth;
+
+            const value = Number(sample[key]) || 0;
+            const y = top + chartHeight -
+                (value / maxValue) * chartHeight;
+
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+    }
+
+    drawLine("rx_mbps", "#50d69b");
+    drawLine("tx_mbps", "#78aaff");
+
+    ctx.fillStyle = "#8d9bb0";
+    ctx.fillText("Oldest", left, height - 5);
+    ctx.fillText("Latest", width - right - 35, height - 5);
+}
+
+async function loadTrafficHistory() {
+    const data = await fetchJSON(API + "/network/traffic/history");
+
+    if (state.authenticated) {
+        drawTrafficChart(data.samples || []);
+    }
+}
+
+/* SYSTEM RESOURCES */
+
+function updateResources(data) {
+    if (!data) return;
+
+    if (data.memory) {
+        setMetric("ram", data.memory.percent, "ramBar");
+    }
+
+    setMetric("cpu", data.cpu_percent, "cpuBar");
+
+    if (data.disk) {
+        setMetric("disk", data.disk.percent, "diskBar");
+    }
+
+    element("cores").textContent =
+        data.cpu_logical_cores ?? "--";
+}
+
+
+function renderPowerStatus(data) {
+    const battery = data && data.battery;
+    const chargers = data && Array.isArray(data.chargers) ? data.chargers : [];
+    const charger = chargers.find(item => item.online === true) || chargers[0] || null;
+    const setText = (id, value) => {
+        const target = element(id);
+        if (target) target.textContent = value == null || value === "" ? "—" : String(value);
+    };
+    const fmt = (value, unit, digits = 1) =>
+        value == null ? "—" : Number(value).toFixed(digits) + unit;
+
+    if (!data || !data.available || !battery) {
+        setText("batteryStatus", (data && data.error) || "ელემენტი ვერ მოიძებნა");
+        setText("batteryLevel", "—");
+        setText("batteryVoltage", "—");
+        setText("batteryTemperature", "—");
+        setText("batteryCurrent", "—");
+        return;
+    }
+
+    setText("batteryStatus", battery.status || "Unknown");
+    setText("batteryLevel", battery.capacity_percent == null ? "—" : battery.capacity_percent + "%");
+    setText("batteryVoltage", fmt(battery.voltage_v, " V", 3));
+    setText("batteryTemperature", fmt(battery.temperature_c, " °C"));
+    setText("batteryCurrent", fmt(battery.current_ma, " mA"));
+    setText("batteryChargeNow", fmt(battery.charge_now_mah, " mAh"));
+    setText("batteryChargeFull",
+        fmt(battery.charge_full_mah, " mAh") + " / " +
+        fmt(battery.charge_full_design_mah, " mAh"));
+    setText("batteryHealth", battery.health || "დამტენზე არ არის მოწოდებული");
+    setText("batteryTechnology",
+        [battery.technology, battery.manufacturer].filter(Boolean).join(" · ") || "—");
+
+    const bar = element("batteryLevelBar");
+    if (bar) {
+        const level = Number(battery.capacity_percent);
+        bar.style.width = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) + "%" : "0%";
+    }
+
+    setText("chargerType", charger
+        ? charger.type + (charger.online === true ? " · მიერთებულია" : " · არააქტიური")
+        : "დამტენი არ არის");
+    setText("chargerVoltage", charger ? fmt(charger.voltage_v, " V", 3) : "—");
+    setText("chargerCurrent", charger ? fmt(charger.current_ma, " mA") : "—");
+    setText("chargerPower", charger ? fmt(charger.power_mw, " mW") : "—");
+    showJSON("batteryDetails", data);
+}
+
+/* MAIN DASHBOARD */
+
+async function renderWifiLive(data) {
+    const target = element("wifiLiveStatus");
+    if (!target) return;
+    const links = Array.isArray(data.connections) ? data.connections : [];
+    const active = links.find(item => item.connected && item.type === "AP" && item.frequency_mhz) || links.find(item => item.connected && item.frequency_mhz);
+    if (!active) {
+        target.textContent = "Wi-Fi · კავშირი არ არის";
+        target.title = "აქტიური Wi-Fi სიხშირე ამჟამად მიუწვდომელია";
+        return;
+    }
+    const frequency = Number(active.frequency_mhz);
+    const band = active.band || (frequency >= 5955 ? "6 GHz" : frequency >= 4900 ? "5 GHz" : "2.4 GHz");
+    const signal = active.signal_dbm != null ? " · " + active.signal_dbm + " dBm" : "";
+    target.textContent = band + " · CH " + (active.channel ?? "—") + " · " + frequency + " MHz" + signal;
+    target.title = "ინტერფეისი: " + active.interface + (active.ssid ? " · SSID: " + active.ssid : "");
+}
+
+async function loadData() {
+    if (!state.authenticated || state.loading) return;
+
+    state.loading = true;
+
+    const button = element("refreshButton");
+    button.disabled = true;
+
+    element("connection").textContent = "Refreshing...";
+
+    const jobs = [
+        ["device", API + "/device"],
+        ["capabilities", API + "/capabilities"],
+        ["routes", API + "/network/routes"],
+        ["wifi", API + "/wifi"],
+        ["wifiCapabilities", API + "/wifi/capabilities"],
+        ["repeaterStatus", API + "/wifi/repeater/status"],
+        ["hotspotStatus", API + "/wifi/hotspot/router/status"],
+        ["hotspotClients", API + "/wifi/hotspot/router/clients"],
+        ["services", API + "/services"],
+        ["resources", API + "/system/resources"],
+        ["power", API + "/system/power"],
+        ["traffic", API + "/network/traffic"],
+        ["internet", API + "/network/internet"],
+        ["cellularStatus", API + "/cellular/status"],
+        ["cellularUsage", API + "/cellular/usage"]
+    ];
+
+    try {
+        const results = await Promise.allSettled(
+            jobs.map(async ([name, url]) => {
+                const data = await fetchJSON(url);
+
+                if (!state.authenticated) return { name, data };
+
+                switch (name) {
+                    case "wifi":
+                        renderWifiLive(data);
+                        showJSON("wifi", data);
+                        break;
+
+                    case "traffic":
+                        updateTraffic(data);
+                        break;
+
+                    case "internet":
+                        updateInternet(data);
+                        break;
+
+                    case "resources":
+                        updateResources(data);
+                        showJSON("resources", data);
+                        break;
+                    case "power":
+                        renderPowerStatus(data);
+                        break;
+                    case "repeaterStatus":
+                        renderRepeaterStatus(data);
+                        break;
+
+                    case "hotspotClients":
+                        renderHotspotClients(data);
+                        break;
+
+                    default:
+                        if (name !== "cellularStatus" &&
+                            name !== "cellularUsage") {
+                            showJSON(name, data);
+                        }
+                }
+
+                return { name, data };
+            })
+        );
+
+        if (!state.authenticated) return;
+
+        const dataByName = {};
+        let failures = 0;
+
+        results.forEach((result, index) => {
+            if (result.status === "fulfilled") {
+                dataByName[result.value.name] = result.value.data;
+            } else {
+                failures++;
+
+                const name = jobs[index][0];
+
+                if (name === "power") {
+                    const status = element("batteryStatus");
+                    if (status) status.textContent = "შეცდომა: " + result.reason.message;
+                } else if (name === "cellularStatus" ||
+                    name === "cellularUsage") {
+                    showJSON("cellularDetails", { error: name + ": " + result.reason.message });
+                } else {
+                    const target = element(name);
+
+                    if (target) {
+                        target.textContent =
+                            "Error: " + result.reason.message;
+                    }
+                }
+            }
+        });
+
+        if (dataByName.cellularStatus) {
+            updateCellular(
+                dataByName.cellularStatus,
+                dataByName.cellularUsage || { interfaces: [] }
+            );
+        }
+
+        const extraResults = await Promise.allSettled([
+            loadInterfaces(),
+            loadTrafficHistory()
+        ]);
+
+        extraResults.forEach(result => {
+            if (result.status === "rejected") failures++;
+        });
+
+        if (!state.authenticated) return;
+
+        element("connection").textContent =
+            failures === 0 ? "● Connected" : "● Partial data";
+
+        element("updated").textContent =
+            "Updated: " + new Date().toLocaleTimeString();
+
+    } catch (error) {
+        if (state.authenticated) {
+            element("connection").textContent =
+                "Connection error: " + error.message;
+        }
+
+    } finally {
+        state.loading = false;
+        button.disabled = false;
+    }
+}
+
+
+/* Georgian / English interface */
+const translations = {
+ "ქსელის მართვის ერთიანი პანელი":"Network Management Console",
+ "ადმინისტრატორის სახელი":"Administrator username",
+ "პაროლი":"Password",
+ "შესვლა":"Sign in",
+ "მხოლოდ ადმინისტრატორისთვის":"Administrators only",
+ "გასვლა":"Sign out",
+ "მიმოხილვა":"Overview",
+ "მობილური ქსელი":"Mobile network",
+ "Wi-Fi და ადაპტერები":"Wi-Fi & adapters",
+ "სისტემა":"System",
+ "მონაცემების განახლება":"Refresh data",
+ "Wi-Fi ქსელების ძიება":"Scan Wi-Fi networks",
+ "ჯერ არ განახლებულა":"Not updated yet",
+ "მოწყობილობა":"Device",
+ "სისტემური რესურსები":"System resources",
+ "პროცესორის დატვირთვა":"CPU usage",
+ "ოპერატიული მეხსიერება":"Memory usage",
+ "დისკის გამოყენება":"Disk usage",
+ "პროცესორის ნაკადები":"CPU threads",
+ "ინტერნეტის მდგომარეობა":"Internet status",
+ "SIM / მობილური ქსელი":"SIM / Mobile network",
+ "მოწყობილობის შესაძლებლობები":"Device capabilities",
+ "ქსელის ინტერფეისები":"Network interfaces",
+ "Wi-Fi ადაპტერის შესაძლებლობები":"Wi-Fi adapter capabilities",
+ "რეპიტერის რეჟიმის მზადყოფნა":"Repeater readiness",
+ "მარშრუტიზაციის ცხრილი":"Routing table",
+ "Wi-Fi კავშირი":"Wi-Fi connection",
+ "ახლომდებარე Wi-Fi ქსელები":"Nearby Wi-Fi networks",
+ "DNS-ის მართვა":"DNS management",
+ "ქსელის ინტერფეისი":"Network interface",
+ "DNS სერვერები (მძიმით გამოყოფილი)":"DNS servers (comma-separated)",
+ "DNS სერვერები (არასავალდებულო)":"DNS servers (optional)",
+ "DNS-ის გამოყენება":"Apply DNS",
+ "ავტომატურზე დაბრუნება":"Restore automatic",
+ "მდგომარეობის ნახვა":"Refresh status",
+ "Wi-Fi ადაპტერები და ჩიპსეტები":"Wi-Fi adapters & chipsets",
+ "WAN / LAN და DHCP":"WAN / LAN & DHCP",
+ "Firewall და NAT":"Firewall & NAT",
+ "SIM / LTE / 5G პარამეტრები":"SIM / LTE / 5G settings",
+ "ქსელთან დაკავშირებული მოწყობილობები":"Connected devices",
+ "სისტემა, ჟურნალები და აღდგენა":"System, logs & recovery",
+ "შესაძლებლობების შემოწმება":"Check capabilities",
+ "ცალკე AP ინტერფეისის შექმნა":"Create dedicated AP interface",
+ "საწყისი Wi-Fi ინტერფეისი (ვირტუალური AP-ის შესაქმნელად)":"Source Wi-Fi interface (to create virtual AP)",
+ "ინტერფეისის არჩევა":"Select interface",
+ "Hotspot-ის ჩართვა":"Start hotspot",
+ "Hotspot-ის გამორთვა":"Stop hotspot",
+ "AP ინტერფეისი":"AP interface",
+ "Hotspot-ის სახელი (SSID)":"Hotspot name (SSID)",
+ "უსაფრთხოება":"Security",
+ "პაროლი (8–63 სიმბოლო)":"Password (8–63 characters)",
+ "SIM, ModemManager, LTE/4G/5G and mobile interface monitoring.":"SIM-ის, ModemManager-ის, LTE/4G/5G-ისა და მობილური ინტერფეისების მონიტორინგი.",
+ "SIM STATUS":"SIM-ის სტატუსი",
+ "OPERATOR":"ოპერატორი",
+ "MODEM STATUS":"მოდემის სტატუსი",
+ "Loading...":"იტვირთება...",
+ "Scanning...":"სკანირება...",
+ "Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.",
+ "Read-only inspection of AP + Client and forwarding readiness.":"AP + Client რეჟიმისა და ტრაფიკის გადაცემის მზადყოფნის მხოლოდ წაკითხვადი შემოწმება.",
+ "Press Scan Wi-Fi networks":"დააჭირე Wi-Fi ქსელების ძიებას",
+ "Connection error: ":"კავშირის შეცდომა: ",
+ "მობილური ქსელი":"Mobile network",
+ "სისტემის მიმოხილვა":"System overview",
+ "მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა":"Current device, internet and resource status",
+ "ინტერნეტთან კავშირი":"Internet connection",
+ "მობილური ინტერფეისები / IP მისამართები":"Cellular interfaces / IP addresses",
+ "ქსელური ტრაფიკი":"Network traffic",
+ "ჩამოტვირთვა RX":"Download RX",
+ "ატვირთვა TX":"Upload TX",
+ "მიღება RX":"Receive RX",
+ "გაგზავნა TX":"Transmit TX",
+ "ბოლო 60 ჩანაწერი":"Last 60 samples",
+ "ინტერფეისის ფილტრი:":"Interface filter:",
+ "ყველა ინტერფეისი":"All interfaces",
+ "მხოლოდ აქტიური":"Active only",
+ "Wi-Fi ქსელი":"Wi-Fi network",
+ "ადაპტერის შესაძლებლობები, კავშირები და უსადენო წვდომა":"Adapter capabilities, connections and wireless access",
+ "ახლომდებარე Wi-Fi ქსელები":"Nearby Wi-Fi networks",
+ "დამატებითი პარამეტრები და დიაგნოსტიკა":"Advanced settings and diagnostics",
+ "როუტერის რეჟიმი":"Router mode",
+ "ინტერნეტის წყარო (WAN)":"Internet source (WAN)",
+ "პაროლი (8–63 ASCII სიმბოლო)":"Password (8–63 ASCII characters)",
+ "Hotspot-ის დაკავშირებული მოწყობილობები":"Hotspot connected devices",
+ "ჩამოტვირთული":"Downloaded",
+ "ატვირთული":"Uploaded",
+ "დაბლოკვა":"Block",
+ "განბლოკვა":"Unblock",
+ "სიჩქარის ლიმიტი":"Speed limit",
+ "ტექნიკური დეტალები":"Technical details",
+ "მობილური ქსელის მართვა":"Mobile network management",
+ "ტექნიკური დიაგნოსტიკა":"Technical diagnostics",
+ "ინტერფეისები":"Interfaces",
+ "ქსელის მდგომარეობა":"Network status",
+ "სერვისები / ხელსაწყოები":"Services / Tools",
+ "მდგომარეობა განახლებულია.":"Status updated.",
+ "სესიის შემოწმება...":"Checking session...",
+ "სისტემის მართვის პანელი":"System control panel",
+ "მობილური ჩამოტვირთვა":"Mobile download",
+ "მობილური ატვირთვა":"Mobile upload",
+ "სიგნალის ხარისხი":"Signal quality",
+ "მოდემის სტატუსი":"Modem status",
+ "რეგისტრაცია":"Registration",
+ "ოპერატორი":"Operator",
+ "SIM-ის სტატუსი":"SIM status"
+
+};
+Object.assign(translations, {
+ "პლატფორმა":"Platform","სისტემა":"System","ბირთვის ვერსია":"Kernel version","არქიტექტურა":"Architecture","მოწყობილობის სახელი":"Hostname","Python ვერსია":"Python version",
+ "პროცესორის დატვირთვა":"CPU usage","ლოგიკური ბირთვები":"Logical cores","ფიზიკური ბირთვები":"Physical cores","მეხსიერება":"Memory","სრული მოცულობა":"Total capacity","თავისუფალი მოცულობა":"Available capacity","გამოყენებული":"Used","გამოყენება":"Usage","დისკი":"Disk","მონტაჟის წერტილი":"Mount point","ინტერფეისები":"Interfaces","ინტერფეისი":"Interface","სახელი":"Name","მდგომარეობა":"State","სტატუსი":"Status","აქტიურია":"Active","ოპერაციული მდგომარეობა":"Operational state","MAC მისამართი":"MAC address","IPv4 მისამართები":"IPv4 addresses","IPv6 მისამართები":"IPv6 addresses","მისამართი":"Address","ქსელის ნიღაბი":"Netmask","მარშრუტები":"Routes","დანიშნულება":"Destination","მეტრიკა":"Metric","ცხრილი":"Table","პროტოკოლი":"Protocol","ნაგულისხმევი მარშრუტი":"Default route",
+ "დრაივერი":"Driver","ჩიპსეტი":"Chipset","მწარმოებელი":"Vendor","მოდელი":"Model","მიერთების ტიპი":"Bus type","PHY":"PHY","PHY სახელი":"PHY name","სიხშირის დიაპაზონები":"Frequency bands","არხები":"Channels","რეჟიმები":"Modes","მხარდაჭერილი რეჟიმები":"Supported modes","სიხშირეები":"Frequencies","არხი":"Channel","სიხშირე":"Frequency","ქსელის სახელი (SSID)":"Network name (SSID)","სიგნალი":"Signal","დაცვა":"Security","ხელმისაწვდომია":"Available","ჩართულია":"Enabled","გამორთულია":"Disabled","მხოლოდ წაკითხვა":"Read-only",
+ "შეფასება":"Assessment","შეტყობინება":"Message","შეცდომა":"Error","წვდომის წერტილები (AP)":"Access points (AP)","Wi-Fi კლიენტები":"Wi-Fi clients","AP + Client ერთდროულად":"AP + Client observed simultaneously","საერთო PHY":"Shared PHY","ერთი არხი":"Same channel","ტრაფიკის გადაცემა":"Forwarding","წინაპირობები":"Prerequisites","Firewall სისტემა":"Firewall backend","Firewall ხელმისაწვდომია":"Firewall available","dnsmasq ხელმისაწვდომია":"dnsmasq available","მიღებული მონაცემები":"Received bytes","გაგზავნილი მონაცემები":"Transmitted bytes","ჩამოტვირთვის სიჩქარე":"Download rate","ატვირთვის სიჩქარე":"Upload rate","ქსელის ტექნოლოგია":"Network technology","რეგისტრაციის მდგომარეობა":"Registration state","ოპერატორი":"Operator","SIM ბარათი":"SIM card","მოდემი":"Modem","მოდემები":"Modems","ქსელი":"Network","ვერსია":"Version","სერვისი":"Service","აქტიური მდგომარეობა":"Active state","ქვემდგომი მდგომარეობა":"Sub-state","აღწერა":"Description","მართვის სისტემა":"Manager","DNS ინტერფეისების მიხედვით":"DNS by interface","DNS სერვერები":"DNS servers","ტიპი":"Type","რაოდენობა":"Count","ჩართვის დრო":"Boot time","მუშაობის დრო":"Uptime",
+ "მოწყობილობა":"Device","სისტემური რესურსები":"System resources","ინტერნეტის ტექნიკური მონაცემები":"Internet diagnostics","მობილური ინტერფეისები":"Cellular interfaces","მოდემისა და SIM-ის მონაცემები":"Modem and SIM details","ქსელური ტრაფიკი":"Network traffic","მოწყობილობის შესაძლებლობები":"Device capabilities","ქსელის ინტერფეისები":"Network interfaces","Wi-Fi ადაპტერის შესაძლებლობები":"Wi-Fi adapter capabilities","მარშრუტიზაციის ცხრილი":"Routing table","Wi-Fi კავშირი":"Wi-Fi connection","Hotspot-ის შესაძლებლობები":"Hotspot capabilities","Repeater-ის დიაგნოსტიკა":"Repeater diagnostics","DNS-ის მდგომარეობა":"DNS status","სერვისები და ხელსაწყოები":"Services and tools"
+});
+Object.assign(translations, {
+ "ქსელების ძიება":"Scan networks",
+ "Wi-Fi ადაპტერი":"Wi-Fi adapter",
+ "არჩეული ქსელის პაროლი":"Selected network password",
+ "დაკავშირება":"Connect",
+ "დაკავშირებულია: ":"Connected: ",
+ "Wi-Fi ქსელთან დაკავშირებული არ არის":"Not connected to a Wi-Fi network",
+ "ჯერ მოძებნე ახლომდებარე Wi-Fi ქსელები.":"Scan for nearby Wi-Fi networks first.",
+ "ქსელების სია ჯერ არ მოძებნილა.":"Networks have not been scanned yet.",
+ "დამატებითი დიაგნოსტიკა":"Advanced diagnostics",
+ "სისტემის დიაგნოსტიკა":"System diagnostics",
+ "მდგომარეობა და დიაგნოსტიკა":"Status and diagnostics",
+ "ინტერნეტის გაზიარება":"Share internet",
+ "ქსელთან დაკავშირება მიმდინარეობს...":"Connecting to Wi-Fi...",
+ "კავშირის მდგომარეობა მოწმდება...":"Checking connection status..."
+});
+const reverseTranslations = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+const englishToGeorgian = Object.fromEntries(Object.entries(translations).map(([ka, en]) => [en, ka]));
+Object.assign(englishToGeorgian, {"SIM STATUS":"SIM-ის მდგომარეობა","MODEM STATUS":"მოდემის მდგომარეობა","REGISTRATION":"ქსელში რეგისტრაცია","SIGNAL QUALITY":"სიგნალის ხარისხი","MOBILE CONNECTION":"მობილური კავშირი","MOBILE DOWNLOAD":"მობილური ჩამოტვირთვა","MOBILE UPLOAD":"მობილური ატვირთვა","CELLULAR INTERFACES / IP ADDRESSES":"მობილური ინტერფეისები / IP მისამართები","connected":"დაკავშირებულია","disconnected":"გათიშულია","home":"სახლის ქსელი","detected":"აღმოჩენილია","unknown":"უცნობია","enabled":"ჩართულია","disabled":"გამორთულია","active":"აქტიურია","inactive":"არააქტიურია","Services / Tools":"სერვისები და ხელსაწყოები","Technical details":"ტექნიკური დეტალები","Loading...":"იტვირთება...","Supported Wi-Fi modes, bands, channels and interfaces.":"Wi-Fi-ის მხარდაჭერილი რეჟიმები, დიაპაზონები, არხები და ინტერფეისები.","Press Wi-Fi ქსელების ძიება":"დააჭირე ღილაკს Wi-Fi ქსელების მოსაძებნად","Router mode":"როუტერის რეჟიმი","SIM Mobile Hotspot":"SIM ბარათის ინტერნეტით Hotspot","Wi-Fi Repeater":"Wi-Fi გამეორება","Select source Wi-Fi interface":"აირჩიე საწყისი Wi-Fi ინტერფეისი","Select interface":"აირჩიე ინტერფეისი","No data":"მონაცემები არ არის","Device capabilities":"მოწყობილობის შესაძლებლობები","Network interfaces":"ქსელის ინტერფეისები","Repeater readiness":"გამეორების რეჟიმის მზადყოფნა","Advanced settings and diagnostics":"დამატებითი პარამეტრები და დიაგნოსტიკა","Internet source (WAN)":"ინტერნეტის წყარო (WAN)","AP interface":"წვდომის წერტილის ინტერფეისი (AP)","Hotspot name":"Hotspot-ის სახელი","Password":"პაროლი","Scan Wi-Fi networks":"Wi-Fi ქსელების ძიება","Refresh data":"მონაცემების განახლება","Network control panel":"ქსელის მართვის პანელი","Administrator panel":"ადმინისტრატორის პანელი","System overview":"სისტემის მიმოხილვა","Network management":"ქსელის მართვა","Mobile network management":"მობილური ქსელის მართვა","Firewall & NAT":"Firewall და NAT","WAN / LAN & DHCP":"WAN / LAN და DHCP"});
+
+const originalTextNodes = new WeakMap();
+let uiLanguage = localStorage.getItem("keyland-language") === "en" ? "en" : "ka";
+function translateTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE) return;
+    if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
+    const original = originalTextNodes.get(node);
+    const trimmed = original.trim();
+    if (!trimmed) return;
+    const translated = uiLanguage === "en" ? (translations[trimmed] || trimmed) : (englishToGeorgian[trimmed] || reverseTranslations[trimmed]);
+    node.nodeValue = translated ? original.replace(trimmed, translated) : original;
+}
+function translateAddedContent(root) {
+    if (!root) return;
+    if (root.nodeType === Node.TEXT_NODE) { translateTextNode(root); return; }
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) translateTextNode(node);
+}
+function applyLanguage(language) {
+    uiLanguage = language === "en" ? "en" : "ka";
+    localStorage.setItem("keyland-language", uiLanguage);
+    document.documentElement.lang = uiLanguage;
+    translateAddedContent(document.body);
+    const toggle = document.getElementById("languageToggle");
+    if (toggle) toggle.textContent = uiLanguage === "en" ? "ქარ" : "EN";
+}
+function tr(ka, en) { return uiLanguage === "en" ? en : ka; }
+document.getElementById("languageToggle").addEventListener("click", () => applyLanguage(uiLanguage === "en" ? "ka" : "en"));
+applyLanguage(uiLanguage);
+const languageObserver = new MutationObserver(records => {
+    for (const record of records) for (const added of record.addedNodes) translateAddedContent(added);
+});
+languageObserver.observe(document.body, {childList:true,subtree:true});
+
+
+function formatRate(mbps) {
+    if (!Number.isFinite(mbps) || mbps < 0.01) return "< 0.01 Mbps";
+    return mbps >= 100 ? mbps.toFixed(0) + " Mbps" : mbps.toFixed(2) + " Mbps";
+}
+
+function renderHotspotClients(status) {
+    const list = element("hotspotClients");
+    const count = element("hotspotClientCount");
+    if (!list || !count) return;
+    const clients = Array.isArray(status?.clients) ? status.clients : [];
+    count.textContent = clients.length + " " + tr("მოწყობილობა", "devices");
+
+    if (!status?.active || clients.length === 0) {
+        list.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "client-empty";
+        empty.textContent = "Hotspot გამორთულია ან დაკავშირებული მოწყობილობები არ არის.";
+        list.append(empty);
+        hotspotClientSamples.clear();
+        return;
+    }
+
+    const now = Date.now();
+    const cards = clients.map(client => {
+        const mac = String(client.mac || "unknown");
+        const rx = Number(client.rx_bytes) || 0;
+        const tx = Number(client.tx_bytes) || 0;
+        const previous = hotspotClientSamples.get(mac);
+        const elapsed = previous ? Math.max(0.1, (now - previous.at) / 1000) : 0;
+        const uploadMbps = previous && rx >= previous.rx ? ((rx - previous.rx) * 8 / elapsed) / 1000000 : 0;
+        const downloadMbps = previous && tx >= previous.tx ? ((tx - previous.tx) * 8 / elapsed) / 1000000 : 0;
+        hotspotClientSamples.set(mac, {rx, tx, at: now});
+
+        const card = document.createElement("article");
+        card.className = "client-device";
+        const head = document.createElement("div");
+        head.className = "client-device-head";
+        const identity = document.createElement("strong");
+        identity.textContent = client.hostname || client.ip || mac;
+        const signal = document.createElement("span");
+        signal.className = "client-signal";
+        signal.textContent = String(client.signal || client.signal_avg || "—");
+        head.append(identity, signal);
+
+        const meta = document.createElement("div");
+        meta.className = "muted";
+        meta.textContent = mac + (client.ip ? " · " + client.ip : "");
+
+        const traffic = document.createElement("div");
+        traffic.className = "client-traffic";
+        const download = document.createElement("div");
+        const downloadLabel = document.createElement("small");
+        downloadLabel.textContent = tr("ჩამოტვირთული", "Downloaded");
+        const downloadValue = document.createElement("b");
+        downloadValue.textContent = formatBytes(tx);
+        download.append(downloadLabel, downloadValue);
+        const upload = document.createElement("div");
+        const uploadLabel = document.createElement("small");
+        uploadLabel.textContent = tr("ატვირთული", "Uploaded");
+        const uploadValue = document.createElement("b");
+        uploadValue.textContent = formatBytes(rx);
+        upload.append(uploadLabel, uploadValue);
+        traffic.append(download, upload);
+
+        const connected = Number(client.connected_time) || 0;
+        const duration = connected >= 3600
+            ? Math.floor(connected / 3600) + "სთ " + Math.floor((connected % 3600) / 60) + "წთ"
+            : Math.floor(connected / 60) + "წთ";
+        const rate = document.createElement("div");
+        rate.className = "client-rate";
+        rate.textContent = "↓ " + formatRate(downloadMbps) + " · ↑ " + formatRate(uploadMbps) + " · " + duration;
+        if (client.speed_limit) {
+            const policy = document.createElement("div");
+            policy.className = "muted";
+            policy.textContent = "ლიმიტი: ↓ " + client.speed_limit.download_mbps + " Mbps · ↑ " + client.speed_limit.upload_mbps + " Mbps";
+            rate.append(document.createElement("br"), policy);
+        }
+
+        const extra = document.createElement("details");
+        extra.className = "diagnostic-details";
+        const extraSummary = document.createElement("summary");
+        extraSummary.textContent = "დეტალური ტექნიკური მონაცემები";
+        const extraGrid = document.createElement("div");
+        extraGrid.className = "technical-grid";
+        const extraFields = [
+            ["RX პაკეტები", client.rx_packets],
+            ["TX პაკეტები", client.tx_packets],
+            ["TX retries", client.tx_retries],
+            ["TX failed", client.tx_failed],
+            ["Inactive time", client.inactive_time != null ? client.inactive_time + " ms" : null],
+            ["TX bitrate", client.tx_bitrate],
+            ["RX bitrate", client.rx_bitrate],
+            ["სიგნალის ხარისხი", client.signal_quality_percent != null ? client.signal_quality_percent + "%" : null],
+            ["Authorized", client.authorized],
+            ["Authenticated", client.authenticated],
+            ["Associated", client.associated],
+            ["Client ID", client.client_id],
+            ["Lease expiry", client.lease_expiry],
+            ["Expected throughput", client.expected_throughput != null ? client.expected_throughput + " kbps" : null]
+        ];
+        extraFields.forEach(([label, value]) => {
+            if (value === null || value === undefined || value === "") return;
+            const field = document.createElement("div");
+            field.className = "technical-field";
+            const title = document.createElement("span");
+            title.className = "technical-label";
+            title.textContent = label;
+            const content = document.createElement("strong");
+            content.className = "technical-value";
+            content.textContent = String(value);
+            field.append(title, content);
+            extraGrid.appendChild(field);
+        });
+        extra.append(extraSummary, extraGrid);
+
+        const actions = document.createElement("div");
+        actions.className = "client-device-actions";
+        const block = document.createElement("button");
+        block.className = client.blocked ? "secondary" : "danger";
+        block.textContent = client.blocked ? tr("განბლოკვა", "Unblock") : tr("დაბლოკვა", "Block");
+        block.addEventListener("click", () => manageHotspotClient(
+            client, client.blocked ? "unblock" : "block"
+        ));
+        const limit = document.createElement("button");
+        limit.className = "secondary";
+        limit.textContent = tr("სიჩქარის ლიმიტი", "Speed limit");
+        limit.addEventListener("click", () => manageHotspotClient(client, "limit"));
+        actions.append(block, limit);
+        card.append(head, meta, traffic, rate, extra, actions);
+        return card;
+    });
+    list.replaceChildren(...cards);
+}
+
+async function manageHotspotClient(client, action) {
+    const mac = String(client.mac || "");
+    if (!mac) return;
+    let endpoint = "";
+    let payload = {mac, confirmed: true};
+
+    if (action === "block" || action === "unblock") {
+        const verb = action === "block" ? "დაბლოკო" : "განბლოკო";
+        if (!window.confirm(mac + " — ნამდვილად გსურს მოწყობილობის " + verb + "?")) return;
+        endpoint = API + "/wifi/hotspot/router/clients/" + action;
+    } else {
+        const download = window.prompt("ჩამოტვირთვის მაქსიმალური სიჩქარე Mbps-ში:", "10");
+        if (download === null) return;
+        const upload = window.prompt("ატვირთვის მაქსიმალური სიჩქარე Mbps-ში:", "5");
+        if (upload === null) return;
+        const down = Number(download), up = Number(upload);
+        if (!Number.isInteger(down) || !Number.isInteger(up) || down < 1 || up < 1 || down > 1000 || up > 1000) {
+            window.alert("მიუთითე მთელი რიცხვი 1-დან 1000 Mbps-მდე.");
+            return;
+        }
+        if (!window.confirm(mac + " — ჩამოტვირთვა " + down + " Mbps, ატვირთვა " + up + " Mbps. გამოიყენო?")) return;
+        endpoint = API + "/wifi/hotspot/router/clients/limit";
+        payload.download_mbps = down;
+        payload.upload_mbps = up;
+    }
+
+    try {
+        const response = await apiFetch(endpoint, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = data.blocked === true
+            ? "მოწყობილობა დაიბლოკა: " + mac
+            : data.blocked === false
+                ? "მოწყობილობა განიბლოკა: " + mac
+                : "სიჩქარის ლიმიტი დაყენებულია: " + mac;
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("hotspotMessage").textContent = "მოქმედება ვერ შესრულდა: " + error.message;
+    }
+}
+
+
+/* Hotspot preflight and guarded controls */
+async function loadHotspotCapabilities() {
+    const output = element("hotspotPreflight");
+    const select = element("hotspotInterface");
+    const start = element("hotspotStartButton");
+    output.textContent = tr("ქსელის შესაძლებლობები მოწმდება...","Checking network capabilities...");
+    start.disabled = true;
+    try {
+        const data = await fetchJSON(API + "/wifi/hotspot/capabilities");
+const source = element("hotspotSourceInterface");
+const previousSource = source.value;
+source.replaceChildren(new Option(
+    tr("აირჩიე საწყისი Wi-Fi ინტერფეისი", "Select source Wi-Fi interface"), ""
+));
+(data.interfaces || []).filter(item => item.type === "managed").forEach(item => {
+    source.add(new Option(
+        item.name + (item.ssid ? " · connected" : " · managed"),
+        item.name
+    ));
+});
+source.value = (data.interfaces || []).some(
+    item => item.name === previousSource && item.type === "managed"
+) ? previousSource : (
+    (data.interfaces || []).some(
+        item => item.name === "wlan0" && item.type === "managed"
+    ) ? "wlan0" : ""
+);
+
+        select.replaceChildren(new Option("keyland-ap · dedicated AP", "keyland-ap"));
+        (data.ap_candidates || []).filter(item => item.type === "AP" && item.name !== "wlan0").forEach(item => {
+            if (item.name !== "keyland-ap") select.add(new Option(item.name + " · AP", item.name));
+        });
+        const wan = element("hotspotUpstream");
+        wan.replaceChildren(new Option(tr("აირჩიე WAN ინტერფეისი","Select WAN interface"), ""));
+        (data.upstream_sources || []).forEach(item => {
+            wan.add(new Option(item.interface + " · " + item.type, item.interface));
+        });
+        const selectedMode = element("hotspotMode")?.value || "hotspot";
+        const selectedSource = (data.interfaces || []).find(
+            x => x.name === source.value && x.type === "managed"
+        );
+
+        const wifiWan = (data.upstream_sources || []).find(
+            x => x.type === "wifi" && x.interface === source.value
+        );
+        const simWan = (data.upstream_sources || []).find(
+            x => x.type === "cellular" && x.interface === "qmapmux0.0"
+        ) || (data.upstream_sources || []).find(x => x.type === "cellular");
+
+        const preferredWan = selectedMode === "repeater" ? wifiWan : simWan;
+        wan.value = preferredWan?.interface || "";
+
+        const station = selectedMode === "repeater"
+            ? (selectedSource?.ssid ? selectedSource : null)
+            : (data.interfaces || []).find(
+                x => x.type === "managed" && x.ssid && Number(x.channel)
+            );
+
+        const stationChannel = Number(station?.channel || 6);
+        const stationBand = stationChannel >= 36 ? "5" : "2.4";
+
+        element("hotspotBand").value = stationBand;
+        updateHotspotChannels();
+
+        if ((stationBand === "2.4" && stationChannel >= 1 && stationChannel <= 11) ||
+            (stationBand === "5" && [36,40,44,48].includes(stationChannel))) {
+            element("hotspotChannel").value = String(stationChannel);
+        }
+
+        // Restore the last successfully applied configuration from the protected API.
+        const savedResult = await fetchJSON(API + "/wifi/hotspot/router/settings").catch(() => ({saved:false}));
+        const saved = savedResult && savedResult.saved && savedResult.settings
+            ? savedResult.settings : null;
+        const savedState = element("hotspotSavedState");
+        const showSaved = (id, value) => {
+            const node = element(id);
+            if (node) node.textContent = value == null || value === "" ? "—" : String(value);
+        };
+        if (saved) {
+            const fields = {
+                hotspotMode: saved.mode,
+                hotspotInterface: saved.interface,
+                hotspotSourceInterface: saved.source_interface,
+                hotspotUpstream: saved.upstream_interface,
+                hotspotSsid: saved.ssid,
+                hotspotPassword: saved.password,
+                hotspotDns: Array.isArray(saved.dns_servers) ? saved.dns_servers.join(", ") : "",
+                hotspotIpv4: saved.ipv4_cidr,
+                hotspotBand: saved.band,
+                hotspotChannel: saved.channel
+            };
+            Object.entries(fields).forEach(([id, value]) => {
+                const field = element(id);
+                if (field && value != null && value !== "") field.value = String(value);
+            });
+            updateHotspotChannels();
+            if (saved.channel != null) element("hotspotChannel").value = String(saved.channel);
+            showSaved("savedHotspotSsid", saved.ssid);
+            showSaved("savedHotspotPassword", saved.password);
+            showSaved("savedHotspotBand", saved.band ? saved.band + " GHz" : "—");
+            showSaved("savedHotspotChannel", saved.channel);
+            showSaved("savedHotspotWan", saved.upstream_interface);
+            showSaved("savedHotspotGateway", saved.ipv4_cidr);
+            if (savedState) savedState.textContent = "შენახულია · ბოლო წარმატებული გაშვება";
+        } else {
+            ["savedHotspotSsid","savedHotspotPassword","savedHotspotBand","savedHotspotChannel","savedHotspotWan","savedHotspotGateway"].forEach(id => showSaved(id, "—"));
+            if (savedState) savedState.textContent = "შენახული კონფიგურაცია ჯერ არ არის";
+        }
+
+        if (selectedMode === "repeater" && !wifiWan) {
+            element("hotspotMessage").textContent = tr(
+                "არჩეული Wi-Fi ინტერფეისი დაკავშირებული არ არის.",
+                "The selected Wi-Fi interface is not connected."
+            );
+        }
+        element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
+        const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
+        const autostart = await fetchJSON(API + "/wifi/hotspot/router/autostart").catch(() => ({enabled:false}));
+        const clientData = await fetchJSON(API + "/wifi/hotspot/router/clients").catch(() => ({active:false,clients:[]}));
+        renderHotspotClients(clientData);
+        start.disabled = !wan.value || status.configured;
+        element("hotspotStopButton").disabled = !status.configured;
+        element("hotspotAutostartDisableButton").disabled = !autostart.enabled;
+        element("hotspotAutostartEnableButton").disabled = autostart.enabled || !status.active;
+        showJSON("hotspotPreflight", {
+            ap_mode_supported: data.ap_mode_supported,
+            interfaces: data.interfaces || [],
+            ap_candidates: data.ap_candidates || [],
+            upstream_sources: data.upstream_sources || [],
+            default_route_interfaces: data.default_route_interfaces || [],
+            router_status: {
+                active: status.active,
+                configured: status.configured,
+                clients: status.clients || [],
+                configuration: status.configuration || {}
+            },
+            automatic_start: {
+                enabled: autostart.enabled,
+                active: autostart.active,
+                upstream_interface: autostart.upstream_interface,
+                message: autostart.message
+            },
+            manager: "hostapd + dnsmasq + nftables",
+            limitations: data.limitations || []
+        });
+        element("hotspotMessage").textContent = status.active
+            ? tr("როუტერი ჩართულია. კონფიგურაცია ავტომატურად აღდგება გადატვირთვის შემდეგ.","Router is active. Configuration will be restored automatically after reboot.")
+            : autostart.enabled
+                ? tr("კონფიგურაცია შენახულია. ველოდები WAN/Wi-Fi კავშირის მზადყოფნას.","Configuration is saved. Waiting for WAN/Wi-Fi readiness.")
+                : status.configured
+                    ? tr("წინა გაშვება არასრულად დასრულდა. ჯერ გამორთე/გაწმინდე კონფიგურაცია.","Previous startup was incomplete. Stop and clean it before restarting.")
+                    : tr("აირჩიე WAN და AP ინტერფეისი, შემდეგ ჩართე.","Choose WAN and AP interface, then start.");
+    } catch (error) {
+        showJSON("hotspotPreflight", { error: tr("შემოწმება ვერ მოხერხდა: ","Preflight failed: ") + error.message });
+    }
+}
+async function startHotspot() {
+    const mode = element("hotspotMode").value;
+    const interfaceName = element("hotspotInterface").value || "keyland-ap";
+    const upstream = element("hotspotUpstream").value;
+    const sourceInterface = element("hotspotSourceInterface").value || "wlan0";
+    const ssid = element("hotspotSsid").value.trim();
+    const password = element("hotspotPassword").value;
+    const dnsServers = element("hotspotDns").value.split(",").map(v => v.trim()).filter(Boolean);
+    const ipv4Cidr = element("hotspotIpv4").value.trim();
+    const band = element("hotspotBand").value;
+    const channel = Number(element("hotspotChannel").value);
+
+    if (!upstream) {
+        element("hotspotMessage").textContent = tr("აირჩიე ინტერნეტის წყარო.","Select an upstream interface.");
+        return;
+    }
+
+    if (mode === "repeater" && upstream !== sourceInterface) {
+        element("hotspotMessage").textContent = tr(
+            "Repeater რეჟიმში WAN უნდა იყოს საწყისი Wi-Fi ინტერფეისი.",
+            "In repeater mode, WAN must be the source Wi-Fi interface."
+        );
+        return;
+    }
+
+    if (!password || password.length < 8 || password.length > 63 || !/^[\x20-\x7E]+$/.test(password)) {
+        element("hotspotMessage").textContent = tr("WPA2 პაროლი უნდა იყოს 8–63 ინგლისური/ASCII სიმბოლო.","WPA2 password must be 8–63 ASCII characters.");
+        return;
+    }
+
+    if (!window.confirm(tr(
+        "ჯერ მომზადდება ცალკე AP ინტერფეისი, შემდეგ გაეშვება DHCP და NAT. არსებული WAN კავშირი არ გადაირთვება. გავაგრძელოთ?",
+        "The dedicated AP interface will be prepared, then DHCP and NAT will start. The existing WAN connection will not be switched. Continue?"
+    ))) return;
+
+    const button = element("hotspotStartButton");
+    button.disabled = true;
+
+    try {
+        // Prepare AP on every start, including after stop or rollback.
+        const prepareResponse = await apiFetch(API + "/wifi/hotspot/create-interface", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                interface: sourceInterface,
+                ap_interface: interfaceName,
+                confirmed: true
+            })
+        });
+
+        const prepared = await prepareResponse.json().catch(() => ({}));
+        if (!prepareResponse.ok || prepared.success === false) {
+            throw new Error(prepared.detail || prepared.error || "AP interface preparation failed.");
+        }
+
+        const response = await apiFetch(API + "/wifi/hotspot/router/start", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                mode,
+                interface: interfaceName,
+                source_interface: sourceInterface,
+                upstream_interface: upstream,
+                ssid,
+                password,
+                dns_servers: dnsServers,
+                ipv4_cidr: ipv4Cidr,
+                band,
+                channel,
+                confirmed: true
+            })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+
+        element("hotspotMessage").textContent =
+            tr("როუტერი ჩაირთო და კონფიგურაცია შენახულია: ", "Router started; configuration saved for reboot: ") +
+            data.ssid + " · WAN " + data.upstream_interface + " · " + data.ipv4_cidr;
+
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent =
+            tr("ჩართვა ვერ მოხერხდა: ", "Start failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+async function enableHotspotAutostart() {
+    if (!window.confirm(tr(
+        "ჩაირთოს ავტომატური გაშვება? მიმდინარე Router კონფიგურაცია უსაფრთხოდ შეინახება.",
+        "Enable automatic startup? The current Router configuration will be saved securely."
+    ))) return;
+    const button = element("hotspotAutostartEnableButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/router/autostart/enable", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr(
+            "ავტომატური გაშვება ჩართულია.",
+            "Automatic startup enabled."
+        );
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("hotspotMessage").textContent = tr("ვერ მოხერხდა: ", "Failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function disableHotspotAutostart() {
+    if (!window.confirm(tr(
+        "გამორთო ავტომატური გაშვება? მიმდინარე Hotspot მუშაობას გააგრძელებს.",
+        "Disable automatic startup? The currently running Hotspot will stay active."
+    ))) return;
+    const button = element("hotspotAutostartDisableButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/router/autostart/disable", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr(
+            "ავტომატური გაშვება გამორთულია. მიმდინარე Hotspot არ გათიშულა.",
+            "Automatic startup disabled. The current Hotspot remains active."
+        );
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("hotspotMessage").textContent = tr("ვერ მოხერხდა: ", "Failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function stopHotspot() {
+    if (!window.confirm(tr("გამორთო Keyland Router Wi-Fi?","Stop Keyland Router Wi-Fi?"))) return;
+    const button = element("hotspotStopButton"); button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/router/stop", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = tr("Hotspot გამორთულია.","Router Wi-Fi stopped.");
+        await loadHotspotCapabilities();
+    } catch(error) { element("hotspotMessage").textContent = tr("გამორთვა ვერ მოხერხდა: ","Stop failed: ") + error.message; }
+    finally { button.disabled = false; }
+}
+async function createVirtualApInterface() {
+    const interfaceName = element("hotspotSourceInterface").value;
+    if (!interfaceName) {
+        element("hotspotMessage").textContent = tr("აირჩიე საწყისი Wi-Fi ინტერფეისი.","Select the source Wi-Fi interface.");
+        return;
+    }
+    if (!window.confirm(tr("შეიქმნება ცალკე keyland-ap ინტერფეისი. აქტიური Wi-Fi კავშირი არ უნდა გაითიშოს, მაგრამ დრაივერის შეზღუდვის შემთხვევაში ოპერაცია შეიძლება უარყოფილი იყოს. გავაგრძელოთ?","Create a separate keyland-ap interface. The active Wi-Fi connection will not be intentionally disconnected; the driver may reject this if concurrency is unsupported. Continue?"))) return;
+    const button = element("hotspotCreateInterfaceButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/create-interface", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:interfaceName,ap_interface:"keyland-ap",confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("hotspotMessage").textContent = data.message || tr("AP ინტერფეისი შეიქმნა.","AP interface created.");
+        await loadHotspotCapabilities();
+    } catch(error) {
+        element("hotspotMessage").textContent = tr("AP ინტერფეისის შექმნა ვერ მოხერხდა: ","Could not create AP interface: ") + error.message;
+    } finally { button.disabled = false; }
+}
+element("hotspotMode").addEventListener("change", async () => {
+    const mode = element("hotspotMode").value;
+
+    element("hotspotMessage").textContent = mode === "repeater"
+        ? tr(
+            "მოწმდება არჩეული Wi-Fi კავშირი და მისი არხი...",
+            "Checking the selected Wi-Fi connection and channel..."
+        )
+        : tr(
+            "მოწმდება SIM ინტერნეტ კავშირი...",
+            "Checking the SIM internet connection..."
+        );
+
+    await loadHotspotCapabilities();
+});
+
+element("hotspotCreateInterfaceButton").addEventListener("click", createVirtualApInterface);
+element("hotspotCheckButton").addEventListener("click", loadHotspotCapabilities);
+element("hotspotStartButton").addEventListener("click", startHotspot);
+element("hotspotStopButton").addEventListener("click", stopHotspot);
+element("hotspotAutostartDisableButton").addEventListener("click", disableHotspotAutostart);
+element("hotspotAutostartEnableButton").addEventListener("click", enableHotspotAutostart);
+function updateHotspotChannels() {
+    const band = element("hotspotBand").value;
+    const channels = band === "5" ? [36, 40, 44, 48] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const select = element("hotspotChannel");
+    const previous = Number(select.value);
+    select.replaceChildren(...channels.map(channel => {
+        const option = document.createElement("option");
+        option.value = String(channel);
+        option.textContent = String(channel);
+        return option;
+    }));
+    select.value = String(channels.includes(previous) ? previous : (band === "5" ? 36 : 6));
+}
+element("hotspotBand").addEventListener("change", updateHotspotChannels);
+updateHotspotChannels();
+
+/* DNS MANAGEMENT */
+function renderDnsStatus(data) {
+    showJSON("dnsStatus", data);
+}
+
+async function loadDnsStatus() {
+    if (!state.authenticated) return;
+    const box = element("dnsStatus");
+    showJSON("dnsStatus", { status: "იტვირთება..." });
+    try {
+        const response = await apiFetch(API + "/network/dns");
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+            let version = "უცნობია";
+            try {
+                const health = await fetchJSON(API + "/health");
+                version = health.version || version;
+            } catch (_) {}
+            throw new Error(tr(
+                "DNS API ამ გაშვებულ სერვერზე არ არის რეგისტრირებული (HTTP 404). სერვერის ვერსია: " + version + ". შეამოწმე, რომ გაშვებულია Keyland Network v0.5.0 ან უფრო ახალი და გადაიტვირთა სწორი systemd სერვისი.",
+                "The running server does not expose the DNS endpoint (HTTP 404). Server version: " + version + ". Ensure Keyland Network v0.5.0 or newer is deployed and the correct systemd service has been restarted."
+            ));
+        }
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        renderDnsStatus(data);
+        element("dnsMessage").textContent = "მდგომარეობა განახლებულია.";
+    } catch (error) {
+        showJSON("dnsStatus", { error: "DNS-ის წაკითხვა ვერ მოხერხდა.", details: error.message });
+        element("dnsMessage").textContent = "შეამოწმეთ სერვერის ვერსია და API კავშირი.";
+    }
+}
+
+async function submitDns(path, payload, confirmationText) {
+    if (!state.authenticated) return;
+    if (!window.confirm(confirmationText)) return;
+    const buttons = ["dnsApplyButton", "dnsResetButton", "dnsRefreshButton"];
+    buttons.forEach(id => element(id).disabled = true);
+    try {
+        const response = await apiFetch(API + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...payload, confirmed: true })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || result.error || ("HTTP " + response.status));
+        element("dnsMessage").textContent = tr("მოთხოვნა შესრულდა. შედეგი გადაამოწმეთ ქვემოთ.","Request applied. Verify the result below.");
+        await loadDnsStatus();
+    } catch (error) {
+        element("dnsMessage").textContent = tr("შეცდომა: ","Error: ") + error.message;
+    } finally {
+        buttons.forEach(id => element(id).disabled = false);
+    }
+}
+
+element("dnsApplyButton").addEventListener("click", () => {
+    const iface = element("dnsInterface").value.trim();
+    const servers = element("dnsServers").value.split(",").map(v => v.trim()).filter(Boolean);
+    if (!iface || !servers.length) {
+        element("dnsMessage").textContent = "შეავსეთ ინტერფეისი და DNS სერვერები.";
+        return;
+    }
+    submitDns("/network/dns", { interface: iface, servers }, "არჩეულ ინტერფეისზე დროებითი DNS პარამეტრები შეიცვლება. გავაგრძელოთ?");
+});
+
+element("dnsResetButton").addEventListener("click", () => {
+    const iface = element("dnsInterface").value.trim();
+    if (!iface) {
+        element("dnsMessage").textContent = "მიუთითეთ ინტერფეისი.";
+        return;
+    }
+    submitDns("/network/dns/reset", { interface: iface }, "არჩეულ ინტერფეისზე DNS ავტომატურ რეჟიმზე დაბრუნდება. გავაგრძელოთ?");
+});
+
+element("dnsRefreshButton").addEventListener("click", loadDnsStatus);
+
+/* WI-FI SCAN */
+
+function renderWifiScan(targetId, data) {
+    const target = element(targetId);
+    if (!target) return;
+    target.replaceChildren();
+
+    const allNetworks = Array.isArray(data.networks) ? data.networks : [];
+    const selectedInterface = element("repeaterInterface")?.value || "";
+    const networks = targetId === "wifiScan" && selectedInterface
+        ? allNetworks.filter(item => item.interface === selectedInterface)
+        : allNetworks;
+    if (!networks.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = data.error || "ქსელები ვერ მოიძებნა. შეამოწმე Wi-Fi ინტერფეისი, rfkill და უფლებები.";
+        target.appendChild(empty);
+        if (Array.isArray(data.interfaces) && data.interfaces.length) {
+            const detail = document.createElement("pre");
+            detail.textContent = JSON.stringify(data.interfaces, null, 2);
+            target.appendChild(detail);
+        }
+        return;
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "wifi-results-grid";
+    networks.forEach(network => {
+        const card = document.createElement("article");
+        card.className = "wifi-result-card";
+        const heading = document.createElement("div");
+        heading.className = "wifi-result-heading";
+        const name = document.createElement("strong");
+        name.textContent = network.ssid || "(დამალული ქსელი)";
+        const security = document.createElement("span");
+        security.className = "wifi-security";
+        security.textContent = network.security || "უცნობი დაცვა";
+        heading.append(name, security);
+        const meta = document.createElement("p");
+        meta.className = "muted";
+        const signal = network.signal_percent != null
+            ? network.signal_percent + "%"
+            : network.signal_dbm != null ? network.signal_dbm + " dBm" : "—";
+        meta.textContent = [
+            network.bssid || "",
+            network.channel ? "არხი " + network.channel : "",
+            network.frequency_mhz ? network.frequency_mhz + " MHz" : "",
+            "სიგნალი " + signal
+        ].filter(Boolean).join(" · ");
+        const connect = document.createElement("button");
+        connect.type = "button";
+        connect.className = "secondary repeater-connect-button";
+        connect.textContent = tr("დაკავშირება", "Connect");
+        connect.addEventListener("click", () => connectRepeaterNetwork(network));
+        card.append(heading, meta, connect);
+        grid.appendChild(card);
+    });
+    target.appendChild(grid);
+
+    const footer = document.createElement("p");
+    footer.className = "muted";
+    footer.textContent = "ნაპოვნია " + networks.length + " ქსელი · " +
+        ((data.interfaces || []).map(item => item.interface + ": " + item.count).join(" / ") || "Wi-Fi scan");
+    target.appendChild(footer);
+}
+
+async function scanWifi() {
+    if (!state.authenticated || state.scanLoading) return;
+    state.scanLoading = true;
+
+    const button = element("scanButton");
+    if (button) button.disabled = true;
+    const target = element("wifiScan");
+    if (target) target.textContent = "Wi-Fi ქსელების ძიება მიმდინარეობს...";
+
+    try {
+        const data = await fetchJSON(API + "/wifi/scan");
+        if (state.authenticated) renderWifiScan("wifiScan", data);
+    } catch (error) {
+        if (state.authenticated && target) target.textContent = "სკანირების შეცდომა: " + error.message;
+    } finally {
+        state.scanLoading = false;
+        if (button) button.disabled = false;
+    }
+}
+
+async function connectRepeaterNetwork(network) {
+    const interfaceName = element("repeaterInterface").value || network.interface || "wlan0";
+    const ssid = String(network.ssid || "");
+    const bssid = String(network.bssid || "");
+    const security = String(network.security || "Open").toLowerCase();
+    const password = element("repeaterPassword").value;
+    const secured = security !== "open" && security !== "--" && security !== "";
+    if (secured && (password.length < 8 || password.length > 63)) {
+        element("repeaterMessage").textContent = tr("შეიყვანე ქსელის სწორი პაროლი (8–63 სიმბოლო).", "Enter the network password (8–63 characters).");
+        element("repeaterPassword").focus();
+        return;
+    }
+    if (!window.confirm(tr(
+        "Wi-Fi ადაპტერი დაუკავშირდება " + ssid + "-ს. მიმდინარე Wi-Fi ინტერნეტი შეიძლება დროებით გაითიშოს. გავაგრძელოთ?",
+        "The Wi-Fi adapter will switch to " + ssid + ". Your current Wi-Fi internet connection may be interrupted. Continue?"
+    ))) return;
+    element("repeaterMessage").textContent = tr("ქსელთან დაკავშირება მიმდინარეობს...", "Connecting to Wi-Fi...");
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/repeater/connect", {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({interface:interfaceName, ssid, bssid, password:secured ? password : "", confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("repeaterPassword").value = "";
+        element("repeaterMessage").textContent = tr("დაკავშირებულია: ", "Connected: ") + (data.ssid || ssid) + ". " + tr("ახლა შეგიძლია გააზიარო Hotspot-ით.", "You can now share it through Hotspot.");
+        await loadData();
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("repeaterMessage").textContent = tr("დაკავშირება ვერ მოხერხდა: ", "Connection failed: ") + error.message;
+    }
+}
+
+async function disconnectRepeater() {
+    const connection = repeaterCurrentConnection;
+    if (!connection) return;
+    if (!window.confirm(tr("გათიშო " + connection.ssid + "? ამ Wi-Fi კავშირის ინტერნეტი შეწყდება.", "Disconnect from " + connection.ssid + "? Internet through this Wi-Fi will stop."))) return;
+    const button = element("repeaterDisconnectButton");
+    button.disabled = true;
+    try {
+        const response = await apiFetch(API + "/wifi/hotspot/repeater/disconnect", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({interface:connection.name, confirmed:true})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || data.error || ("HTTP " + response.status));
+        element("repeaterMessage").textContent = tr("Wi-Fi კავშირი გათიშულია.", "Wi-Fi disconnected.");
+        await loadData();
+        await loadHotspotCapabilities();
+    } catch (error) {
+        element("repeaterMessage").textContent = tr("გათიშვა ვერ მოხერხდა: ", "Disconnect failed: ") + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function shareRepeaterConnection() {
+    if (!repeaterCurrentConnection) return;
+    element("hotspotMode").value = "repeater";
+    element("hotspotSourceInterface").value = repeaterCurrentConnection.name;
+    await loadHotspotCapabilities();
+    element("hotspot-section").scrollIntoView({behavior:"smooth", block:"start"});
+    const hotspotAlreadyConfigured = !element("hotspotStopButton").disabled;
+    element("hotspotMessage").textContent = hotspotAlreadyConfigured
+        ? tr(
+            "ჯერ გამორთე მოქმედი Hotspot. შემდეგ Repeater რეჟიმში თავიდან ჩართე გაზიარება.",
+            "Stop the currently active Hotspot first. Then start sharing again in Repeater mode."
+        )
+        : tr(
+            "Repeater კავშირი არჩეულია. შეამოწმე WAN, მიუთითე Hotspot-ის პაროლი და ჩართე გაზიარება.",
+            "Repeater connection selected. Confirm the WAN, enter a Hotspot password and start sharing."
+        );
+    if (!element("hotspotPassword").value) element("hotspotPassword").focus({preventScroll:true});
+}
+
+/* CONTROLS */
+
+element("refreshButton").addEventListener("click", loadData);
+element("scanButton").addEventListener("click", scanWifi);
+element("repeaterDisconnectButton").addEventListener("click", disconnectRepeater);
+element("repeaterShareButton").addEventListener("click", shareRepeaterConnection);
+
+
+element("interfaceFilter").addEventListener(
+    "change",
+    loadInterfaces
+);
+
+/* Sidebar section tracking — keeps navigation context in sync while scrolling */
+(() => {
+    const links = Array.from(document.querySelectorAll(".primary-nav a[href^='#']"));
+    const sections = links
+        .map(link => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+    const activate = id => {
+        links.forEach(link => {
+            const active = link.getAttribute("href") === "#" + id;
+            link.classList.toggle("active", active);
+            if (active) link.setAttribute("aria-current", "location");
+            else link.removeAttribute("aria-current");
+        });
+    };
+    links.forEach(link => link.addEventListener("click", () => {
+        const id = link.getAttribute("href").slice(1);
+        activate(id);
+    }));
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+            const visible = entries.filter(entry => entry.isIntersecting)
+                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (visible) activate(visible.target.id);
+        }, {rootMargin:"-18% 0px -68% 0px",threshold:[0,.15,.35,.6]});
+        sections.forEach(section => observer.observe(section));
+    } else {
+        const initial = location.hash.slice(1) || "overview-section";
+        activate(initial);
+    }
+})();
+
+/* POLLING */
+
+function startPolling() {
+    stopPolling();
+
+    if (!state.authenticated) return;
+
+    loadData();
+    loadDnsStatus();
+    loadHotspotCapabilities();
+
+    state.pollingTimer = setInterval(() => {
+        if (state.authenticated) {
+            loadData();
+        }
+    }, 15000);
+}
+
+function stopPolling() {
+    if (state.pollingTimer !== null) {
+        clearInterval(state.pollingTimer);
+        state.pollingTimer = null;
+    }
+}
+
+/* CHART RESIZE */
+
+let resizeTimer = null;
+
+window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(() => {
+        if (state.authenticated) {
+            loadTrafficHistory().catch(console.error);
+        }
+    }, 250);
+});
+
+
+/* SIM SMS */
+async function refreshSms() {
+    if (!state.authenticated) return;
+    const status = element("smsStatus");
+    const list = element("smsList");
+    status.textContent = "SMS-ები იტვირთება...";
+    try {
+        const data = await fetchJSON(API + "/cellular/sms/messages");
+        list.replaceChildren();
+        if (!data.messages || !data.messages.length) {
+            list.textContent = "შეტყობინებები ვერ მოიძებნა.";
+        } else {
+            for (const sms of data.messages) {
+                const card = document.createElement("article");
+                card.className = "sms-item";
+                const meta = document.createElement("div");
+                meta.className = "sms-meta";
+                const direction = document.createElement("strong");
+                direction.textContent = sms.direction === "received" ? "შემოსული" : "გაგზავნილი";
+                const number = document.createElement("span");
+                number.textContent = sms.number || "უცნობი ნომერი";
+                const time = document.createElement("span");
+                time.textContent = sms.timestamp || sms.state || "";
+                meta.append(direction, number, time);
+                const body = document.createElement("div");
+                body.className = "sms-body";
+                body.textContent = sms.text || "(ტექსტი მიუწვდომელია)";
+                card.append(meta, body);
+                list.append(card);
+            }
+        }
+        status.textContent = "მოდემი #" + data.modem_id + " · " + data.count + " შეტყობინება";
+    } catch (error) {
+        status.textContent = "შეცდომა: " + error.message;
+    }
+}
+element("smsRefreshButton")?.addEventListener("click", refreshSms);
+element("smsMessage")?.addEventListener("input", event => {
+    element("smsLength").textContent = String(event.target.value.length);
+});
+element("smsSendForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!state.authenticated) return;
+    const number = element("smsNumber").value.trim();
+    const message = element("smsMessage").value;
+    if (!window.confirm("გავაგზავნო SMS ნომერზე " + number + "? ოპერატორმა შეიძლება ჩამოგაჭრას SMS-ის საფასური.")) return;
+    const button = element("smsSendButton");
+    button.disabled = true;
+    element("smsStatus").textContent = "SMS იგზავნება...";
+    try {
+        const response = await apiFetch(API + "/cellular/sms/send", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({number, message})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+        element("smsMessage").value = "";
+        element("smsLength").textContent = "0";
+        element("smsStatus").textContent = "SMS მიღებულია გასაგზავნად · ID " + data.sms_id;
+        refreshSms();
+    } catch (error) {
+        element("smsStatus").textContent = "შეცდომა: " + error.message;
+    } finally {
+        button.disabled = false;
+    }
+});
+
+/* Authenticated PTY terminal */
+let terminalSocket = null;
+let terminalConnected = false;
+function terminalWrite(value) {
+    const output = element("terminalOutput");
+    const readable = String(value)
+        .replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "")
+        .replace(/\x1B\][^\x07]*(?:\x07|\x1B\\)/g, "")
+        .replace(/\r\n/g, "\n");
+    output.textContent += readable;
+    if (output.textContent.length > 150000) output.textContent = output.textContent.slice(-120000);
+    const windowEl = element("terminalWindow");
+    windowEl.scrollTop = windowEl.scrollHeight;
+}
+function terminalSetConnected(connected, label) {
+    terminalConnected = connected;
+    element("terminalStatus").textContent = label;
+    element("terminalConnectButton").disabled = connected;
+    element("terminalDisconnectButton").disabled = !connected;
+    element("terminalInput").disabled = !connected;
+    element("terminalSendButton").disabled = !connected;
+    element("terminalCtrlC").disabled = !connected;
+    element("terminalCtrlD").disabled = !connected;
+}
+function terminalSend(data) {
+    if (terminalSocket && terminalSocket.readyState === WebSocket.OPEN) {
+        terminalSocket.send(JSON.stringify({type:"input", data}));
+    }
+}
+function connectTerminal() {
+    if (!state.authenticated || terminalSocket) return;
+    const scheme = location.protocol === "https:" ? "wss://" : "ws://";
+    const socket = new WebSocket(scheme + location.host + "/api/v1/terminal/ws");
+    terminalSocket = socket;
+    terminalSetConnected(false, "უკავშირდება...");
+    socket.onopen = () => terminalSetConnected(true, "დაკავშირებულია");
+    socket.onmessage = event => {
+        let packet;
+        try { packet = JSON.parse(event.data); } catch (_) { return; }
+        if (packet.type === "ready") {
+            terminalWrite("\n[Keyland PTY] მომხმარებელი: " + packet.username +
+                " · უფლებები: " + packet.privilege + " · სამუშაო დირექტორია: " + packet.cwd + "\n");
+        } else if (packet.type === "output") {
+            terminalWrite(packet.data);
+        } else if (packet.type === "error") {
+            terminalWrite("\n[შეცდომა] " + packet.message + "\n");
+        }
+    };
+    socket.onerror = () => terminalSetConnected(false, "კავშირის შეცდომა");
+    socket.onclose = event => {
+        terminalSocket = null;
+        terminalSetConnected(false, event.code === 1008 ? "ავტორიზაცია/Origin უარყოფილია" : "კავშირი დასრულდა");
+    };
+}
+function disconnectTerminal() {
+    if (terminalSocket) {
+        try { terminalSocket.send(JSON.stringify({type:"close"})); } catch (_) {}
+        terminalSocket.close();
+        terminalSocket = null;
+    }
+    terminalSetConnected(false, "გამორთულია");
+}
+element("terminalConnectButton")?.addEventListener("click", connectTerminal);
+element("terminalDisconnectButton")?.addEventListener("click", disconnectTerminal);
+element("terminalSendButton")?.addEventListener("click", () => terminalSend("\r"));
+element("terminalInput")?.addEventListener("keydown", event => {
+    if (!terminalConnected || event.isComposing) return;
+    let data = null;
+    if (event.ctrlKey && !event.altKey && !event.metaKey) {
+        const key = event.key.toLowerCase();
+        const controls = {c:"\u0003", d:"\u0004", z:"\u001a", l:"\u000c", a:"\u0001", e:"\u0005", u:"\u0015", k:"\u000b", w:"\u0017"};
+        data = controls[key] || null;
+    } else if (event.key === "Enter") data = "\r";
+    else if (event.key === "Backspace") data = "\u007f";
+    else if (event.key === "Tab") data = "\t";
+    else if (event.key === "Escape") data = "\u001b";
+    else if (event.key === "ArrowUp") data = "\u001b[A";
+    else if (event.key === "ArrowDown") data = "\u001b[B";
+    else if (event.key === "ArrowRight") data = "\u001b[C";
+    else if (event.key === "ArrowLeft") data = "\u001b[D";
+    else if (event.key === "Home") data = "\u001b[H";
+    else if (event.key === "End") data = "\u001b[F";
+    else if (event.key === "Delete") data = "\u001b[3~";
+    else if (event.key.length === 1 && !event.altKey && !event.metaKey) data = event.key;
+    if (data !== null) {
+        event.preventDefault();
+        terminalSend(data);
+        event.target.value = "";
+    }
+});
+element("terminalInput")?.addEventListener("paste", event => {
+    if (!terminalConnected) return;
+    event.preventDefault();
+    terminalSend(event.clipboardData.getData("text"));
+});
+element("terminalInput")?.addEventListener("compositionend", event => {
+    if (terminalConnected && event.data) terminalSend(event.data);
+    event.target.value = "";
+});
+element("terminalCtrlC")?.addEventListener("click", () => terminalSend("\u0003"));
+element("terminalCtrlD")?.addEventListener("click", () => terminalSend("\u0004"));
+element("terminalClearButton")?.addEventListener("click", () => {
+    element("terminalOutput").textContent = "";
+});
+
+
+/* START */
+
+initializeApp();
+
+</script>
+</body>
+</html>

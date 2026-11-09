@@ -1867,7 +1867,7 @@ footer { color:#7187a4; }
                 <span class="hotspot-control-tag">AP CONTROL</span>
             </div>
             <div id="hotspotSavedSettings" class="hotspot-saved-settings" aria-live="polite">
-                <div class="hotspot-saved-title"><strong>შენახული Hotspot კონფიგურაცია</strong><span id="hotspotSavedState">იტვირთება...</span></div>
+                <div class="hotspot-saved-title"><strong>Hotspot კონფიგურაცია</strong><span id="hotspotSavedState">იტვირთება...</span></div>
                 <div class="hotspot-saved-grid">
                     <div><small>SSID</small><b id="savedHotspotSsid">—</b></div>
                     <div><small>პაროლი</small><b id="savedHotspotPassword">—</b></div>
@@ -3670,6 +3670,60 @@ source.value = (data.interfaces || []).some(
         }
         element("hotspotCreateInterfaceButton").disabled = !(data.ap_mode_supported && (data.interfaces || []).some(x => x.type === "managed"));
         const status = await fetchJSON(API + "/wifi/hotspot/router/status").catch(() => ({active:false}));
+
+        // Reflect the real running router configuration in the dashboard.
+        // The status API deliberately does not expose the Wi-Fi password.
+        const activeConfig = status && status.active && status.configuration
+            ? status.configuration : null;
+
+        if (activeConfig) {
+            const setField = (id, value) => {
+                const field = element(id);
+                if (!field || value == null || value === "") return;
+                field.value = String(value);
+            };
+
+            setField("hotspotMode", activeConfig.mode);
+            setField("hotspotInterface", activeConfig.interface);
+            setField("hotspotSourceInterface", activeConfig.source_interface);
+            setField("hotspotUpstream", activeConfig.upstream_interface);
+            setField("hotspotSsid", activeConfig.ssid);
+            setField("hotspotIpv4", activeConfig.ipv4_cidr);
+            setField("hotspotBand", activeConfig.band);
+
+            if (Array.isArray(activeConfig.dns_servers)) {
+                setField("hotspotDns", activeConfig.dns_servers.join(", "));
+            }
+
+            const dnsMonitoring = element("hotspotDnsMonitoring");
+            if (dnsMonitoring && typeof activeConfig.dns_monitoring === "boolean") {
+                dnsMonitoring.checked = activeConfig.dns_monitoring;
+            }
+
+            updateHotspotChannels();
+            if (activeConfig.channel != null) {
+                setField("hotspotChannel", activeConfig.channel);
+            }
+
+            // Do not populate the password field from runtime status.
+            showSaved("savedHotspotSsid", activeConfig.ssid);
+            showSaved("savedHotspotPassword", "დაცულია · პაროლი არ იკითხება");
+            showSaved(
+                "savedHotspotBand",
+                activeConfig.band ? activeConfig.band + " GHz" : "—"
+            );
+            showSaved("savedHotspotChannel", activeConfig.channel);
+            showSaved("savedHotspotWan", activeConfig.upstream_interface);
+            showSaved(
+                "savedHotspotGateway",
+                activeConfig.gateway || activeConfig.ipv4_cidr
+            );
+
+            if (savedState) {
+                savedState.textContent = "აქტიურია · მიმდინარე კონფიგურაცია";
+            }
+        }
+
         const autostart = await fetchJSON(API + "/wifi/hotspot/router/autostart").catch(() => ({enabled:false}));
         const clientData = await fetchJSON(API + "/wifi/hotspot/router/clients").catch(() => ({active:false,clients:[]}));
         renderHotspotClients(clientData);
