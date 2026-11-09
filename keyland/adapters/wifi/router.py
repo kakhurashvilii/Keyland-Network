@@ -1273,6 +1273,8 @@ def captive_enable() -> dict[str, Any]:
   iifname "{ap}" udp dport 53 accept
   iifname "{ap}" tcp dport 53 accept
   iifname "{ap}" udp dport 67 accept
+  iifname "{ap}" ip saddr . ether saddr @authorized_clients tcp dport {{ 80, 443 }} accept
+  iifname "{ap}" drop
  }}
  chain forward {{
   type filter hook forward priority -20; policy accept;
