@@ -82,7 +82,7 @@ class PortalSettings(BaseModel):
     background_color: str = Field(default="#101827", pattern=r"^#[0-9a-fA-F]{6}$")
     accent_color: str = Field(default="#2878e8", pattern=r"^#[0-9a-fA-F]{6}$")
     session_minutes: int = Field(default=1440, ge=5, le=10080)
-    guest_password: str | None = Field(default=None, max_length=128)
+    guest_password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 @router.get("/config")
