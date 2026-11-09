@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import hashlib
 import ipaddress
 import json
 import re
@@ -22,11 +23,25 @@ MAC = re.compile(r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}")
 
 
 def read_settings() -> dict:
+    defaults = {
+        "auth_mode": "consent",
+        "logo_text": "KEYLAND",
+        "title": "მოგესალმებით!",
+        "welcome_text": "ინტერნეტით სარგებლობის გასაგრძელებლად გაეცანით პირობებს.",
+        "terms_text": "ქსელით სარგებლობისას დაიცავით მოქმედი კანონმდებლობა და პატივი ეცით სხვა მომხმარებლებს.",
+        "button_text": "ვეთანხმები და გაგრძელება",
+        "background_color": "#101827",
+        "accent_color": "#2878e8",
+        "session_minutes": 1440,
+    }
     try:
         raw = json.loads(SETTINGS.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         raw = {}
-    return raw if isinstance(raw, dict) else {}
+    if not isinstance(raw, dict):
+        raw = {}
+    defaults.update({key: value for key, value in raw.items() if key in defaults or key == "password_hash"})
+    return defaults
 
 
 def escape(value: object, default: str = "") -> str:
@@ -193,7 +208,7 @@ label{{display:block;margin:17px 0 8px;font-size:14px}}input[type=password]{{dis
             try:
                 salt_hex, digest_hex = encoded.split("$", 1)
                 salt, expected = bytes.fromhex(salt_hex), bytes.fromhex(digest_hex)
-                actual = __import__("hashlib").pbkdf2_hmac("sha256", supplied.encode("utf-8"), salt, 310000)
+                actual = hashlib.pbkdf2_hmac("sha256", supplied.encode("utf-8"), salt, 310000)
             except (ValueError, TypeError):
                 self.send_page(self.page("სტუმრის პაროლი ჯერ არ არის სწორად დაყენებული."), 503)
                 return
