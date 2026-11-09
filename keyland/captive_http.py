@@ -114,7 +114,10 @@ class Handler(BaseHTTPRequestHandler):
             for key, (_, expiry) in list(NONCES.items()):
                 if expiry < now:
                     NONCES.pop(key, None)
-            NONCES[ip] = (token, now + 600)
+            if len(NONCES) >= 4096:
+                oldest = min(NONCES, key=lambda key: NONCES[key][1])
+                NONCES.pop(oldest, None)
+            NONCES[token] = (ip, now + 600)
         consent = (
             '<label class="check"><input type="checkbox" name="consent" value="yes" required> ვეთანხმები გამოყენების პირობებს</label>'
             if needs_consent else ""
@@ -174,8 +177,8 @@ label{{display:block;margin:17px 0 8px;font-size:14px}}input[type=password]{{dis
 
         nonce = form.get("nonce", [""])[0]
         with NONCE_LOCK:
-            saved = NONCES.pop(ip_raw, None)
-        if not saved or not secrets.compare_digest(saved[0], nonce) or saved[1] < time.monotonic():
+            saved = NONCES.pop(nonce, None)
+        if not saved or saved[0] != ip_raw or saved[1] < time.monotonic():
             self.send_page(self.page("ფორმა ვადაგასულია. თავიდან სცადე."), 403)
             return
 
