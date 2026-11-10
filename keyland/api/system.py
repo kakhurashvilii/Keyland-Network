@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/v1/system", tags=["System"])
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 HOTSPOT_SETTINGS = DATA_DIR / "hotspot-settings.json"
+CAPTIVE_PORTAL_SETTINGS = DATA_DIR / "captive-portal.json"
 BACKUP_DIR = DATA_DIR / "recovery-backups"
 AUDIT_LOG = DATA_DIR / "system-actions.jsonl"
 
@@ -113,15 +114,20 @@ def factory_reset(payload: FactoryResetRequest, user: dict = Depends(require_adm
     if payload.scope not in {"network", "keyland"}:
         raise HTTPException(status_code=400, detail="Scope must be network or keyland.")
 
-    # Deliberately narrow reset boundary: preserve source code, database/admin,
-    # OS, service files and unrelated user data. Only known Keyland runtime
-    # configuration is removed after a verified backup.
-    targets = [HOTSPOT_SETTINGS]
+    # Reset scopes have distinct, explicit boundaries. Both preserve the
+    # administrator/database and system installation; "keyland" additionally
+    # clears the saved Captive Portal application settings.
+    targets_by_scope = {
+        "network": [HOTSPOT_SETTINGS],
+        "keyland": [HOTSPOT_SETTINGS, CAPTIVE_PORTAL_SETTINGS],
+    }
+    targets = targets_by_scope[payload.scope]
     existing = [path for path in targets if path.is_file()]
     if not existing:
         return {
-            "success": True, "reset": False,
-            "message": "No supported saved network settings were present; nothing was changed.",
+            "success": True, "reset": False, "scope": payload.scope,
+            "message": f"No saved settings exist for the {payload.scope} reset scope; nothing was changed.",
+            "removed": [],
         }
 
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
