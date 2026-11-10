@@ -2114,13 +2114,29 @@ footer { color:#7187a4; }
             <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
-        <div id="zerotier-section" class="section-heading"><div><span class="section-kicker">ZT / ZERO TIER</span><h2>ZeroTier ქსელის მართვა</h2><p>სერვისის, Node ID-ის, ქსელებისა და Peers-ის მონიტორინგი</p></div></div>
+        <div id="zerotier-section" class="section-heading"><div><span class="section-kicker">ZT / ZERO TIER</span><h2>ZeroTier ქსელის მართვა</h2><p>ლოკალური კავშირი, Central ქსელები და მათში გაწევრიანებული მოწყობილობები</p></div></div>
 
         <section class="card" style="grid-column:1/-1">
-            <h3>ZeroTier მდგომარეობა</h3>
-            <p class="muted">მხოლოდ წაკითხვის რეჟიმი — ქსელის კონფიგურაცია და მარშრუტები არ იცვლება.</p>
+            <h3>ლოკალური ZeroTier აგენტი</h3>
+            <p class="muted">მხოლოდ წაკითხვა — ამ პანელიდან ქსელის მარშრუტები ან სერვისის მდგომარეობა არ იცვლება.</p>
             <pre id="zerotierStatus">ZeroTier მონაცემები იტვირთება...</pre>
-            <button type="button" id="zerotierRefreshButton" class="secondary">ZeroTier მონაცემების განახლება</button>
+            <button type="button" id="zerotierRefreshButton" class="secondary">მონაცემების განახლება</button>
+        </section>
+
+        <section class="card" style="grid-column:1/-1">
+            <h3>ZeroTier Central — ქსელები და მოწყობილობები</h3>
+            <p class="muted">Central API-ის გასაღები ინახება მხოლოდ Keyland სერვერზე გარემოს ცვლადში. წევრების ავტორიზაცია/გაუქმება ამ ეტაპზე გამორთულია.</p>
+            <div id="zerotierCentralMessage" class="client-empty" role="status">Central API-ის მდგომარეობა მოწმდება...</div>
+            <label for="zerotierNetworkSelect">ქსელი</label>
+            <select id="zerotierNetworkSelect" disabled>
+                <option value="">ქსელები ჯერ არ ჩატვირთულა</option>
+            </select>
+            <div class="hotspot-actions">
+                <button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button>
+            </div>
+            <div id="zerotierMembers" class="client-list" aria-live="polite">
+                <p class="client-empty">აირჩიე ქსელი წევრების სანახავად.</p>
+            </div>
         </section>
 
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
@@ -2594,9 +2610,134 @@ async function refreshZeroTier() {
     } catch (error) {
         target.textContent = "ZeroTier API შეცდომა: " + error.message;
     }
+    await refreshCentralNetworks();
+}
+
+async function refreshCentralNetworks() {
+    const message = element("zerotierCentralMessage");
+    const select = element("zerotierNetworkSelect");
+    const members = element("zerotierMembers");
+    if (!state.authenticated || !message || !select) return;
+
+    message.textContent = "Central API ქსელები იტვირთება...";
+    try {
+        const data = await fetchJSON(API + "/zerotier/central/networks");
+        if (!data.configured) {
+            message.textContent = "Central API გასაღები არ არის დაყენებული. სერვერზე დაამატე KEYLAND_ZEROTIER_CENTRAL_TOKEN გარემოს ცვლადი და გადატვირთე Keyland.";
+            select.disabled = true;
+            select.replaceChildren(new Option("Central API არ არის კონფიგურირებული", ""));
+            if (members) members.replaceChildren(Object.assign(document.createElement("p"), {
+                className: "client-empty",
+                textContent: "ქსელებისა და მოწყობილობების სიის სანახავად საჭიროა Central API token."
+            }));
+            return;
+        }
+        if (!data.available) throw new Error(data.error || "Central API მიუწვდომელია");
+
+        const previous = select.value;
+        const options = [new Option("აირჩიე ZeroTier ქსელი", "")];
+        (data.networks || []).forEach(network => {
+            const label = (network.name || "Unnamed network") + " · " + network.id +
+                " · " + (network.total_member_count ?? 0) + " მოწყობილობა";
+            options.push(new Option(label, network.id));
+        });
+        select.replaceChildren(...options);
+        select.disabled = data.networks.length === 0;
+        const stillExists = (data.networks || []).some(network => network.id === previous);
+        if (stillExists) select.value = previous;
+        else if (data.networks.length === 1) select.value = data.networks[0].id;
+
+        message.textContent = data.networks.length
+            ? "Central API დაკავშირებულია · ნაპოვნია " + data.networks.length + " ქსელი."
+            : "Central API დაკავშირებულია, მაგრამ ხელმისაწვდომი ქსელები ვერ მოიძებნა.";
+
+        if (select.value) await refreshCentralMembers();
+        else if (members) members.replaceChildren(Object.assign(document.createElement("p"), {
+            className: "client-empty",
+            textContent: "აირჩიე ქსელი წევრების სანახავად."
+        }));
+    } catch (error) {
+        message.textContent = "Central API შეცდომა: " + error.message;
+        select.disabled = true;
+    }
+}
+
+async function refreshCentralMembers() {
+    const select = element("zerotierNetworkSelect");
+    const target = element("zerotierMembers");
+    if (!state.authenticated || !select || !target || !select.value) return;
+
+    target.replaceChildren(Object.assign(document.createElement("p"), {
+        className: "client-empty",
+        textContent: "მოწყობილობების სია იტვირთება..."
+    }));
+    try {
+        const networkId = select.value;
+        const data = await fetchJSON(
+            API + "/zerotier/central/networks/" + encodeURIComponent(networkId) + "/members"
+        );
+        if (!data.available) throw new Error(data.error || "წევრების სია მიუწვდომელია");
+
+        const fragment = document.createDocumentFragment();
+        (data.members || []).forEach(member => {
+            const card = document.createElement("article");
+            card.className = "client-device";
+
+            const head = document.createElement("div");
+            head.className = "client-device-head";
+            const title = document.createElement("strong");
+            title.textContent = member.name || "სახელის გარეშე მოწყობილობა";
+            const auth = document.createElement("span");
+            auth.className = "client-signal";
+            auth.textContent = member.authorized === true ? "AUTHORIZED" :
+                member.authorized === false ? "NOT AUTHORIZED" : "UNKNOWN";
+            head.append(title, auth);
+
+            const details = document.createElement("div");
+            details.className = "client-traffic";
+            const fields = [
+                ["Node ID", member.id || "—"],
+                ["Managed IP", (member.ip_assignments || []).join(", ") || "—"],
+                ["Physical address", member.physical_address || "—"],
+                ["Last seen", member.last_seen ? new Date(Number(member.last_seen) * 1000).toLocaleString() : "—"]
+            ];
+            fields.forEach(([label, value]) => {
+                const item = document.createElement("div");
+                const small = document.createElement("small");
+                small.textContent = label;
+                const strong = document.createElement("b");
+                strong.textContent = String(value);
+                item.append(small, strong);
+                details.append(item);
+            });
+
+            card.append(head, details);
+            if (member.description) {
+                const description = document.createElement("p");
+                description.className = "muted";
+                description.textContent = member.description;
+                card.append(description);
+            }
+            fragment.append(card);
+        });
+        if (!data.members || data.members.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "client-empty";
+            empty.textContent = "ამ ქსელში წევრები ჯერ არ მოიძებნა.";
+            fragment.append(empty);
+        }
+        target.replaceChildren(fragment);
+    } catch (error) {
+        target.replaceChildren(Object.assign(document.createElement("p"), {
+            className: "client-empty",
+            textContent: "წევრების ჩატვირთვის შეცდომა: " + error.message
+        }));
+    }
 }
 
 document.getElementById("zerotierRefreshButton")?.addEventListener("click", refreshZeroTier);
+document.getElementById("zerotierMembersRefreshButton")?.addEventListener("click", refreshCentralMembers);
+document.getElementById("zerotierNetworkSelect")?.addEventListener("change", refreshCentralMembers);
 
 /* SYSTEM POWER & RECOVERY */
 async function submitSystemAction(path, phrase, warning) {
@@ -3272,6 +3413,7 @@ async function loadData() {
             );
         }
         if (dataByName.resources) trackResourceNotifications(dataByName.resources);
+        refreshCentralNetworks();
 
         const extraResults = await Promise.allSettled([
             loadInterfaces(),
