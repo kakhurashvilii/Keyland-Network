@@ -207,31 +207,95 @@ def _public_ip(url: str, version: int) -> str | None:
         return None
 
 
-def get_internet_status():
-    """Check connectivity and discover the public IP through the active WAN."""
-    targets = [("1.1.1.1", 443), ("8.8.8.8", 53)]
-    connected = False
-    target = None
-    for host, port in targets:
-        try:
-            with socket.create_connection((host, port), timeout=2):
-                connected = True
-                target = f"{host}:{port}"
-                break
-        except OSError:
-            continue
+def _route_metric(route: dict) -> tuple[int, int]:
+    """Return comparable route/interface metrics across Linux and Windows."""
+    try:
+        route_metric = int(route.get("metric", route.get("RouteMetric", 0)) or 0)
+    except (TypeError, ValueError):
+        route_metric = 0
+    try:
+        interface_metric = int(route.get("InterfaceMetric", 0) or 0)
+    except (TypeError, ValueError):
+        interface_metric = 0
+    return route_metric, interface_metric
 
-    routes = get_routes().get("routes", [])
-    default_route = next(
-        (route for route in routes
-         if route.get("dst", "default") in ("default", "0.0.0.0/0")
-         and route.get("dev")),
-        {},
+
+def _best_default_route(routes: list[dict]) -> dict:
+    """Choose the lowest-metric default route, not whichever appears first."""
+    candidates = [
+        route for route in routes
+        if route.get("dst", route.get("DestinationPrefix", "default"))
+        in ("default", "0.0.0.0/0")
+        and (route.get("dev") or route.get("InterfaceIndex") is not None)
+    ]
+    return min(candidates, key=_route_metric) if candidates else {}
+
+
+def _active_route(destination: str, version: int) -> dict:
+    """Ask the kernel which interface it would actually use for a destination."""
+    if SYSTEM != "linux" or not shutil.which("ip"):
+        return {}
+    command = ["ip"]
+    if version == 6:
+        command.append("-6")
+    command.extend(["-j", "route", "get", destination])
+    result = run_command(command, timeout=3)
+    if not result["success"] or not result["output"]:
+        return {}
+    try:
+        routes = json.loads(result["output"])
+        return routes[0] if isinstance(routes, list) and routes and isinstance(routes[0], dict) else {}
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def _probe_connectivity(host: str, port: int, family: int) -> tuple[bool, str | None]:
+    """Probe one address family without allowing the other family to mask failure."""
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as client:
+            client.settimeout(2)
+            address = (host, port, 0, 0) if family == socket.AF_INET6 else (host, port)
+            client.connect(address)
+        return True, f"{host}:{port}"
+    except OSError:
+        return False, None
+
+
+def get_internet_status():
+    """Check IPv4 and IPv6 independently and report the kernel-selected WAN."""
+    ipv4_connected = False
+    ipv4_target = None
+    for host, port in (("1.1.1.1", 443), ("8.8.8.8", 53)):
+        ipv4_connected, ipv4_target = _probe_connectivity(host, port, socket.AF_INET)
+        if ipv4_connected:
+            break
+
+    ipv6_connected = False
+    ipv6_target = None
+    if getattr(socket, "has_ipv6", False):
+        for host, port in (("2606:4700:4700::1111", 443), ("2001:4860:4860::8888", 443)):
+            ipv6_connected, ipv6_target = _probe_connectivity(host, port, socket.AF_INET6)
+            if ipv6_connected:
+                break
+
+    connected = ipv4_connected or ipv6_connected
+    target = ipv4_target or ipv6_target
+
+    route_data = get_routes()
+    routes = route_data.get("routes", []) if route_data.get("available") else []
+    default_route = _best_default_route(routes)
+
+    # A kernel route lookup accounts for policy rules and the active metric.
+    active_route = (
+        _active_route("1.1.1.1", 4) if ipv4_connected
+        else _active_route("2606:4700:4700::1111", 6) if ipv6_connected
+        else {}
     )
-    wan_interface = default_route.get("dev")
-    if not wan_interface:
-        gateway = get_default_gateway()
-        wan_interface = None
+    selected_route = active_route if active_route.get("dev") else default_route
+
+    wan_interface = selected_route.get("dev")
+    if not wan_interface and selected_route.get("InterfaceIndex") is not None:
+        wan_interface = str(selected_route.get("InterfaceIndex"))
 
     if wan_interface and wan_interface.startswith(("rmnet", "qmap", "wwan", "ppp", "cellular")):
         wan_type = "cellular"
@@ -242,27 +306,39 @@ def get_internet_status():
     else:
         wan_type = None
 
-    local_address = None
+    local_ipv4 = None
+    local_ipv6 = None
     if wan_interface:
         for interface in get_interfaces():
             if interface.get("name") == wan_interface:
-                local_address = next(
+                local_ipv4 = next(
                     (item.get("address") for item in interface.get("addresses", [])
                      if item.get("family") == "IPv4"),
                     None,
                 )
+                local_ipv6 = next(
+                    (item.get("address") for item in interface.get("addresses", [])
+                     if item.get("family") == "IPv6"
+                     and not str(item.get("address", "")).startswith("fe80:")),
+                    None,
+                )
                 break
 
-    public_ipv4 = _public_ip("https://api.ipify.org?format=json", 4) if connected else None
-    public_ipv6 = _public_ip("https://api6.ipify.org?format=json", 6) if connected else None
+    public_ipv4 = _public_ip("https://api.ipify.org?format=json", 4) if ipv4_connected else None
+    public_ipv6 = _public_ip("https://api6.ipify.org?format=json", 6) if ipv6_connected else None
     return {
         "platform": SYSTEM,
         "connected": connected,
+        "ipv4_connected": ipv4_connected,
+        "ipv6_connected": ipv6_connected,
         "target": target,
+        "ipv4_target": ipv4_target,
+        "ipv6_target": ipv6_target,
         "wan_interface": wan_interface,
         "wan_type": wan_type,
-        "gateway": default_route.get("gateway"),
-        "local_ipv4": local_address,
+        "gateway": selected_route.get("gateway", selected_route.get("NextHop")),
+        "local_ipv4": local_ipv4,
+        "local_ipv6": local_ipv6,
         "public_ipv4": public_ipv4,
         "public_ipv6": public_ipv6,
         "public_ip_provider": "api.ipify.org",
@@ -284,21 +360,10 @@ def get_default_gateway():
             "error": result.get("error", "Routing information unavailable"),
         }
 
-    for route in result.get("routes", []):
-        if SYSTEM == "windows":
-            destination = route.get("DestinationPrefix")
-            gateway = route.get("NextHop")
-        else:
-            destination = route.get("dst", "default")
-            gateway = route.get("gateway")
-
-        if destination in ("0.0.0.0/0", "default") and gateway:
-            if gateway not in ("0.0.0.0", "::"):
-                return {
-                    "available": True,
-                    "gateway": gateway,
-                    "error": None,
-                }
+    route = _best_default_route(result.get("routes", []))
+    gateway = route.get("NextHop") if SYSTEM == "windows" else route.get("gateway")
+    if gateway and gateway not in ("0.0.0.0", "::"):
+        return {"available": True, "gateway": gateway, "error": None}
 
     return {
         "available": False,
