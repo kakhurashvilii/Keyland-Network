@@ -215,13 +215,19 @@ def write_state(data: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
-def _clients(ap: str | None) -> list[dict[str, Any]]:
-    """Collect per-station counters and radio statistics from the AP driver."""
+def _clients_status(ap: str | None) -> dict[str, Any]:
+    """Return station data and distinguish an empty AP from failed inspection."""
     if not ap:
-        return []
-    r = run(["iw", "dev", ap, "station", "dump"])
-    if not r["ok"]:
-        return []
+        return {"available": False, "clients": [], "error": "The Keyland AP interface is not configured."}
+
+    result = run(["iw", "dev", ap, "station", "dump"])
+    if not result["ok"]:
+        return {
+            "available": False,
+            "clients": [],
+            "error": str(result.get("err") or result.get("out") or "iw station dump failed."),
+        }
+
     clients: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
     numeric_fields = {
@@ -229,12 +235,16 @@ def _clients(ap: str | None) -> list[dict[str, Any]]:
         "tx_retries", "tx_failed", "connected_time", "inactive_time",
         "expected_throughput",
     }
-    for raw in r["out"].splitlines():
+    for raw in result["out"].splitlines():
         line = raw.strip()
         if line.startswith("Station "):
             if current:
                 clients.append(current)
-            current = {"mac": line.split()[1].lower()}
+            parts = line.split()
+            if len(parts) < 2:
+                current = None
+                continue
+            current = {"mac": parts[1].lower()}
             continue
         if not current or ":" not in line:
             continue
@@ -256,7 +266,12 @@ def _clients(ap: str | None) -> list[dict[str, Any]]:
             current[key] = value
     if current:
         clients.append(current)
-    return clients
+    return {"available": True, "clients": clients, "error": None}
+
+
+def _clients(ap: str | None) -> list[dict[str, Any]]:
+    """Backward-compatible client list helper."""
+    return _clients_status(ap)["clients"]
 
 
 def status() -> dict[str, Any]:
@@ -266,10 +281,22 @@ def status() -> dict[str, Any]:
         for key in ("hostapd_pid", "dnsmasq_pid"):
             try: os.kill(int(state[key]), 0); alive[key] = True
             except (OSError, KeyError, ValueError, TypeError): alive[key] = False
-    return {"configured": bool(state), "active": bool(state and all(alive.values())),
-            "configuration": {k:v for k,v in (state or {}).items()
-                              if k not in ("password", "hostapd_pid", "dnsmasq_pid")},
-            "processes": alive, "interfaces": interfaces(), "default_routes": defaults(), "clients": _clients(state.get("interface") if state else None)}
+    client_status = _clients_status(state.get("interface") if state else None)
+    return {
+        "configured": bool(state),
+        "active": bool(state and all(alive.values())),
+        "configuration": {
+            k: v for k, v in (state or {}).items()
+            if k not in ("password", "hostapd_pid", "dnsmasq_pid")
+        },
+        "processes": alive,
+        "interfaces": interfaces(),
+        "default_routes": defaults(),
+        "clients": client_status["clients"],
+        "clients_available": client_status["available"],
+        "clients_error": client_status["error"],
+        "clients_count": len(client_status["clients"]),
+    }
 
 
 
