@@ -21,7 +21,95 @@ def valid_network_id(network_id: str) -> bool:
     return bool(_NETWORK_ID_RE.fullmatch(network_id or ""))
 
 
+def valid_member_id(member_id: str) -> bool:
+    return bool(re.fullmatch(r"^[0-9a-fA-F]{10}$", member_id or ""))
+
+
+def _central_request(
+    method: str,
+    path: str,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    token = os.getenv(TOKEN_ENV, "").strip()
+    if not token:
+        return {"configured": False, "available": False,
+                "error": f"{TOKEN_ENV} is not configured", "data": None}
+
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    request = Request(
+        f"{BASE_URL}{path}",
+        data=body,
+        headers={
+            "Authorization": f"token {token}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "Keyland-Network/1.5",
+        },
+        method=method,
+    )
+    try:
+        with urlopen(request, timeout=12) as response:
+            raw = response.read()
+            parsed = json.loads(raw.decode("utf-8")) if raw else {}
+        return {"configured": True, "available": True, "error": None, "data": parsed}
+    except HTTPError as exc:
+        messages = {
+            400: "Central API rejected the request (HTTP 400)",
+            401: "Central API token was rejected (HTTP 401)",
+            403: "Token does not have permission (HTTP 403)",
+            404: "Network or member was not found (HTTP 404)",
+            409: "Central API reported a conflict (HTTP 409)",
+            429: "Central API rate limit reached (HTTP 429)",
+        }
+        return {"configured": True, "available": False,
+                "error": messages.get(exc.code, f"Central API request failed (HTTP {exc.code})"),
+                "data": None}
+    except URLError:
+        return {"configured": True, "available": False,
+                "error": "Could not connect to ZeroTier Central", "data": None}
+    except (TimeoutError, OSError):
+        return {"configured": True, "available": False,
+                "error": "Central API connection timed out or failed", "data": None}
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return {"configured": True, "available": False,
+                "error": "Central API returned invalid JSON", "data": None}
+
+
 def _central_get(path: str) -> dict[str, Any]:
+    return _central_request("GET", path)
+
+
+def set_central_member_authorization(
+    network_id: str, member_id: str, authorized: bool
+) -> dict[str, Any]:
+    if not valid_network_id(network_id) or not valid_member_id(member_id):
+        return {"success": False, "error": "Invalid network or member ID"}
+    result = _central_request(
+        "POST",
+        f"/network/{network_id}/member/{member_id}",
+        {"config": {"authorized": bool(authorized)}},
+    )
+    if not result["available"]:
+        return {"success": False, "error": result["error"]}
+    return {"success": True, "member": result["data"]}
+
+
+def update_central_network(network_id: str, config: dict[str, Any]) -> dict[str, Any]:
+    if not valid_network_id(network_id):
+        return {"success": False, "error": "Invalid ZeroTier network ID"}
+    allowed = {"name", "description", "private", "routes", "ipAssignmentPools", "dns"}
+    clean = {key: value for key, value in config.items() if key in allowed}
+    if not clean:
+        return {"success": False, "error": "No supported network settings supplied"}
+    result = _central_request(
+        "POST", f"/network/{network_id}", {"config": clean}
+    )
+    if not result["available"]:
+        return {"success": False, "error": result["error"]}
+    return {"success": True, "network": _network_summary(result["data"]) if isinstance(result["data"], dict) else result["data"]}
+
+
+
     token = os.getenv(TOKEN_ENV, "").strip()
     if not token:
         return {
