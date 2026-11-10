@@ -88,7 +88,8 @@ def test_create_virtual_ap_sets_ap_mode_when_driver_creates_managed_interface():
         "interface_combinations": {"ap_client_combination_mentioned": True},
     }
 
-    with patch.object(hotspot, "get_hotspot_capabilities", return_value=preflight), \
+    with patch.object(hotspot.shutil, "which", return_value="/usr/bin/fake"), \
+         patch.object(hotspot, "get_hotspot_capabilities", return_value=preflight), \
          patch.object(hotspot, "_wifi_interfaces", side_effect=interface_snapshots), \
          patch.object(hotspot, "_run", side_effect=fake_run):
         result = hotspot.create_virtual_ap("wlan0", True)
