@@ -3678,13 +3678,28 @@ function renderHotspotClients(status) {
     const count = element("hotspotClientCount");
     if (!list || !count) return;
     const clients = Array.isArray(status?.clients) ? status.clients : [];
+    if (status?.clients_available === false) {
+        count.textContent = tr("მონაცემები მიუწვდომელია", "data unavailable");
+        list.replaceChildren();
+        const unavailable = document.createElement("div");
+        unavailable.className = "client-empty";
+        unavailable.textContent = status.clients_error
+            ? tr("კლიენტების სიის წაკითხვა ვერ მოხერხდა: ", "Could not read client list: ") + status.clients_error
+            : tr("Wi-Fi კლიენტების მონაცემები მიუწვდომელია.", "Wi-Fi client data is unavailable.");
+        list.append(unavailable);
+        hotspotClientSamples.clear();
+        return;
+    }
+
     count.textContent = clients.length + " " + tr("მოწყობილობა", "devices");
 
     if (!status?.active || clients.length === 0) {
         list.replaceChildren();
         const empty = document.createElement("div");
         empty.className = "client-empty";
-        empty.textContent = "Hotspot გამორთულია ან დაკავშირებული მოწყობილობები არ არის.";
+        empty.textContent = !status?.active
+            ? tr("Hotspot გამორთულია.", "Hotspot is stopped.")
+            : tr("დაკავშირებული მოწყობილობები არ არის.", "No devices are connected.");
         list.append(empty);
         hotspotClientSamples.clear();
         return;
