@@ -3678,7 +3678,7 @@ function renderHotspotClients(status) {
     const count = element("hotspotClientCount");
     if (!list || !count) return;
     const clients = Array.isArray(status?.clients) ? status.clients : [];
-    if (status?.clients_available === false) {
+    if (status?.active && status?.clients_available === false) {
         count.textContent = tr("მონაცემები მიუწვდომელია", "data unavailable");
         list.replaceChildren();
         const unavailable = document.createElement("div");
