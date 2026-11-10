@@ -67,8 +67,12 @@ def _write_settings(settings: dict) -> None:
 
 def _router_action(action: str) -> dict:
     try:
+        command = ["/usr/local/sbin/keyland-routerctl"]
+        if os.geteuid() != 0:
+            command = ["sudo", "-n", *command]
+
         proc = subprocess.run(
-            ["sudo", "-n", "/usr/local/sbin/keyland-routerctl"],
+            command,
             input=json.dumps({"action": action, "payload": {}}),
             capture_output=True, text=True, timeout=20, check=False,
         )

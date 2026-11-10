@@ -1290,9 +1290,9 @@ def captive_enable() -> dict[str, Any]:
  chain prerouting {{
   type nat hook prerouting priority -110; policy accept;
   iifname "{ap}" ip saddr . ether saddr @authorized_clients tcp dport 80 return
-  iifname "{ap}" ip protocol tcp tcp dport 80 dnat to {gateway_ip}:8088
-  iifname "{ap}" udp dport 53 dnat to {gateway_ip}:53
-  iifname "{ap}" tcp dport 53 dnat to {gateway_ip}:53
+  iifname "{ap}" ip protocol tcp tcp dport 80 dnat ip to {gateway_ip}:8088
+  iifname "{ap}" udp dport 53 dnat ip to {gateway_ip}:53
+  iifname "{ap}" tcp dport 53 dnat ip to {gateway_ip}:53
  }}
  chain input {{
   type filter hook input priority -20; policy accept;
