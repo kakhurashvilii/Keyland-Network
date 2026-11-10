@@ -2699,7 +2699,7 @@ async function refreshCentralMembers() {
                 ["Node ID", member.id || "—"],
                 ["Managed IP", (member.ip_assignments || []).join(", ") || "—"],
                 ["Physical address", member.physical_address || "—"],
-                ["Last seen", member.last_seen ? new Date(Number(member.last_seen) * 1000).toLocaleString() : "—"]
+                ["Last seen", member.last_seen ? new Date(Number(member.last_seen)).toLocaleString() : "—"]
             ];
             fields.forEach(([label, value]) => {
                 const item = document.createElement("div");
