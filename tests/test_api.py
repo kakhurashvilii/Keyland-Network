@@ -394,3 +394,75 @@ def test_zerotier_network_update_validates_route():
               "confirmation_text": "UPDATE NETWORK 9e1948db63b1d491"},
     )
     assert response.status_code == 422
+
+
+
+def test_zerotier_central_member_authorize_posts_expected_config(monkeypatch):
+    import json
+    import keyland.adapters.zerotier.central as central
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return b'{"id":"1cc1eac232","config":{"authorized":true}}'
+
+    def fake_urlopen(request, timeout):
+        assert request.get_method() == "POST"
+        assert request.full_url.endswith(
+            "/network/9e1948db63b1d491/member/1cc1eac232"
+        )
+        assert json.loads(request.data.decode("utf-8")) == {
+            "config": {"authorized": True}
+        }
+        assert request.get_header("Authorization") == "token test-central-token"
+        return FakeResponse()
+
+    monkeypatch.setenv("KEYLAND_ZEROTIER_CENTRAL_TOKEN", "test-central-token")
+    monkeypatch.setattr(central, "urlopen", fake_urlopen)
+    response = client.post(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/members/1cc1eac232/authorize",
+        json={"confirmed": True, "confirmation_text": "AUTHORIZE 1cc1eac232"},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+
+def test_zerotier_central_network_settings_posts_config(monkeypatch):
+    import json
+    import keyland.adapters.zerotier.central as central
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def read(self):
+            return b'{"id":"9e1948db63b1d491","config":{"name":"Keyland"}}'
+
+    def fake_urlopen(request, timeout):
+        assert request.get_method() == "POST"
+        payload = json.loads(request.data.decode("utf-8"))
+        assert payload["config"]["name"] == "Keyland"
+        assert payload["config"]["private"] is True
+        assert payload["config"]["routes"] == [
+            {"target": "192.168.50.0/24", "via": "192.168.5.15"}
+        ]
+        return FakeResponse()
+
+    monkeypatch.setenv("KEYLAND_ZEROTIER_CENTRAL_TOKEN", "test-central-token")
+    monkeypatch.setattr(central, "urlopen", fake_urlopen)
+    response = client.post(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/settings",
+        json={
+            "name": "Keyland",
+            "private": True,
+            "routes": [{"target": "192.168.50.0/24", "via": "192.168.5.15"}],
+            "confirmed": True,
+            "confirmation_text": "UPDATE NETWORK 9e1948db63b1d491",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
