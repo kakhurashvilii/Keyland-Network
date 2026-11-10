@@ -1589,6 +1589,80 @@ footer { color:#7187a4; }
 @media(max-width:900px){.portal-editor-layout{grid-template-columns:1fr}.portal-preview-wrap{position:static}.portal-preview{min-height:480px}}
 @media(max-width:560px){.portal-field-grid{grid-template-columns:1fr}.portal-field-wide{grid-column:auto}.portal-runtime-note{display:block}.portal-runtime-note strong{display:block;margin-bottom:4px}.portal-preview{min-height:450px;padding:20px 15px}}
 
+
+/* ZeroTier — compact, readable network operations panel */
+.zt-panel{padding:22px!important;background:linear-gradient(145deg,rgba(18,32,51,.99),rgba(12,23,39,.99))!important}
+.zt-panel-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.zt-panel-head h3{margin:4px 0 3px!important;font-size:16px!important}
+.zt-panel-head p{margin:0;font-size:12px}
+.zt-eyebrow{display:block;color:#75baff;font-size:9px;font-weight:850;letter-spacing:.16em}
+.zt-state{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:6px 10px;border:1px solid #38516e;border-radius:999px;background:#17283c;color:#c5d8ef;font-size:10px;font-weight:800;letter-spacing:.04em}
+.zt-state-online{border-color:rgba(37,199,138,.35);background:rgba(37,199,138,.1);color:#65e5b4}
+.zt-state-offline{border-color:rgba(240,100,112,.35);background:rgba(240,100,112,.1);color:#ff9aa3}
+.zt-state-warn{border-color:rgba(240,164,59,.35);background:rgba(240,164,59,.1);color:#ffd18b}
+.zt-state-wait{color:#b8c9dd}
+.zt-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.zt-metric{min-width:0;padding:13px 14px;border:1px solid #2a405a;border-radius:11px;background:rgba(7,16,29,.52)}
+.zt-metric-label,.zt-metric-note{display:block;color:#8fa4bf;font-size:10px}
+.zt-metric-value{display:block;margin:5px 0 2px;color:#eef5ff;font-size:17px;overflow-wrap:anywhere}
+.zt-metric-note{font-size:9px}
+.zt-subhead,.zt-members-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:23px 0 12px;padding-bottom:9px;border-bottom:1px solid #2a3c53}
+.zt-subhead h4,.zt-members-heading h4{margin:0;font-size:13px;color:#e1ecfa}
+.zt-subhead p{margin:3px 0 0;font-size:10px}
+.zt-network-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.zt-network-card,.zt-peer-card{min-width:0;padding:14px;border:1px solid #2b415c;border-radius:12px;background:rgba(7,16,29,.48)}
+.zt-network-head,.zt-peer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.zt-network-name{display:block;font-size:14px;color:#f0f5fd}
+.zt-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;color:#8fb8e9;overflow-wrap:anywhere}
+.zt-network-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:13px 0;color:#b7c8dc;font-size:10px}
+.zt-route-list{padding-top:10px;border-top:1px solid #26394f}
+.zt-route{margin-top:5px;padding:7px 9px;border-radius:7px;background:#122239;color:#d0e2f7;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+.zt-use-network{margin:10px 0 0!important}
+.zt-count,.zt-central-mark{padding:6px 10px;border:1px solid #2b4664;border-radius:8px;background:#12243a;color:#8fc1ff;font-size:10px;font-weight:750;white-space:nowrap}
+.zt-peer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
+.zt-peer-role{padding:4px 7px;border-radius:6px;background:#1a2c43;color:#9fc5f4;font-size:9px;font-weight:800}
+.zt-peer-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px;color:#a9bbd1;font-size:10px}
+.zt-peer-facts span{overflow-wrap:anywhere}
+.zt-empty{padding:15px;border:1px dashed #344a64;border-radius:9px;color:#91a5bf;font-size:11px}
+.zt-control-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:18px}
+.zt-control-actions,.zt-toolbar-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.zt-control-actions button,.zt-toolbar-actions button{margin:0!important}
+.zt-warning{margin:8px 0;color:#d9ad72;font-size:10px}
+.zt-message{margin:10px 0 0;padding:10px 12px;border:1px solid #30455e;border-radius:9px;background:rgba(8,17,30,.45);color:#b9cbe1;font-size:11px;overflow-wrap:anywhere}
+.zt-error{border-color:rgba(240,100,112,.35);color:#ff9aa3}
+.zt-central-toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:14px;border:1px solid #2b405a;border-radius:11px;background:rgba(7,16,29,.42)}
+.zt-select-wrap{flex:1;min-width:180px}
+.zt-select-wrap label{margin-top:0}
+.zt-select-wrap select{margin-bottom:0}
+.zt-members-heading{margin-top:20px}
+.zt-advanced{margin-top:18px;border:1px solid #2a405a;border-radius:11px;background:rgba(7,16,29,.35)}
+.zt-advanced>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;color:#dce9f8;font-size:12px;font-weight:750;cursor:pointer;list-style:none}
+.zt-advanced>summary::-webkit-details-marker{display:none}
+.zt-advanced>summary::after{content:"＋";color:#83baff;font-size:17px}
+.zt-advanced[open]>summary::after{content:"−"}
+.zt-advanced>summary button{margin:0!important}
+.zt-advanced-body{padding:0 15px 15px}
+.zt-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
+.zt-raw{margin:12px 0}
+.zt-raw summary{color:#9fb6d2;font-size:11px;cursor:pointer}
+.zt-raw pre{max-height:220px}
+.zt-diagnostics>summary{flex-wrap:wrap}
+.zt-diagnostics>summary>span{display:flex;flex-direction:column;gap:3px}
+.zt-diagnostics>summary strong{font-size:13px}
+.zt-diagnostics>p,.zt-diagnostics>pre{margin:0 14px 14px}
+@media(max-width:700px){
+ .zt-panel{padding:16px!important}
+ .zt-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .zt-metric{padding:11px}
+ .zt-metric-value{font-size:15px}
+ .zt-panel-head{align-items:flex-start}
+ .zt-control-grid,.zt-central-toolbar{grid-template-columns:1fr;display:grid}
+ .zt-control-actions,.zt-toolbar-actions{display:grid;grid-template-columns:1fr 1fr}
+ .zt-control-actions button,.zt-toolbar-actions button{width:100%;font-size:10px;padding:9px 7px}
+ .zt-config-grid{grid-template-columns:1fr}
+ .zt-network-facts{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 
@@ -2114,64 +2188,66 @@ footer { color:#7187a4; }
             <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
-        <div id="zerotier-section" class="section-heading"><div><span class="section-kicker">ZT / ZERO TIER</span><h2>ZeroTier Network Manager</h2><p>სერვისი, ქსელები, წევრები, peers, routes, DNS და დიაგნოსტიკა</p></div></div>
+        <div id="zerotier-section" class="section-heading">
+            <div><span class="section-kicker">NETWORK SERVICES / ZT</span><h2>ZeroTier</h2><p>ვირტუალური ქსელის მდგომარეობა, კავშირები და Central-ის მართვა</p></div>
+            <button type="button" id="zerotierRefreshButton" class="secondary">↻ განახლება</button>
+        </div>
 
-        <section class="card" style="grid-column:1/-1">
-            <h3>Overview · ლოკალური ZeroTier აგენტი</h3>
-            <p class="muted">სერვისის მდგომარეობა, Node ID, ქსელები და peers. ცვლილებები ცალკე დადასტურებას მოითხოვს.</p>
-            <pre id="zerotierStatus">ZeroTier მონაცემები იტვირთება...</pre>
-            <button type="button" id="zerotierRefreshButton" class="secondary">მონაცემების განახლება</button>
-            <h4>Peers / კავშირები · latency · path</h4>
-            <pre id="zerotierPeers">Peers იტვირთება...</pre>
+        <section class="card zt-panel" style="grid-column:1/-1">
+            <div class="zt-panel-head">
+                <div><span class="zt-eyebrow">LOCAL AGENT</span><h3>ლოკალური ZeroTier აგენტი</h3><p class="muted">მიმდინარე მოწყობილობის კავშირისა და სერვისის მდგომარეობა</p></div>
+                <span id="zerotierAgentBadge" class="zt-state zt-state-wait">მოწმდება...</span>
+            </div>
+            <div id="zerotierStatus" class="zt-metrics" aria-live="polite"><div class="zt-empty">ZeroTier მონაცემები იტვირთება...</div></div>
+            <div class="zt-subhead"><div><h4>ჩართული ქსელები</h4><p class="muted">ქსელის მისამართები, DNS და მარშრუტები</p></div></div>
+            <div id="zerotierNetworks" class="zt-network-grid"><div class="zt-empty">ქსელები იტვირთება...</div></div>
         </section>
 
-        <section class="card" style="grid-column:1/-1">
-            <h3>Networks · მიერთება და გათიშვა</h3>
-            <p class="muted">მოქმედებს მხოლოდ ამ OnePlus მოწყობილობის ZeroTier კავშირზე. გათიშვამ შეიძლება შეწყვიტოს მიმდინარე ZeroTier SSH სესია.</p>
-            <label for="zerotierLocalNetworkId">Network ID (16 hex სიმბოლო)</label>
-            <input id="zerotierLocalNetworkId" maxlength="16" autocomplete="off" spellcheck="false" placeholder="9e1948db63b1d491">
-            <div class="button-row">
-                <button type="button" id="zerotierJoinButton">ქსელთან მიერთება</button>
-                <button type="button" id="zerotierLeaveButton" class="danger">ქსელიდან გათიშვა</button>
-            </div>
-            <p id="zerotierLocalActionMessage" class="muted" role="status"></p>
+        <section class="card zt-panel" style="grid-column:1/-1">
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">PEER CONNECTIONS</span><h3>მოწყობილობებთან კავშირები</h3><p class="muted">Peer-ების სტატუსი, როლი, დაყოვნება და აქტიური გზა</p></div><span id="zerotierPeerCount" class="zt-count">—</span></div>
+            <div id="zerotierPeers" class="zt-peer-grid" aria-live="polite"><div class="zt-empty">Peers იტვირთება...</div></div>
         </section>
 
-        <section class="card" style="grid-column:1/-1">
-            <h3>Central · Networks, Members / Devices</h3>
-            <p class="muted">Legacy Central API token ინახება მხოლოდ Keyland სერვერზე. ცვლილებები ითხოვს ადმინისტრატორის დადასტურებას. New Central Service Account token-ს ცალკე API ინტეგრაცია სჭირდება.</p>
-            <div id="zerotierCentralMessage" class="client-empty" role="status">Central API-ის მდგომარეობა მოწმდება...</div>
-            <label for="zerotierNetworkSelect">Central ქსელი</label>
-            <select id="zerotierNetworkSelect" disabled><option value="">ქსელები ჯერ არ ჩატვირთულა</option></select>
-            <div class="button-row">
-                <button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button>
-                <button type="button" id="zerotierNetworkRefreshButton" class="secondary">ქსელების განახლება</button>
+        <section class="card zt-panel" style="grid-column:1/-1">
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">LOCAL NETWORK CONTROL</span><h3>ქსელთან მიერთება / გათიშვა</h3><p class="muted">მართავს მხოლოდ ამ მოწყობილობის ადგილობრივ ZeroTier კავშირს.</p></div></div>
+            <div class="zt-control-grid">
+                <div><label for="zerotierLocalNetworkId">Network ID</label><input id="zerotierLocalNetworkId" maxlength="16" autocomplete="off" spellcheck="false" placeholder="16 სიმბოლო, hex"></div>
+                <div class="zt-control-actions"><button type="button" id="zerotierJoinButton">ქსელთან მიერთება</button><button type="button" id="zerotierLeaveButton" class="danger">ქსელიდან გათიშვა</button></div>
             </div>
-            <h4>Routes & DNS · ქსელის პარამეტრები</h4>
-            <pre id="zerotierNetworkConfig">აირჩიე Central ქსელი.</pre>
-            <label for="zerotierNetworkName">ქსელის სახელი</label>
-            <input id="zerotierNetworkName" maxlength="128" placeholder="Network name">
-            <label for="zerotierNetworkPrivate">წვდომის კონტროლი</label>
-            <select id="zerotierNetworkPrivate">
-                <option value="true">Private — ავტორიზაცია აუცილებელია</option>
-                <option value="false">Public — ავტორიზაცია არ მოითხოვება</option>
-            </select>
-            <label for="zerotierDnsServers">DNS სერვერები (მძიმით გამოყოფილი IP-ები)</label>
-            <input id="zerotierDnsServers" placeholder="192.168.5.10, 1.1.1.1">
-            <label for="zerotierDnsDomain">DNS დომენი (არასავალდებულო)</label>
-            <input id="zerotierDnsDomain" maxlength="253" placeholder="pve.zt">
-            <label for="zerotierRoutes">Managed routes · JSON მასივი</label>
-            <textarea id="zerotierRoutes" rows="3" placeholder='[{"target":"192.168.50.0/24","via":"192.168.5.15"}]'></textarea>
-            <button type="button" id="zerotierSaveNetworkButton">ქსელის პარამეტრების შენახვა</button>
-            <p id="zerotierNetworkActionMessage" class="muted" role="status"></p>
-            <h4>Members / Devices</h4>
+            <p class="zt-warning">გაფრთხილება: ZeroTier-ით მიმდინარე SSH კავშირი შეიძლება გაწყდეს, თუ იმავე ქსელიდან გამოხვალ.</p>
+            <p id="zerotierLocalActionMessage" class="zt-message" role="status"></p>
+        </section>
+
+        <section class="card zt-panel" style="grid-column:1/-1">
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">ZERO TIER CENTRAL</span><h3>Central — ქსელები და მოწყობილობები</h3><p class="muted">ქსელის წევრებისა და ავტორიზაციის მართვა. API Token ინახება მხოლოდ Keyland სერვერზე.</p></div><span class="zt-central-mark">CENTRAL</span></div>
+            <div id="zerotierCentralMessage" class="zt-message zt-central-message" role="status">Central API-ის მდგომარეობა მოწმდება...</div>
+            <div class="zt-central-toolbar"><div class="zt-select-wrap"><label for="zerotierNetworkSelect">ასარჩევი Central ქსელი</label><select id="zerotierNetworkSelect" disabled><option value="">ქსელები ჯერ არ ჩატვირთულა</option></select></div><div class="zt-toolbar-actions"><button type="button" id="zerotierNetworkRefreshButton" class="secondary">ქსელების განახლება</button><button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button></div></div>
+            <div class="zt-members-heading"><h4>ქსელის წევრები</h4><span class="muted">წვდომის სტატუსი და მოწყობილობის ინფორმაცია</span></div>
             <div id="zerotierMembers" class="client-list" aria-live="polite"><p class="client-empty">აირჩიე ქსელი წევრების სანახავად.</p></div>
+            <details class="zt-advanced">
+                <summary>ქსელის გაფართოებული პარამეტრები · DNS / Routes / Privacy</summary>
+                <div class="zt-advanced-body">
+                    <div class="zt-config-grid">
+                        <div><label for="zerotierNetworkName">ქსელის სახელი</label><input id="zerotierNetworkName" maxlength="128" placeholder="Network name"></div>
+                        <div><label for="zerotierNetworkPrivate">წვდომის კონტროლი</label><select id="zerotierNetworkPrivate"><option value="true">Private — ავტორიზაცია აუცილებელია</option><option value="false">Public — ავტორიზაცია არ მოითხოვება</option></select></div>
+                        <div><label for="zerotierDnsServers">DNS სერვერები</label><input id="zerotierDnsServers" placeholder="192.168.5.10, 1.1.1.1"></div>
+                        <div><label for="zerotierDnsDomain">DNS დომენი</label><input id="zerotierDnsDomain" maxlength="253" placeholder="pve.zt"></div>
+                    </div>
+                    <label for="zerotierRoutes">Managed routes · JSON მასივი</label>
+                    <textarea id="zerotierRoutes" rows="4" placeholder='[{"target":"192.168.50.0/24","via":"192.168.5.15"}]'></textarea>
+                    <details class="zt-raw"><summary>მიმდინარე Central კონფიგურაციის JSON</summary><pre id="zerotierNetworkConfig">აირჩიე Central ქსელი.</pre></details>
+                    <button type="button" id="zerotierSaveNetworkButton">ცვლილებების შენახვა</button>
+                    <p id="zerotierNetworkActionMessage" class="zt-message" role="status"></p>
+                </div>
+            </details>
         </section>
 
-        <section class="card" style="grid-column:1/-1">
-            <h3>Diagnostics · სერვისი და ლოგები</h3>
-            <button type="button" id="zerotierDiagnosticsButton" class="secondary">დიაგნოსტიკისა და ბოლო 100 ლოგის ნახვა</button>
-            <pre id="zerotierDiagnostics">დიაგნოსტიკა ჯერ არ ჩატვირთულა.</pre>
+        <section class="card zt-panel" style="grid-column:1/-1">
+            <details class="zt-advanced zt-diagnostics">
+                <summary><span><span class="zt-eyebrow">TROUBLESHOOTING</span><strong>დიაგნოსტიკა და სერვისის ლოგები</strong></span><button type="button" id="zerotierDiagnosticsButton" class="secondary">დიაგნოსტიკის ჩატვირთვა</button></summary>
+                <p class="muted">სერვისის სტატუსი და ბოლო 100 ჟურნალური ჩანაწერი.</p>
+                <pre id="zerotierDiagnostics">დიაგნოსტიკა ჯერ არ ჩატვირთულა.</pre>
+            </details>
         </section>
 
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
@@ -2634,17 +2710,102 @@ async function fetchJSON(endpoint) {
     return response.json();
 }
 
+function ztNode(tag, className, value) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (value !== undefined && value !== null) node.textContent = String(value);
+    return node;
+}
+function ztMetric(label, value, note) {
+    const card = ztNode("div", "zt-metric");
+    card.append(ztNode("span", "zt-metric-label", label), ztNode("strong", "zt-metric-value", value || "—"));
+    if (note) card.append(ztNode("small", "zt-metric-note", note));
+    return card;
+}
+function renderZeroTierStatus(data) {
+    const info = data.info || {};
+    const settings = info.config?.settings || {};
+    const networks = Array.isArray(data.networks) ? data.networks : [];
+    const peers = Array.isArray(data.peers) ? data.peers : [];
+    const badge = element("zerotierAgentBadge");
+    badge.textContent = info.online ? "ONLINE · აქტიური" : data.available ? "OFFLINE · კავშირი არ არის" : "NOT AVAILABLE";
+    badge.className = "zt-state " + (info.online ? "zt-state-online" : "zt-state-offline");
+    const status = element("zerotierStatus");
+    status.replaceChildren(
+        ztMetric("Node ID", info.address, "ამ მოწყობილობის იდენტიფიკატორი"),
+        ztMetric("ZeroTier ვერსია", info.version, "ლოკალური აგენტი"),
+        ztMetric("სერვისი", data.service, "zerotier-one"),
+        ztMetric("ქსელები", networks.length, "ჩართული ქსელები"),
+        ztMetric("Peers", peers.filter(p => p.role !== "PLANET").length, "მოწყობილობებთან კავშირები"),
+        ztMetric("Listening port", settings.primaryPort, "ძირითადი პორტი")
+    );
+    const networkTarget = element("zerotierNetworks");
+    networkTarget.replaceChildren();
+    if (!networks.length) networkTarget.append(ztNode("p", "zt-empty", "ჩართული ქსელები ვერ მოიძებნა."));
+    networks.forEach(network => {
+        const card = ztNode("article", "zt-network-card");
+        const head = ztNode("div", "zt-network-head");
+        const title = ztNode("div");
+        title.append(ztNode("strong", "zt-network-name", network.name || "სახელის გარეშე ქსელი"));
+        title.append(ztNode("small", "zt-mono", network.nwid || network.id || "—"));
+        head.append(title, ztNode("span", "zt-state " + (network.status === "OK" ? "zt-state-online" : "zt-state-warn"), network.status || "UNKNOWN"));
+        card.append(head);
+        const facts = ztNode("div", "zt-network-facts");
+        [["IP მისამართი",(network.assignedAddresses || []).join(", ") || "—"],["ინტერფეისი",network.portDeviceName || "—"],["ტიპი",network.type || "—"],["DNS",(network.dns?.servers || []).join(", ") || "—"],["DNS დომენი",network.dns?.domain || "—"],["MTU",network.mtu || "—"]].forEach(([k,v]) => facts.append(ztNode("div", "", k + ": " + v)));
+        card.append(facts);
+        const routes = Array.isArray(network.routes) ? network.routes : [];
+        if (routes.length) {
+            const routeList = ztNode("div", "zt-route-list");
+            routeList.append(ztNode("small", "zt-metric-label", "მარშრუტები"));
+            routes.forEach(route => routeList.append(ztNode("div", "zt-route", (route.target || "—") + (route.via ? "  →  " + route.via : "  ·  პირდაპირი"))));
+            card.append(routeList);
+        }
+        const use = ztNode("button", "secondary zt-use-network", "Network ID-ის გამოყენება");
+        use.type = "button";
+        use.addEventListener("click", () => {
+            element("zerotierLocalNetworkId").value = network.nwid || network.id || "";
+            element("zerotierLocalNetworkId").scrollIntoView({behavior:"smooth",block:"center"});
+        });
+        card.append(use);
+        networkTarget.append(card);
+    });
+    const peerTarget = element("zerotierPeers");
+    const peerCount = element("zerotierPeerCount");
+    const nonPlanet = peers.filter(peer => peer.role !== "PLANET");
+    peerCount.textContent = nonPlanet.length + " მოწყობილობა · " + peers.length + " სულ";
+    peerTarget.replaceChildren();
+    if (!peers.length) peerTarget.append(ztNode("p", "zt-empty", "Peer-ები ვერ მოიძებნა."));
+    peers.forEach(peer => {
+        const card = ztNode("article", "zt-peer-card");
+        const head = ztNode("div", "zt-peer-head");
+        head.append(ztNode("strong", "zt-mono", peer.address || "უცნობი ID"));
+        head.append(ztNode("span", "zt-peer-role", peer.role || "PEER"));
+        card.append(head);
+        const preferred = (peer.paths || []).find(path => path.preferred) || (peer.paths || []).find(path => path.active);
+        const facts = ztNode("div", "zt-peer-facts");
+        facts.append(ztNode("span", "", peer.latency >= 0 ? peer.latency + " ms latency" : "Latency —"));
+        facts.append(ztNode("span", "", "Paths: " + (peer.paths || []).length));
+        facts.append(ztNode("span", "", preferred?.address || "აქტიური გზა —"));
+        facts.append(ztNode("span", "", peer.version || "ვერსია —"));
+        card.append(facts);
+        peerTarget.append(card);
+    });
+    if (data.errors?.length) {
+        const errors = ztNode("p", "zt-message zt-error", data.errors.join(" · "));
+        status.append(errors);
+    }
+}
 async function refreshZeroTier() {
     const target = element("zerotierStatus");
     if (!target || !state.authenticated) return;
-    target.textContent = "ZeroTier მონაცემები იტვირთება...";
+    target.replaceChildren(ztNode("div", "zt-empty", "ZeroTier მონაცემები იტვირთება..."));
     try {
         const data = await fetchJSON(API + "/zerotier/status");
-        target.textContent = JSON.stringify(data, null, 2);
-        const peers = element("zerotierPeers");
-        if (peers) peers.textContent = JSON.stringify(data.peers || [], null, 2);
+        renderZeroTierStatus(data);
     } catch (error) {
-        target.textContent = "ZeroTier API შეცდომა: " + error.message;
+        target.replaceChildren(ztNode("div", "zt-message zt-error", "ZeroTier API შეცდომა: " + error.message));
+        element("zerotierAgentBadge").textContent = "შეცდომა";
+        element("zerotierAgentBadge").className = "zt-state zt-state-offline";
     }
     await refreshCentralNetworks();
 }
