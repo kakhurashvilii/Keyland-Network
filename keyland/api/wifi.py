@@ -95,6 +95,8 @@ class VirtualApRequest(BaseModel):
 
 @router.post("/create-interface")
 def hotspot_create_interface(payload: VirtualApRequest, user: dict = Depends(require_admin)):
+    if payload.confirmed is not True:
+        raise HTTPException(status_code=400, detail="Explicit administrator confirmation is required.")
     result = _call_router_helper("prepare", {
         "interface": payload.interface,
         "ap_interface": payload.ap_interface,
