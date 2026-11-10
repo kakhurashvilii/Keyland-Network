@@ -55,7 +55,7 @@ from keyland.api.wan_wlan0 import router as wan_wlan0_router
 from keyland.api.captive_portal import router as captive_portal_router
 
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
