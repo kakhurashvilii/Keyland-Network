@@ -11,3 +11,4 @@ v0.8.0	SIM SMS inbox / sent / delete, დაცული Linux Shell ტერ�
 v1.0.0	რამდენიმე მოწყობილობის ცენტრალიზებული მართვა
 v1.0.1	DNS მოთხოვნების ისტორია, router helper-ის DNS მხარდაჭერა და უსაფრთხო shutdown/autostart შენარჩუნება
 v1.0.3	Device Internet Activity — DNS მოთხოვნების დაჯგუფება მოწყობილობის მიხედვით, ძებნა და განახლებული მართვის პანელი
+v1.2.1	WAN metric-aware detection, independent IPv4/IPv6 monitoring, Wi-Fi client diagnostics, distinct Factory Reset scopes and unprivileged web terminal
