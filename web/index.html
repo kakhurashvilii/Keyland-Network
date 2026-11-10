@@ -1685,6 +1685,7 @@ footer { color:#7187a4; }
     <a href="#portal-section" class="nav-portal"><span class="nav-index">P1</span><span><strong>Captive Portal</strong><small>სტუმრების წვდომა</small></span></a>
     <a href="#activity-section"><span class="nav-index">A1</span><span><strong>Device Activity</strong><small>საიტების ისტორია</small></span></a>
     <a href="#repeater-section"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
+    <a href="#zerotier-section"><span class="nav-index">ZT</span><span><strong>ZeroTier</strong><small>ვირტუალური ქსელი და მოწყობილობები</small></span></a>
     <a href="#network-section"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
     <div class="nav-group-label">მოწყობილობა</div>
     <a href="#system-section"><span class="nav-index">05</span><span><strong>სისტემა</strong><small>მდგომარეობა და დიაგნოსტიკა</small></span></a>
@@ -2113,6 +2114,15 @@ footer { color:#7187a4; }
             <details class="diagnostic-details"><summary>დამატებითი დიაგნოსტიკა</summary><pre id="repeaterStatus">მზადყოფნის შემოწმება იტვირთება...</pre></details>
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
+        <div id="zerotier-section" class="section-heading"><div><span class="section-kicker">ZT / ZERO TIER</span><h2>ZeroTier ქსელის მართვა</h2><p>სერვისის, Node ID-ის, ქსელებისა და Peers-ის მონიტორინგი</p></div></div>
+
+        <section class="card" style="grid-column:1/-1">
+            <h3>ZeroTier მდგომარეობა</h3>
+            <p class="muted">მხოლოდ წაკითხვის რეჟიმი — ქსელის კონფიგურაცია და მარშრუტები არ იცვლება.</p>
+            <pre id="zerotierStatus">ZeroTier მონაცემები იტვირთება...</pre>
+            <button type="button" id="zerotierRefreshButton" class="secondary">ZeroTier მონაცემების განახლება</button>
+        </section>
+
         <div id="network-section" class="section-heading"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
 
         <section class="card">
@@ -2572,6 +2582,21 @@ async function fetchJSON(endpoint) {
 
     return response.json();
 }
+
+async function refreshZeroTier() {
+    const target = element("zerotierStatus");
+    if (!target || !state.authenticated) return;
+
+    target.textContent = "ZeroTier მონაცემები იტვირთება...";
+    try {
+        const data = await fetchJSON(API + "/zerotier/status");
+        target.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        target.textContent = "ZeroTier API შეცდომა: " + error.message;
+    }
+}
+
+document.getElementById("zerotierRefreshButton")?.addEventListener("click", refreshZeroTier);
 
 /* SYSTEM POWER & RECOVERY */
 async function submitSystemAction(path, phrase, warning) {
@@ -3138,7 +3163,8 @@ async function loadData() {
         ["traffic", API + "/network/traffic"],
         ["internet", API + "/network/internet"],
         ["cellularStatus", API + "/cellular/status"],
-        ["cellularUsage", API + "/cellular/usage"]
+        ["cellularUsage", API + "/cellular/usage"],
+        ["zerotierStatus", API + "/zerotier/status"]
     ];
 
     try {
