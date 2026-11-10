@@ -1,4 +1,4 @@
-"""ZeroTier Legacy Central API integration.
+"""ZeroTier Legacy Central API integration and network administration.
 
 The API token is read only from the server environment and is never returned
 to callers or sent to the browser.
