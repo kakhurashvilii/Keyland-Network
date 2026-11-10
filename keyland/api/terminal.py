@@ -13,6 +13,8 @@ import os
 import pty
 import re
 import signal
+import shutil
+import pwd
 import subprocess
 import struct
 import sys
@@ -83,6 +85,49 @@ def _same_origin(websocket: WebSocket) -> bool:
         return False
 
 
+def _terminal_launch_config() -> tuple[list[str], dict[str, str], str, str]:
+    """Build a shell launch that never inherits root privileges or API secrets."""
+    if os.geteuid() == 0:
+        username = os.environ.get("KEYLAND_TERMINAL_USER", "nobody").strip() or "nobody"
+        try:
+            account = pwd.getpwnam(username)
+        except KeyError as exc:
+            raise RuntimeError(f"Unprivileged terminal account '{username}' does not exist.") from exc
+        if account.pw_uid == 0:
+            raise RuntimeError("The terminal account must not be root.")
+        setpriv = shutil.which("setpriv")
+        if not setpriv:
+            raise RuntimeError("setpriv is required to drop root privileges for the web terminal.")
+        command_prefix = [
+            setpriv,
+            f"--reuid={account.pw_uid}",
+            f"--regid={account.pw_gid}",
+            "--clear-groups",
+        ]
+        privilege = "unprivileged"
+    else:
+        account = pwd.getpwuid(os.geteuid())
+        username = account.pw_name
+        command_prefix = []
+        privilege = "service-user"
+
+    home = account.pw_dir if account.pw_dir and os.path.isdir(account.pw_dir) else "/tmp"
+    # Never pass JWT secrets, database paths or root environment into the shell.
+    env = {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": home,
+        "USER": username,
+        "LOGNAME": username,
+        "SHELL": account.pw_shell or "/bin/bash",
+        "TERM": "xterm-256color",
+        "COLORTERM": "truecolor",
+    }
+    for key in ("LANG", "LC_ALL", "LC_CTYPE"):
+        value = os.environ.get(key)
+        if value:
+            env[key] = value
+    return command_prefix, env, username, privilege
+
 
 async def _read_pty(fd: int) -> bytes:
     loop = asyncio.get_running_loop()
@@ -125,8 +170,16 @@ async def terminal_socket(websocket: WebSocket):
     try:
         master_fd, slave_fd = pty.openpty()
         fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 100, 0, 0))
-        env = os.environ.copy()
-        env.update({"TERM": "xterm-256color", "COLORTERM": "truecolor"})
+        try:
+            command_prefix, env, terminal_user, privilege = _terminal_launch_config()
+        except (RuntimeError, KeyError, OSError) as exc:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": f"Terminal could not start safely: {exc}",
+            }))
+            await websocket.close(code=1011, reason="Safe terminal identity unavailable")
+            return
+
         # A small Python bootstrap acquires the PTY as the controlling
         # terminal, then replaces itself with an interactive login Bash.
         bootstrap = (
@@ -135,7 +188,7 @@ async def terminal_socket(websocket: WebSocket):
             "os.execv('/bin/bash', ['/bin/bash', '--login', '-i'])"
         )
         process = subprocess.Popen(
-            [sys.executable, "-c", bootstrap],
+            command_prefix + [sys.executable, "-c", bootstrap],
             stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
             cwd=str(ROOT), env=env, close_fds=True,
             start_new_session=True,
@@ -145,8 +198,9 @@ async def terminal_socket(websocket: WebSocket):
         await websocket.send_text(json.dumps({
             "type": "ready",
             "username": username,
+            "terminal_user": terminal_user,
             "cwd": str(ROOT),
-            "privilege": "root" if os.geteuid() == 0 else "service-user",
+            "privilege": privilege,
             "max_session_seconds": MAX_SESSION_SECONDS,
             "idle_timeout_seconds": IDLE_TIMEOUT,
         }))
