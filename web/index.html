@@ -2642,11 +2642,7 @@ async function refreshZeroTier() {
         const data = await fetchJSON(API + "/zerotier/status");
         target.textContent = JSON.stringify(data, null, 2);
         const peers = element("zerotierPeers");
-        if (peers) peers.textContent = JSON.stringify((data.peers || []).map(peer => ({
-            address: peer.address, role: peer.role, latency: peer.latency,
-            link: peer.link, path: peer.path, lastReceive: peer.lastReceive,
-            lastSend: peer.lastSend
-        })), null, 2);
+        if (peers) peers.textContent = JSON.stringify(data.peers || [], null, 2);
     } catch (error) {
         target.textContent = "ZeroTier API შეცდომა: " + error.message;
     }
