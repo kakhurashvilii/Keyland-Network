@@ -48,7 +48,7 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "1.4.0"
+    assert response.json()["version"] == "1.5.0"
     assert response.json()["api"] == "v1"
     assert response.json()["management"]["dns"] == "/api/v1/network/dns"
 
@@ -335,3 +335,62 @@ def test_zerotier_central_members_requires_admin():
         "/api/v1/zerotier/central/networks/9e1948db63b1d491/members"
     )
     assert response.status_code == 401
+
+
+
+def test_zerotier_diagnostics_requires_admin():
+    assert unauth_client.get("/api/v1/zerotier/diagnostics").status_code == 401
+
+
+def test_zerotier_join_requires_admin():
+    response = unauth_client.post(
+        "/api/v1/zerotier/local/join",
+        json={"network_id": "9e1948db63b1d491", "confirmed": True,
+              "confirmation_text": "JOIN NETWORK 9e1948db63b1d491"},
+    )
+    assert response.status_code == 401
+
+
+def test_zerotier_join_requires_exact_confirmation():
+    response = client.post(
+        "/api/v1/zerotier/local/join",
+        json={"network_id": "9e1948db63b1d491", "confirmed": False,
+              "confirmation_text": ""},
+    )
+    assert response.status_code == 400
+    assert "Explicit confirmation required" in response.json()["detail"]
+
+
+def test_zerotier_leave_rejects_invalid_network_id():
+    response = client.post(
+        "/api/v1/zerotier/local/leave",
+        json={"network_id": "not-a-network-id", "confirmed": True,
+              "confirmation_text": "LEAVE NETWORK not-a-network-id"},
+    )
+    assert response.status_code == 422
+
+
+def test_zerotier_member_authorization_requires_confirmation():
+    response = client.post(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/members/1cc1eac232/authorize",
+        json={"confirmed": False, "confirmation_text": ""},
+    )
+    assert response.status_code == 400
+
+
+def test_zerotier_network_update_requires_confirmation():
+    response = client.post(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/settings",
+        json={"name": "Keyland test", "confirmed": False,
+              "confirmation_text": ""},
+    )
+    assert response.status_code == 400
+
+
+def test_zerotier_network_update_validates_route():
+    response = client.post(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/settings",
+        json={"routes": [{"target": "not-a-cidr"}], "confirmed": True,
+              "confirmation_text": "UPDATE NETWORK 9e1948db63b1d491"},
+    )
+    assert response.status_code == 422
