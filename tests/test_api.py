@@ -48,7 +48,7 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "1.3.0"
+    assert response.json()["version"] == "1.4.0"
     assert response.json()["api"] == "v1"
     assert response.json()["management"]["dns"] == "/api/v1/network/dns"
 
@@ -305,3 +305,33 @@ def test_zerotier_status_endpoint():
     assert "networks" in data
     assert "peers" in data
     assert data["read_only"] is True
+
+
+
+def test_zerotier_central_networks_requires_admin():
+    response = unauth_client.get("/api/v1/zerotier/central/networks")
+    assert response.status_code == 401
+
+
+def test_zerotier_central_networks_without_token(monkeypatch):
+    monkeypatch.delenv("KEYLAND_ZEROTIER_CENTRAL_TOKEN", raising=False)
+    response = client.get("/api/v1/zerotier/central/networks")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["configured"] is False
+    assert data["available"] is False
+    assert data["networks"] == []
+
+
+def test_zerotier_central_members_rejects_invalid_network_id():
+    response = client.get(
+        "/api/v1/zerotier/central/networks/not-a-network-id/members"
+    )
+    assert response.status_code == 400
+
+
+def test_zerotier_central_members_requires_admin():
+    response = unauth_client.get(
+        "/api/v1/zerotier/central/networks/9e1948db63b1d491/members"
+    )
+    assert response.status_code == 401
