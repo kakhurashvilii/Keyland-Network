@@ -217,7 +217,9 @@ def _route_metric(route: dict) -> tuple[int, int]:
         interface_metric = int(route.get("InterfaceMetric", 0) or 0)
     except (TypeError, ValueError):
         interface_metric = 0
-    return route_metric, interface_metric
+    if "InterfaceMetric" in route:
+        return route_metric + interface_metric, 0
+    return route_metric, 0
 
 
 def _best_default_route(routes: list[dict]) -> dict:
@@ -293,7 +295,7 @@ def get_internet_status():
     )
     selected_route = active_route if active_route.get("dev") else default_route
 
-    wan_interface = selected_route.get("dev")
+    wan_interface = selected_route.get("dev") or selected_route.get("InterfaceAlias")
     if not wan_interface and selected_route.get("InterfaceIndex") is not None:
         wan_interface = str(selected_route.get("InterfaceIndex"))
 
@@ -547,7 +549,7 @@ def get_routes():
         command = (
             "Get-NetRoute -AddressFamily IPv4 "
             "| Select-Object DestinationPrefix,NextHop,"
-            "InterfaceIndex,RouteMetric,Protocol "
+            "InterfaceIndex,InterfaceAlias,RouteMetric,InterfaceMetric,Protocol "
             "| ConvertTo-Json -Depth 3 -Compress"
         )
 
