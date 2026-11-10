@@ -111,7 +111,7 @@ def _terminal_launch_config() -> tuple[list[str], dict[str, str], str, str]:
         command_prefix = []
         privilege = "service-user"
 
-    home = account.pw_dir if account.pw_dir and os.path.isdir(account.pw_dir) else "/tmp"
+    home = account.pw_dir or "/nonexistent"
     # Never pass JWT secrets, database paths or root environment into the shell.
     env = {
         "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
