@@ -99,11 +99,14 @@ def test_validate_rejects_disabled_or_dfs_5ghz_channel():
             router._validate(base_payload(band="5", channel=52))
 
 
-def test_repeater_must_follow_upstream_channel():
+def test_repeater_automatically_follows_upstream_channel():
     patches = patch_preflight()
     with patches[0], patches[1], patches[2], patches[3]:
-        with pytest.raises(ValueError, match="Repeater AP must use"):
-            router._validate(base_payload(mode="repeater", upstream_interface="wlan0", band="5", channel=36))
+        result = router._validate(
+            base_payload(mode="repeater", upstream_interface="wlan0", band="5", channel=36)
+        )
+    assert result["band"] == "2.4"
+    assert result["channel"] == 6
 
 
 def test_prepare_ap_converts_only_dedicated_interface():
