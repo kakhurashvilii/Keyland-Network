@@ -48,7 +48,7 @@ def test_health():
     response = unauth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "online"
-    assert response.json()["version"] == "1.2.1"
+    assert response.json()["version"] == "1.3.0"
     assert response.json()["api"] == "v1"
     assert response.json()["management"]["dns"] == "/api/v1/network/dns"
 
@@ -289,3 +289,19 @@ def test_hotspot_virtual_interface_requires_confirmation():
         json={"interface": "wlan0", "confirmed": False},
     )
     assert response.status_code == 400
+
+
+
+def test_zerotier_status_requires_admin():
+    response = unauth_client.get("/api/v1/zerotier/status")
+    assert response.status_code == 401
+
+
+def test_zerotier_status_endpoint():
+    response = client.get("/api/v1/zerotier/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "service" in data
+    assert "networks" in data
+    assert "peers" in data
+    assert data["read_only"] is True
