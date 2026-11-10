@@ -168,7 +168,7 @@ def get_central_members(network_id: str) -> dict[str, Any]:
             "physical_address": item.get("physicalAddress"),
             "ip_assignments": item.get("ipAssignments") or config.get("ipAssignments") or [],
             "last_seen": item.get("lastSeen"),
-            "last_authorized_time": item.get("lastAuthorizedTime"),
+            "last_authorized_time": item.get("lastAuthorizedTime") or config.get("lastAuthorizedTime"),
             "client_version": item.get("clientVersion"),
             "protocol_version": item.get("protocolVersion"),
         })
