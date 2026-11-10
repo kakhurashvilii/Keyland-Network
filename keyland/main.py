@@ -53,9 +53,10 @@ from keyland.api.sms import router as sms_router
 from keyland.api.terminal import router as terminal_router
 from keyland.api.wan_wlan0 import router as wan_wlan0_router
 from keyland.api.captive_portal import router as captive_portal_router
+from keyland.api.zerotier import router as zerotier_router
 
 
-VERSION = "1.2.1"
+VERSION = "1.3.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 COOKIE_SECURE = os.getenv("KEYLAND_COOKIE_SECURE", "false").lower() == "true"
@@ -76,6 +77,7 @@ app.include_router(sms_router)
 app.include_router(terminal_router)
 app.include_router(wan_wlan0_router)
 app.include_router(captive_portal_router)
+app.include_router(zerotier_router)
 
 
 @app.middleware("http")
