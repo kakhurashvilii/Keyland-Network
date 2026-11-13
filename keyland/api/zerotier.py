@@ -209,7 +209,7 @@ def zerotier_update_network(
     if payload.dns_servers is not None or payload.dns_domain is not None:
         config["dns"] = {
             "servers": payload.dns_servers or [],
-            **({"domain": payload.dns_domain} if payload.dns_domain else {}),
+            **({"domain": payload.dns_domain} if payload.dns_domain is not None else {}),
         }
     if not config:
         raise HTTPException(status_code=400, detail="No network settings supplied")
