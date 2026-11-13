@@ -2210,7 +2210,7 @@ footer { color:#7187a4; }
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
         <div id="zerotier-section" class="section-heading">
-            <div><span class="section-kicker">NETWORK SERVICES / PRIVATE NETWORK</span><h2>ZeroTier მართვა</h2><p>ლოკალური აგენტი, ქსელები, მოწყობილობები და Central-ის კონტროლი ერთ სივრცეში</p></div>
+            <div><span class="section-kicker">NETWORK SERVICES / PRIVATE NETWORK</span><h2>ZeroTier — პირადი ქსელების მართვა</h2><p>ამ მოწყობილობის კავშირი, მიერთებული ქსელები და Peer-ები. ადგილობრივი სტატუსი Central API-ისგან დამოუკიდებლად იტვირთება.</p></div>
             <button type="button" id="zerotierRefreshButton" class="secondary">↻ მონაცემების განახლება</button>
         </div>
 
@@ -2220,17 +2220,17 @@ footer { color:#7187a4; }
                 <span id="zerotierAgentBadge" class="zt-state zt-state-wait">მოწმდება...</span>
             </div>
             <div id="zerotierStatus" class="zt-metrics" aria-live="polite"><div class="zt-empty">ZeroTier მონაცემები იტვირთება...</div></div>
-            <div class="zt-subhead"><div><h4>ჩართული ქსელები</h4><p>ქსელის მისამართები, DNS და მარშრუტები</p></div></div>
+            <div class="zt-subhead"><div><h4>ამ მოწყობილობაზე მიერთებული ქსელები</h4><p>ლოკალური ZeroTier Agent-იდან მიღებული Network ID, IP მისამართები, ინტერფეისი და მარშრუტები</p></div></div>
             <div id="zerotierNetworks" class="zt-network-grid"><div class="zt-empty">ქსელები იტვირთება...</div></div>
         </section>
 
         <section class="card zt-panel" style="grid-column:1/-1">
-            <div class="zt-panel-head"><div><span class="zt-eyebrow">CONNECTED DEVICES / PEERS</span><h3>მოწყობილობებთან კავშირები</h3><p>Peer-ების როლი, დაყოვნება და აქტიური ქსელური გზა</p></div><span id="zerotierPeerCount" class="zt-count">—</span></div>
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">CONNECTED DEVICES / PEERS</span><h3>Peer კავშირები</h3><p>ZeroTier კვანძები, მათი როლი, დაყოვნება და აქტიური ქსელური გზა. PLANET ჩანაწერები ინფრასტრუქტურაა და არა შენი ქსელის მოწყობილობები.</p></div><span id="zerotierPeerCount" class="zt-count">—</span></div>
             <div id="zerotierPeers" class="zt-peer-grid" aria-live="polite"><div class="zt-empty">Peer-ების სია იტვირთება...</div></div>
         </section>
 
         <section class="card zt-panel" style="grid-column:1/-1">
-            <div class="zt-panel-head"><div><span class="zt-eyebrow">LOCAL NETWORK CONTROL</span><h3>ქსელთან მიერთება / გათიშვა</h3><p class="muted">მართავს მხოლოდ ამ მოწყობილობის ადგილობრივ ZeroTier კავშირს.</p></div></div>
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">LOCAL NETWORK CONTROL</span><h3>ქსელთან მიერთება / გათიშვა</h3><p class="muted">მართავს მხოლოდ ამ OnePlus/Kali მოწყობილობის ადგილობრივ ZeroTier წევრობას. Central-ის API Token ამისთვის საჭირო არ არის.</p></div></div>
             <div class="zt-control-grid">
                 <div><label for="zerotierLocalNetworkId">Network ID</label><input id="zerotierLocalNetworkId" maxlength="16" autocomplete="off" spellcheck="false" placeholder="16 სიმბოლო, hex"></div>
                 <div class="zt-control-actions"><button type="button" id="zerotierJoinButton">ქსელთან მიერთება</button><button type="button" id="zerotierLeaveButton" class="danger">ქსელიდან გათიშვა</button></div>
@@ -2240,7 +2240,7 @@ footer { color:#7187a4; }
         </section>
 
         <section class="card zt-panel" style="grid-column:1/-1">
-            <div class="zt-panel-head"><div><span class="zt-eyebrow">ZERO TIER CENTRAL</span><h3>Central — ქსელები და მოწყობილობები</h3><p class="muted">ქსელის წევრებისა და ავტორიზაციის მართვა. API Token ინახება მხოლოდ Keyland სერვერზე.</p></div><span class="zt-central-mark">CENTRAL</span></div>
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">ZERO TIER CENTRAL</span><h3>Central — ქსელები და მოწყობილობები</h3><p class="muted">ZeroTier Central-ის ღრუბლოვანი მართვა: ქსელების, წევრებისა და ავტორიზაციის კონტროლი. ეს განყოფილება არჩევითია; Token ინახება მხოლოდ Keyland სერვერზე.</p></div><span class="zt-central-mark">CENTRAL</span></div>
             <div id="zerotierCentralMessage" class="zt-message zt-central-message" role="status">Central API-ის მდგომარეობა მოწმდება...</div>
             <div class="zt-central-toolbar"><div class="zt-select-wrap"><label for="zerotierNetworkSelect">ასარჩევი Central ქსელი</label><select id="zerotierNetworkSelect" disabled><option value="">ქსელები ჯერ არ ჩატვირთულა</option></select></div><div class="zt-toolbar-actions"><button type="button" id="zerotierNetworkRefreshButton" class="secondary">ქსელების განახლება</button><button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button></div></div>
             <div class="zt-members-heading"><h4>ქსელის წევრები</h4><span class="muted">წვდომის სტატუსი და მოწყობილობის ინფორმაცია</span></div>
@@ -2374,6 +2374,7 @@ const state = {
     interfaceLoading: false,
     pollingTimer: null,
     smsPollingTimer: null,
+    zerotierPollingTimer: null,
     smsLoading: false,
     sessionCheckInProgress: false
 };
@@ -2825,8 +2826,14 @@ async function refreshZeroTier() {
         renderZeroTierStatus(data);
     } catch (error) {
         target.replaceChildren(ztNode("div", "zt-message zt-error", "ZeroTier API შეცდომა: " + error.message));
-        element("zerotierAgentBadge").textContent = "შეცდომა";
+        element("zerotierAgentBadge").textContent = "API შეცდომა";
         element("zerotierAgentBadge").className = "zt-state zt-state-offline";
+        const networks = element("zerotierNetworks");
+        const peers = element("zerotierPeers");
+        const count = element("zerotierPeerCount");
+        if (networks) networks.replaceChildren(ztNode("div", "zt-message zt-error", "ქსელების სია ვერ ჩაიტვირთა. შეამოწმე ადგილობრივი ZeroTier API."));
+        if (peers) peers.replaceChildren(ztNode("div", "zt-message zt-error", "Peer-ების სია ვერ ჩაიტვირთა."));
+        if (count) count.textContent = "მიუწვდომელია";
     }
     await refreshCentralNetworks();
 }
@@ -5136,6 +5143,11 @@ function startPolling() {
     loadDnsStatus();
     loadHotspotCapabilities();
     refreshSms(true);
+    refreshZeroTier();
+
+    state.zerotierPollingTimer = setInterval(() => {
+        if (state.authenticated) refreshZeroTier();
+    }, 30000);
 
     state.pollingTimer = setInterval(() => {
         if (state.authenticated) loadData();
@@ -5158,6 +5170,10 @@ function stopPolling() {
     if (state.smsPollingTimer !== null) {
         clearInterval(state.smsPollingTimer);
         state.smsPollingTimer = null;
+    }
+    if (state.zerotierPollingTimer !== null) {
+        clearInterval(state.zerotierPollingTimer);
+        state.zerotierPollingTimer = null;
     }
 }
 
