@@ -1590,68 +1590,100 @@ footer { color:#7187a4; }
 @media(max-width:560px){.portal-field-grid{grid-template-columns:1fr}.portal-field-wide{grid-column:auto}.portal-runtime-note{display:block}.portal-runtime-note strong{display:block;margin-bottom:4px}.portal-preview{min-height:450px;padding:20px 15px}}
 
 
-/* ZeroTier — compact, readable network operations panel */
-.zt-panel{padding:22px!important;background:linear-gradient(145deg,rgba(18,32,51,.99),rgba(12,23,39,.99))!important}
-.zt-panel-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
-.zt-panel-head h3{margin:4px 0 3px!important;font-size:16px!important}
-.zt-panel-head p{margin:0;font-size:12px}
-.zt-eyebrow{display:block;color:#75baff;font-size:9px;font-weight:850;letter-spacing:.16em}
-.zt-state{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:6px 10px;border:1px solid #38516e;border-radius:999px;background:#17283c;color:#c5d8ef;font-size:10px;font-weight:800;letter-spacing:.04em}
-.zt-state-online{border-color:rgba(37,199,138,.35);background:rgba(37,199,138,.1);color:#65e5b4}
-.zt-state-offline{border-color:rgba(240,100,112,.35);background:rgba(240,100,112,.1);color:#ff9aa3}
-.zt-state-warn{border-color:rgba(240,164,59,.35);background:rgba(240,164,59,.1);color:#ffd18b}
+/* ZeroTier — clean network operations workspace */
+.zt-panel{
+ padding:24px!important;
+ border:1px solid #2b405b!important;
+ border-radius:16px!important;
+ background:linear-gradient(145deg,#14243a 0%,#101c2e 68%,#0e1929 100%)!important;
+ box-shadow:0 14px 34px rgba(0,0,0,.16)!important;
+}
+.zt-panel-head{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:20px}
+.zt-panel-head h3{margin:5px 0 4px!important;color:#f1f6ff!important;font-size:16px!important;font-weight:750!important}
+.zt-panel-head p{margin:0;font-size:12px;color:#93a7c0}
+.zt-eyebrow{display:block;color:#79baff;font-size:9px;font-weight:850;letter-spacing:.17em}
+.zt-state{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;padding:7px 11px;border:1px solid #3b526e;border-radius:999px;background:#1a2b42;color:#c8d8eb;font-size:10px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+.zt-state-online{border-color:rgba(45,211,153,.34);background:rgba(45,211,153,.1);color:#6be6b8}
+.zt-state-offline{border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.1);color:#ff9ca9}
+.zt-state-warn{border-color:rgba(240,178,78,.35);background:rgba(240,178,78,.1);color:#ffd18b}
 .zt-state-wait{color:#b8c9dd}
-.zt-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.zt-metric{min-width:0;padding:13px 14px;border:1px solid #2a405a;border-radius:11px;background:rgba(7,16,29,.52)}
-.zt-metric-label,.zt-metric-note{display:block;color:#8fa4bf;font-size:10px}
-.zt-metric-value{display:block;margin:5px 0 2px;color:#eef5ff;font-size:17px;overflow-wrap:anywhere}
+.zt-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.zt-metric{min-width:0;min-height:91px;padding:15px 16px;border:1px solid #2a405b;border-radius:12px;background:rgba(7,16,29,.42)}
+.zt-metric-label,.zt-metric-note{display:block;color:#91a6c0;font-size:10px}
+.zt-metric-value{display:block;margin:7px 0 3px;color:#f0f6ff;font-size:18px;font-weight:750;letter-spacing:-.025em;overflow-wrap:anywhere}
 .zt-metric-note{font-size:9px}
-.zt-subhead,.zt-members-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:23px 0 12px;padding-bottom:9px;border-bottom:1px solid #2a3c53}
-.zt-subhead h4,.zt-members-heading h4{margin:0;font-size:13px;color:#e1ecfa}
-.zt-subhead p{margin:3px 0 0;font-size:10px}
-.zt-network-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
-.zt-network-card,.zt-peer-card{min-width:0;padding:14px;border:1px solid #2b415c;border-radius:12px;background:rgba(7,16,29,.48)}
-.zt-network-head,.zt-peer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.zt-network-name{display:block;font-size:14px;color:#f0f5fd}
-.zt-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;color:#8fb8e9;overflow-wrap:anywhere}
-.zt-network-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:13px 0;color:#b7c8dc;font-size:10px}
-.zt-route-list{padding-top:10px;border-top:1px solid #26394f}
-.zt-route{margin-top:5px;padding:7px 9px;border-radius:7px;background:#122239;color:#d0e2f7;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
-.zt-use-network{margin:10px 0 0!important}
-.zt-count,.zt-central-mark{padding:6px 10px;border:1px solid #2b4664;border-radius:8px;background:#12243a;color:#8fc1ff;font-size:10px;font-weight:750;white-space:nowrap}
-.zt-peer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
-.zt-peer-role{padding:4px 7px;border-radius:6px;background:#1a2c43;color:#9fc5f4;font-size:9px;font-weight:800}
-.zt-peer-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px;color:#a9bbd1;font-size:10px}
-.zt-peer-facts span{overflow-wrap:anywhere}
-.zt-empty{padding:15px;border:1px dashed #344a64;border-radius:9px;color:#91a5bf;font-size:11px}
+.zt-subhead,.zt-members-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:26px 0 13px;padding-bottom:10px;border-bottom:1px solid #2b4059}
+.zt-subhead h4,.zt-members-heading h4{margin:0;color:#eaf2fd;font-size:14px;font-weight:750}
+.zt-subhead p{margin:4px 0 0;color:#8fa4be;font-size:11px}
+.zt-network-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:13px}
+.zt-network-card,.zt-peer-card{min-width:0;padding:16px;border:1px solid #2b415d;border-radius:13px;background:rgba(7,16,29,.38);transition:border-color .18s,background .18s}
+.zt-network-card:hover,.zt-peer-card:hover{border-color:#4a6c93;background:rgba(12,26,44,.72)}
+.zt-network-head,.zt-peer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.zt-network-name{display:block;color:#f1f6ff;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+.zt-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;color:#91bdf0;overflow-wrap:anywhere}
+.zt-network-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0;color:#c0cfe0;font-size:10px}
+.zt-network-facts>div{min-width:0;padding:9px 10px;border:1px solid rgba(52,76,105,.55);border-radius:8px;background:rgba(18,35,56,.55);overflow-wrap:anywhere}
+.zt-route-list{padding-top:12px;border-top:1px solid #293d55}
+.zt-route{margin-top:6px;padding:8px 10px;border-radius:8px;background:#14263d;color:#d0e2f7;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+.zt-use-network{margin:12px 0 0!important}
+.zt-count,.zt-central-mark{padding:7px 11px;border:1px solid #2d4968;border-radius:8px;background:#142943;color:#9ac9ff;font-size:10px;font-weight:800;white-space:nowrap}
+.zt-peer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:11px}
+.zt-peer-role{padding:5px 8px;border:1px solid #344d6a;border-radius:7px;background:#1a2d45;color:#a9cdf7;font-size:9px;font-weight:850;letter-spacing:.05em}
+.zt-peer-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px;color:#b7c7da;font-size:10px}
+.zt-peer-facts span{min-width:0;padding:8px 9px;border-radius:7px;background:rgba(19,37,59,.7);overflow-wrap:anywhere}
+.zt-empty{grid-column:1/-1;padding:17px;border:1px dashed #3b526e;border-radius:10px;color:#9aadc5;font-size:11px;text-align:center}
 .zt-control-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:18px}
-.zt-control-actions,.zt-toolbar-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.zt-control-actions,.zt-toolbar-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .zt-control-actions button,.zt-toolbar-actions button{margin:0!important}
-.zt-warning{margin:8px 0;color:#d9ad72;font-size:10px}
-.zt-message{margin:10px 0 0;padding:10px 12px;border:1px solid #30455e;border-radius:9px;background:rgba(8,17,30,.45);color:#b9cbe1;font-size:11px;overflow-wrap:anywhere}
-.zt-error{border-color:rgba(240,100,112,.35);color:#ff9aa3}
-.zt-central-toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:14px;border:1px solid #2b405a;border-radius:11px;background:rgba(7,16,29,.42)}
+.zt-warning{margin:10px 0;color:#d9ad72;font-size:10px;line-height:1.6}
+.zt-message{margin:12px 0 0;padding:11px 13px;border:1px solid #304761;border-radius:9px;background:rgba(7,16,29,.4);color:#bfd0e4;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.zt-error{border-color:rgba(251,113,133,.35);color:#ff9ca9}
+.zt-central-toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:16px;border:1px solid #2b405a;border-radius:12px;background:rgba(7,16,29,.36)}
 .zt-select-wrap{flex:1;min-width:180px}
 .zt-select-wrap label{margin-top:0}
 .zt-select-wrap select{margin-bottom:0}
-.zt-members-heading{margin-top:20px}
-.zt-advanced{margin-top:18px;border:1px solid #2a405a;border-radius:11px;background:rgba(7,16,29,.35)}
-.zt-advanced>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;color:#dce9f8;font-size:12px;font-weight:750;cursor:pointer;list-style:none}
+.zt-members-heading{margin-top:22px}
+.zt-advanced{margin-top:18px;border:1px solid #2b405a;border-radius:12px;background:rgba(7,16,29,.28);overflow:hidden}
+.zt-advanced>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;color:#e0ebf9;font-size:12px;font-weight:750;cursor:pointer;list-style:none}
 .zt-advanced>summary::-webkit-details-marker{display:none}
 .zt-advanced>summary::after{content:"＋";color:#83baff;font-size:17px}
 .zt-advanced[open]>summary::after{content:"−"}
 .zt-advanced>summary button{margin:0!important}
-.zt-advanced-body{padding:0 15px 15px}
+.zt-advanced-body{padding:0 16px 16px}
 .zt-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
-.zt-raw{margin:12px 0}
-.zt-raw summary{color:#9fb6d2;font-size:11px;cursor:pointer}
+.zt-raw{margin:14px 0}
+.zt-raw summary{color:#a9bfd9;font-size:11px;cursor:pointer}
 .zt-raw pre{max-height:220px}
 .zt-diagnostics>summary{flex-wrap:wrap}
-.zt-diagnostics>summary>span{display:flex;flex-direction:column;gap:3px}
+.zt-diagnostics>summary>span{display:flex;flex-direction:column;gap:4px}
 .zt-diagnostics>summary strong{font-size:13px}
-.zt-diagnostics>p,.zt-diagnostics>pre{margin:0 14px 14px}
+.zt-diagnostics>p,.zt-diagnostics>pre{margin:0 16px 16px}
+#zerotier-section{scroll-margin-top:22px}
+@media(max-width:900px){
+ .zt-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .zt-control-grid,.zt-central-toolbar{grid-template-columns:1fr;display:grid}
+ .zt-control-actions,.zt-toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:700px){
- .zt-panel{padding:16px!important}
+ .zt-panel{padding:17px!important}
+ .zt-panel-head{align-items:flex-start}
+ .zt-metrics{gap:8px}
+ .zt-metric{min-height:82px;padding:11px}
+ .zt-metric-value{font-size:15px}
+ .zt-control-actions,.zt-toolbar-actions{grid-template-columns:1fr 1fr}
+ .zt-control-actions button,.zt-toolbar-actions button{width:100%;font-size:10px;padding:9px 7px}
+ .zt-config-grid{grid-template-columns:1fr}
+ .zt-network-facts{grid-template-columns:1fr 1fr}
+ .zt-subhead,.zt-members-heading{align-items:flex-start}
+}
+@media(max-width:420px){
+ .zt-metrics{grid-template-columns:1fr 1fr}
+ .zt-network-facts{grid-template-columns:1fr}
+ .zt-panel-head{gap:9px}
+ .zt-state{font-size:9px;padding:6px 8px}
+}
+
+
  .zt-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  .zt-metric{padding:11px}
  .zt-metric-value{font-size:15px}
@@ -2189,23 +2221,23 @@ footer { color:#7187a4; }
             <p class="muted">ერთ რადიოზე Repeater და Hotspot ერთ არხს იყენებს. აქტიური Hotspot-ის დროს upstream Wi-Fi-ის შეცვლა ან გათიშვა დაიბლოკება, რათა კავშირი მოულოდნელად არ დაირღვეს.</p>
         </section>
         <div id="zerotier-section" class="section-heading">
-            <div><span class="section-kicker">NETWORK SERVICES / ZT</span><h2>ZeroTier</h2><p>ვირტუალური ქსელის მდგომარეობა, კავშირები და Central-ის მართვა</p></div>
-            <button type="button" id="zerotierRefreshButton" class="secondary">↻ განახლება</button>
+            <div><span class="section-kicker">NETWORK SERVICES / PRIVATE NETWORK</span><h2>ZeroTier მართვა</h2><p>ლოკალური აგენტი, ქსელები, მოწყობილობები და Central-ის კონტროლი ერთ სივრცეში</p></div>
+            <button type="button" id="zerotierRefreshButton" class="secondary">↻ მონაცემების განახლება</button>
         </div>
 
         <section class="card zt-panel" style="grid-column:1/-1">
             <div class="zt-panel-head">
-                <div><span class="zt-eyebrow">LOCAL AGENT</span><h3>ლოკალური ZeroTier აგენტი</h3><p class="muted">მიმდინარე მოწყობილობის კავშირისა და სერვისის მდგომარეობა</p></div>
+                <div><span class="zt-eyebrow">LOCAL AGENT / DEVICE STATUS</span><h3>ლოკალური აგენტი</h3><p>ამ მოწყობილობის ZeroTier კავშირი და ტექნიკური მდგომარეობა</p></div>
                 <span id="zerotierAgentBadge" class="zt-state zt-state-wait">მოწმდება...</span>
             </div>
             <div id="zerotierStatus" class="zt-metrics" aria-live="polite"><div class="zt-empty">ZeroTier მონაცემები იტვირთება...</div></div>
-            <div class="zt-subhead"><div><h4>ჩართული ქსელები</h4><p class="muted">ქსელის მისამართები, DNS და მარშრუტები</p></div></div>
+            <div class="zt-subhead"><div><h4>ჩართული ქსელები</h4><p>ქსელის მისამართები, DNS და მარშრუტები</p></div></div>
             <div id="zerotierNetworks" class="zt-network-grid"><div class="zt-empty">ქსელები იტვირთება...</div></div>
         </section>
 
         <section class="card zt-panel" style="grid-column:1/-1">
-            <div class="zt-panel-head"><div><span class="zt-eyebrow">PEER CONNECTIONS</span><h3>მოწყობილობებთან კავშირები</h3><p class="muted">Peer-ების სტატუსი, როლი, დაყოვნება და აქტიური გზა</p></div><span id="zerotierPeerCount" class="zt-count">—</span></div>
-            <div id="zerotierPeers" class="zt-peer-grid" aria-live="polite"><div class="zt-empty">Peers იტვირთება...</div></div>
+            <div class="zt-panel-head"><div><span class="zt-eyebrow">CONNECTED DEVICES / PEERS</span><h3>მოწყობილობებთან კავშირები</h3><p>Peer-ების როლი, დაყოვნება და აქტიური ქსელური გზა</p></div><span id="zerotierPeerCount" class="zt-count">—</span></div>
+            <div id="zerotierPeers" class="zt-peer-grid" aria-live="polite"><div class="zt-empty">Peer-ების სია იტვირთება...</div></div>
         </section>
 
         <section class="card zt-panel" style="grid-column:1/-1">
