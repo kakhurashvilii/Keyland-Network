@@ -3060,6 +3060,22 @@ element("terminalClearButton")?.addEventListener("click", () => {
 
 
 
+
+/* Move long explanatory copy behind a compact help affordance. */
+(function(){
+  document.querySelectorAll("#dashboard .card > p:not([id]):not([role])").forEach(paragraph=>{
+    if(paragraph.textContent.trim().length<110 || paragraph.querySelector("button,input,select,textarea,a")) return;
+    const details=document.createElement("details");
+    details.className="inline-help";
+    const summary=document.createElement("summary");
+    summary.textContent="?";
+    summary.setAttribute("aria-label","დამატებითი განმარტება");
+    details.appendChild(summary);
+    details.appendChild(paragraph);
+    paragraph.parentNode.insertBefore(details,paragraph);
+  });
+})();
+
 /* Page views: keep the overview concise and move technical controls to focused pages. */
 (function(){
   const titles={"overview":"მიმოხილვა","mobile":"მობილური ქსელი","hotspot":"Hotspot","portal":"Captive Portal","activity":"მოწყობილობების აქტივობა","repeater":"Wi-Fi გამეორება","zerotier":"ZeroTier","network":"ქსელის მართვა","system":"სისტემა"};
