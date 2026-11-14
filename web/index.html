@@ -103,7 +103,7 @@
     <a href="#mobile-section" data-view-target="mobile"><span class="nav-index">M</span><span><strong>მობილური</strong><small>SIM და SMS</small></span></a>
     <a href="#hotspot-section" data-view-target="hotspot" class="nav-hotspot"><span class="nav-index">02</span><span><strong>Hotspot</strong><small>ინტერნეტის გაზიარება</small></span><span class="nav-link-indicator" aria-hidden="true"></span></a>
     <a href="#portal-section" data-view-target="portal" class="nav-portal"><span class="nav-index">P1</span><span><strong>Captive Portal</strong><small>სტუმრების წვდომა</small></span></a>
-    <a href="#activity-section" data-view-target="activity"><span class="nav-index">A1</span><span><strong>Device Activity</strong><small>საიტების ისტორია</small></span></a>
+    <a href="#activity-section" data-view-target="activity"><span class="nav-index">A1</span><span><strong>მოწყობილობების აქტივობა</strong><small>საიტების ისტორია</small></span></a>
     <a href="#repeater-section" data-view-target="repeater"><span class="nav-index">03</span><span><strong>Repeater</strong><small>ქსელთან დაკავშირება</small></span></a>
     <a href="#zerotier-section" data-view-target="zerotier"><span class="nav-index">ZT</span><span><strong>ZeroTier</strong><small>ვირტუალური ქსელი და მოწყობილობები</small></span></a>
     <a href="#network-section" data-view-target="network"><span class="nav-index">04</span><span><strong>ქსელი</strong><small>ინტერფეისები და DNS</small></span></a>
@@ -129,7 +129,7 @@
     </div>
 
     <div class="grid">
-        <div id="overview-section" class="section-heading" data-page-view="overview"><div><span class="section-kicker">01 / OVERVIEW</span><h2>სისტემის მიმოხილვა</h2><p>მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა</p></div></div>
+        <div id="overview-section" class="section-heading" data-page-view="overview"><div><span class="section-kicker">01 / მიმოხილვა</span><h2>სისტემის მიმოხილვა</h2><p>მოწყობილობის, ინტერნეტისა და რესურსების მიმდინარე მდგომარეობა</p></div></div>
 
         <section class="card" data-page-view="overview">
             <h3 id="device-title">მოწყობილობა</h3>
@@ -393,7 +393,7 @@
                     <label for="hotspotMode">როუტერის რეჟიმი</label>
                     <select id="hotspotMode">
                         <option value="hotspot">SIM Mobile Hotspot</option>
-                        <option value="repeater">Wi-Fi Repeater</option>
+                        <option value="repeater">Wi-Fi გამეორება</option>
                     </select>
                 </div>
                 <div>
@@ -525,7 +525,7 @@
             <p class="muted">მოწყობილობის ამოცნობა ხდება DHCP lease-ის IP/MAC/hostname მონაცემებით. VPN-მა ან დაშიფრულმა DNS-მა შეიძლება ისტორია არასრული გახადოს.</p>
         </section>
 
-        <div id="repeater-section" class="section-heading" data-page-view="repeater"><div><span class="section-kicker">03 / REPEATER</span><h2>Wi-Fi Repeater</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
+        <div id="repeater-section" class="section-heading" data-page-view="repeater"><div><span class="section-kicker">03 / გამეორება</span><h2>Wi-Fi გამეორება</h2><p>მოძებნე Wi-Fi, დაუკავშირდი და გააზიარე Hotspot-ით</p></div></div>
         <section class="card repeater-card" style="grid-column:1 / -1;" data-page-view="repeater">
             <div class="repeater-status-row"><div><h3>Wi-Fi კავშირი</h3><div id="repeaterConnection" class="repeater-connection unknown" role="status" aria-live="polite">კავშირის მდგომარეობა მონაცემი ჯერ არ არის</div></div><span class="cellular-badge">UPSTREAM</span></div>
             <div class="repeater-controls">
@@ -602,7 +602,7 @@
             </details>
         </section>
 
-        <div id="network-section" class="section-heading" data-page-view="network"><div><span class="section-kicker">04 / NETWORK</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
+        <div id="network-section" class="section-heading" data-page-view="network"><div><span class="section-kicker">04 / ქსელი</span><h2>ქსელის მართვა</h2><p>ქსელის ინტერფეისები და DNS პარამეტრები</p></div></div>
 
         <section class="card" data-page-view="overview">
             <h3>ქსელის ინტერფეისები</h3>
@@ -667,7 +667,7 @@
             <p class="muted">უსაფრთხოება: საჭიროა მოქმედი ადმინისტრატორის სესია; WebSocket იღებს მხოლოდ იმავე საიტის Origin-ს. სესია წყდება 15 წუთი უმოქმედობის ან მაქსიმალური დროის შემდეგ. ჟურნალში ინახება მხოლოდ კავშირის მეტამონაცემები — ბრძანებები და მათი შედეგები არა.</p>
         </section>
 
-        <div id="system-section" class="section-heading" data-page-view="system"><div><span class="section-kicker">05 / SYSTEM</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
+        <div id="system-section" class="section-heading" data-page-view="system"><div><span class="section-kicker">05 / სისტემა</span><h2>სისტემა</h2><p>მოწყობილობის მდგომარეობა და საჭიროების შემთხვევაში ტექნიკური ინფორმაცია</p></div></div>
         <section class="card" id="system-power-card" data-page-view="system">
             <h3>სისტემის მართვა · v1.0.0</h3>
             <p class="muted">გადატვირთვა და უსაფრთხო აღდგენა. ყველა მოქმედება საჭიროებს ადმინისტრატორის დადასტურებას.</p>
