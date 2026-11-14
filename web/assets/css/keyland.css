@@ -1672,3 +1672,10 @@ body[data-active-view="repeater"] #dashboard .grid>.section-heading[data-page-vi
 body[data-active-view="zerotier"] #dashboard .grid>.section-heading[data-page-view="zerotier"],
 body[data-active-view="network"] #dashboard .grid>.section-heading[data-page-view="network"],
 body[data-active-view="system"] #dashboard .grid>.section-heading[data-page-view="system"]{display:flex}
+
+.inline-help{display:inline-block;position:relative;vertical-align:middle;margin:0 0 10px 5px}
+.inline-help>summary{display:grid;place-items:center;width:21px;height:21px;border:1px solid var(--border);border-radius:50%;color:var(--muted);font-size:12px;font-weight:800;cursor:pointer;list-style:none}
+.inline-help>summary::-webkit-details-marker{display:none}
+.inline-help[open]{display:block;margin:0 0 12px}
+.inline-help[open]>summary{margin-bottom:8px;color:var(--blue-light);border-color:var(--blue)}
+.inline-help>p{margin:0;padding:10px 12px;border-left:2px solid var(--blue);border-radius:0 8px 8px 0;background:rgba(8,17,30,.38);color:var(--muted);font-size:12px;line-height:1.6}
