@@ -11,6 +11,7 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
 
 from keyland.detector import detect_device, detect_capabilities
@@ -69,6 +70,8 @@ app = FastAPI(
     description="OpenWrt-style Network Management Platform",
     version=VERSION,
 )
+
+app.mount("/assets", StaticFiles(directory=ROOT / "web" / "assets"), name="assets")
 
 app.include_router(dns_router)
 app.include_router(wifi_hotspot_router)
