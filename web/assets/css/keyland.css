@@ -1660,3 +1660,15 @@ body[data-active-view="overview"] #quickStatus{display:grid}
 .view-help{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:6px;border:1px solid var(--border);border-radius:50%;color:var(--muted);font-size:11px;cursor:help}
 @media(max-width:760px){.quick-status{grid-template-columns:1fr 1fr}.quick-status-card:last-child{grid-column:1/-1}#pageTitle{font-size:19px}}
 @media(max-width:420px){.quick-status{grid-template-columns:1fr}.quick-status-card:last-child{grid-column:auto}}
+
+/* Keep only the active page heading visible. */
+#dashboard .grid>.section-heading[data-page-view]{display:none}
+body[data-active-view="overview"] #dashboard .grid>.section-heading[data-page-view="overview"],
+body[data-active-view="mobile"] #dashboard .grid>.section-heading[data-page-view="mobile"],
+body[data-active-view="hotspot"] #dashboard .grid>.section-heading[data-page-view="hotspot"],
+body[data-active-view="portal"] #dashboard .grid>.section-heading[data-page-view="portal"],
+body[data-active-view="activity"] #dashboard .grid>.section-heading[data-page-view="activity"],
+body[data-active-view="repeater"] #dashboard .grid>.section-heading[data-page-view="repeater"],
+body[data-active-view="zerotier"] #dashboard .grid>.section-heading[data-page-view="zerotier"],
+body[data-active-view="network"] #dashboard .grid>.section-heading[data-page-view="network"],
+body[data-active-view="system"] #dashboard .grid>.section-heading[data-page-view="system"]{display:flex}
