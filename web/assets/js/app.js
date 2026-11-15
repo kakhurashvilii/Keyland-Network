@@ -318,6 +318,10 @@ function showLogin(message = "") {
 function showDashboard(username) {
     state.authenticated = true;
 
+    if (!document.body.dataset.activeView) {
+        document.body.dataset.activeView = "overview";
+    }
+
     document.body.classList.remove("login-active");
 
     element("loginOverlay").classList.add("hidden");
