@@ -3052,52 +3052,89 @@ element("terminalClearButton")?.addEventListener("click", () => {
   });
 })();
 
-/* Page views: keep the overview concise and move technical controls to focused pages. */
+/* Page views: one controller owns navigation, page visibility and history. */
 (function(){
-  const titles={"overview":"მიმოხილვა","mobile":"მობილური ქსელი","hotspot":"Hotspot","portal":"Captive Portal","activity":"მოწყობილობების აქტივობა","repeater":"Wi-Fi გამეორება","zerotier":"ZeroTier","network":"ქსელის მართვა","system":"სისტემა"};
-  function setView(view){
-    if(!titles[view]) view="overview";
+  const titles={
+    overview:"მიმოხილვა",
+    mobile:"მობილური ქსელი",
+    hotspot:"Hotspot",
+    portal:"Captive Portal",
+    activity:"მოწყობილობების აქტივობა",
+    repeater:"Wi-Fi გამეორება",
+    zerotier:"ZeroTier",
+    network:"ქსელის მართვა",
+    system:"სისტემა"
+  };
+  const sectionToView={
+    "overview-section":"overview",
+    "mobile-section":"mobile",
+    "hotspot-section":"hotspot",
+    "portal-section":"portal",
+    "activity-section":"activity",
+    "repeater-section":"repeater",
+    "zerotier-section":"zerotier",
+    "network-section":"network",
+    "system-section":"system"
+  };
+
+  function normalizeView(value){
+    const key=String(value||"").replace(/^#/,"");
+    return titles[key]?key:(sectionToView[key]||"overview");
+  }
+
+  function setView(value,historyMode="none"){
+    const view=normalizeView(value);
     document.body.dataset.activeView=view;
 
-    /* Apply visibility directly to every page block. This avoids relying on
-       fragile parent/child CSS selectors when dashboard markup is reorganized. */
     document.querySelectorAll("#dashboard [data-page-view]").forEach(node=>{
       const visible=node.dataset.pageView===view;
-      node.style.display=visible?(node.classList.contains("section-heading")?"flex":"block"):"none";
+      node.style.display=visible
+        ?(node.classList.contains("section-heading")?"flex":"block")
+        :"none";
       node.setAttribute("aria-hidden",String(!visible));
     });
 
     const title=document.getElementById("pageTitle");
     if(title) title.textContent=titles[view];
-    document.querySelectorAll(".primary-nav [data-view-target]").forEach(link=>{
+
+    document.querySelectorAll(".primary-nav a[data-view-target]").forEach(link=>{
       const active=link.dataset.viewTarget===view;
       link.classList.toggle("active",active);
       if(active) link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     });
-    try{history.replaceState(null,"","#"+view);}catch(_){}
+
+    if(historyMode!=="none"){
+      try{
+        const method=historyMode==="push"?"pushState":"replaceState";
+        history[method]({keylandView:view},"","#"+view);
+      }catch(_){}
+    }
+    return view;
   }
-  /* Use a document-level CAPTURE listener for navigation.
-     This keeps navigation working if a nested control or another handler
-     stops click bubbling, and also supports links added after initialization. */
+
   document.addEventListener("click",event=>{
-    const link=event.target && event.target.closest
-      ? event.target.closest(".primary-nav a[data-view-target]")
-      : null;
+    const link=event.target&&event.target.closest
+      ?event.target.closest(".primary-nav a[data-view-target]")
+      :null;
     if(!link) return;
     const view=link.getAttribute("data-view-target");
     if(!titles[view]) return;
     event.preventDefault();
     event.stopPropagation();
-    setView(view);
+    setView(view,"push");
   },true);
 
-  /* Support browser back/forward and direct #view links. */
-  window.addEventListener("hashchange",()=>{
-    const view=String(location.hash||"").slice(1);
-    if(titles[view]) setView(view);
+  window.addEventListener("popstate",()=>{
+    setView(location.hash,"none");
   });
-  function read(id){return document.getElementById(id)?.textContent?.trim()||"";}
+  window.addEventListener("hashchange",()=>{
+    setView(location.hash,"none");
+  });
+
+  function read(id){
+    return document.getElementById(id)?.textContent?.trim()||"";
+  }
   function syncSummary(){
     const internet=read("internetStatus");
     const clients=read("hotspotClientCount");
@@ -3105,19 +3142,24 @@ element("terminalClearButton")?.addEventListener("click", () => {
     const set=(id,value)=>{
       const node=document.getElementById(id);
       if(!node)return;
-      node.textContent=(!value||/^(--|მონაცემი ჯერ არ არის|მოწმდება|მოლოდინი)/i.test(value))?"მონაცემი ჯერ არ არის":value;
+      node.textContent=(!value||/^(--|მონაცემი ჯერ არ არის|მოწმდება|მოლოდინი)/i.test(value))
+        ?"მონაცემი ჯერ არ არის":value;
     };
     set("summaryInternet",internet);
     set("summaryClients",clients);
     set("summaryBattery",battery);
   }
-  setView("overview");
+
+  setView(location.hash||"overview","replace");
   syncSummary();
   const observer=new MutationObserver(syncSummary);
   ["internetStatus","hotspotClientCount","batteryLevel"].forEach(id=>{
-    const node=document.getElementById(id);if(node)observer.observe(node,{childList:true,subtree:true,characterData:true});
+    const node=document.getElementById(id);
+    if(node) observer.observe(node,{childList:true,subtree:true,characterData:true});
   });
-  document.getElementById("pageTitle")?.addEventListener("dblclick",()=>setView("overview"));
+  document.getElementById("pageTitle")?.addEventListener("dblclick",()=>{
+    setView("overview","push");
+  });
 })();
 
 /* START */
