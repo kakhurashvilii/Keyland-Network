@@ -10,7 +10,8 @@ from keyland.database import get_user_by_id, get_user_by_username
 
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_MINUTES = 30
+# Persistent administrator session: survives browser refresh/restart for 7 days.
+ACCESS_TOKEN_MINUTES = 7 * 24 * 60
 ACCESS_COOKIE_NAME = "keyland_session"
 
 SECRET_KEY = os.getenv("KEYLAND_JWT_SECRET")
