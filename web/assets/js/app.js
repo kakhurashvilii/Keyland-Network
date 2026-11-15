@@ -3047,8 +3047,12 @@ element("terminalClearButton")?.addEventListener("click", () => {
     summary.textContent="?";
     summary.setAttribute("aria-label","დამატებითი განმარტება");
     details.appendChild(summary);
+
+    const parent = paragraph.parentNode;
+    if (!parent) return;
+
+    parent.insertBefore(details, paragraph);
     details.appendChild(paragraph);
-    paragraph.parentNode.insertBefore(details,paragraph);
   });
 })();
 
