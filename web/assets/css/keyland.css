@@ -1689,3 +1689,46 @@ body:not(.login-active)[data-active-view="overview"] #dashboard > .grid > [data-
 body:not(.login-active)[data-active-view="overview"] #dashboard > .grid > .section-heading[data-page-view="overview"] {
   display: flex !important;
 }
+
+
+/* Authentication and page-layout contract.
+   Keep all dashboard chrome out of the unauthenticated view. */
+body.login-active{
+  overflow:hidden;
+}
+body.login-active > header,
+body.login-active > .app-layout,
+body.login-active > footer{
+  display:none !important;
+}
+body.login-active > #loginOverlay{
+  display:flex !important;
+}
+body:not(.login-active) > #loginOverlay{
+  display:none !important;
+}
+
+/* Stable dashboard columns; content cards remain controlled by their page view. */
+.app-layout{
+  display:grid;
+  grid-template-columns:minmax(210px,236px) minmax(0,1fr);
+  align-items:start;
+}
+.app-layout > #dashboard{
+  width:100%;
+  min-width:0;
+}
+#dashboard .grid{
+  min-width:0;
+}
+@media(max-width:820px){
+  .app-layout{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .app-layout > .primary-nav,
+  .app-layout > #dashboard{
+    width:100%;
+  }
+}
