@@ -3077,11 +3077,25 @@ element("terminalClearButton")?.addEventListener("click", () => {
     });
     try{history.replaceState(null,"","#"+view);}catch(_){}
   }
-  document.querySelectorAll(".primary-nav [data-view-target]").forEach(link=>{
-    link.addEventListener("click",event=>{
-      event.preventDefault();
-      setView(link.dataset.viewTarget);
-    });
+  /* Use a document-level CAPTURE listener for navigation.
+     This keeps navigation working if a nested control or another handler
+     stops click bubbling, and also supports links added after initialization. */
+  document.addEventListener("click",event=>{
+    const link=event.target && event.target.closest
+      ? event.target.closest(".primary-nav a[data-view-target]")
+      : null;
+    if(!link) return;
+    const view=link.getAttribute("data-view-target");
+    if(!titles[view]) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setView(view);
+  },true);
+
+  /* Support browser back/forward and direct #view links. */
+  window.addEventListener("hashchange",()=>{
+    const view=String(location.hash||"").slice(1);
+    if(titles[view]) setView(view);
   });
   function read(id){return document.getElementById(id)?.textContent?.trim()||"";}
   function syncSummary(){
