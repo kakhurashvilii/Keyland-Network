@@ -577,7 +577,26 @@
         <section class="card zt-panel" style="grid-column:1/-1" data-page-view="zerotier">
             <div class="zt-panel-head"><div><span class="zt-eyebrow">ZERO TIER CENTRAL</span><h3>Central — ქსელები და მოწყობილობები</h3><p class="muted">ZeroTier Central-ის ღრუბლოვანი მართვა: ქსელების, წევრებისა და ავტორიზაციის კონტროლი. ეს განყოფილება არჩევითია; Token ინახება მხოლოდ Keyland სერვერზე.</p></div><span class="zt-central-mark">CENTRAL</span></div>
             <div id="zerotierCentralMessage" class="zt-message zt-central-message" role="status">Central API-ის მდგომარეობა მონაცემი ჯერ არ არის</div>
-            <div class="zt-central-toolbar"><div class="zt-select-wrap"><label for="zerotierNetworkSelect">ასარჩევი Central ქსელი</label><select id="zerotierNetworkSelect" disabled><option value="">ქსელები ჯერ არ ჩატვირთულა</option></select></div><div class="zt-toolbar-actions"><button type="button" id="zerotierNetworkRefreshButton" class="secondary">ქსელების განახლება</button><button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button></div></div>
+            <div class="zt-central-toolbar"><div class="zt-select-wrap"><label for="zerotierNetworkSelect">ასარჩევი Central ქსელი</label><select id="zerotierNetworkSelect" disabled><option value="">ქსელები ჯერ არ ჩატვირთულა</option></select></div><div class="zt-toolbar-actions">
+                <button type="button" id="zerotierNetworkRefreshButton" class="secondary">ახლა განახლება</button>
+                <button type="button" id="zerotierMembersRefreshButton" class="secondary">წევრების განახლება</button>
+            </div></div>
+            <div class="zt-refresh-settings">
+                <label class="zt-auto-refresh-control">
+                    <input type="checkbox" id="zerotierCentralAutoRefresh">
+                    <span>ავტომატური განახლება</span>
+                </label>
+                <div class="zt-refresh-interval">
+                    <label for="zerotierCentralRefreshInterval">ინტერვალი</label>
+                    <select id="zerotierCentralRefreshInterval">
+                        <option value="30">30 წამი</option>
+                        <option value="60">1 წუთი</option>
+                        <option value="120">2 წუთი</option>
+                        <option value="300">5 წუთი</option>
+                    </select>
+                </div>
+                <span id="zerotierCentralRefreshStatus" class="zt-refresh-status" role="status">განახლება ჯერ არ შესრულებულა</span>
+            </div>
             <div class="zt-members-heading"><h4>ქსელის წევრები</h4><span class="muted">წვდომის სტატუსი და მოწყობილობის ინფორმაცია</span></div>
             <div id="zerotierMembers" class="client-list" aria-live="polite"><p class="client-empty">აირჩიე ქსელი წევრების სანახავად.</p></div>
             <details class="zt-advanced">

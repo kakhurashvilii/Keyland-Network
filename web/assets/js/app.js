@@ -11,6 +11,9 @@ const state = {
     pollingTimer: null,
     smsPollingTimer: null,
     zerotierPollingTimer: null,
+    centralRefreshInFlight: false,
+    centralMembersInFlight: false,
+
     smsLoading: false,
     sessionCheckInProgress: false
 };
@@ -475,7 +478,6 @@ async function refreshZeroTier() {
         if (peers) peers.replaceChildren(ztNode("div", "zt-message zt-error", "Peer-ების სია ვერ ჩაიტვირთა."));
         if (count) count.textContent = "მიუწვდომელია";
     }
-    await refreshCentralNetworks();
 }
 
 async function submitZeroTierAction(path, body, phrase, warning, outputId) {
@@ -500,93 +502,237 @@ async function submitZeroTierAction(path, body, phrase, warning, outputId) {
     } catch (error) { output.textContent = "შეცდომა: " + error.message; }
 }
 
+
+const CENTRAL_REFRESH_ENABLED_KEY = "keyland.zerotier.central.autorefresh";
+const CENTRAL_REFRESH_INTERVAL_KEY = "keyland.zerotier.central.interval";
+
+function centralRefreshInterval() {
+    const allowed = [30, 60, 120, 300];
+    let value = 60;
+    try {
+        value = Number(localStorage.getItem(CENTRAL_REFRESH_INTERVAL_KEY)) || 60;
+    } catch (_) {}
+    return allowed.includes(value) ? value : 60;
+}
+
+function centralAutoRefreshEnabled() {
+    try {
+        return localStorage.getItem(CENTRAL_REFRESH_ENABLED_KEY) !== "false";
+    } catch (_) {
+        return true;
+    }
+}
+
+function setCentralRefreshStatus(message) {
+    const target = element("zerotierCentralRefreshStatus");
+    if (target) target.textContent = message;
+}
+
+function centralRefreshSuccess() {
+    const now = new Date().toLocaleString();
+    setCentralRefreshStatus("ბოლო განახლება: " + now);
+}
+
+function startCentralAutoRefresh() {
+    if (state.zerotierPollingTimer !== null) {
+        clearInterval(state.zerotierPollingTimer);
+        state.zerotierPollingTimer = null;
+    }
+    if (!state.authenticated || !centralAutoRefreshEnabled()) return;
+
+    state.zerotierPollingTimer = setInterval(() => {
+        if (state.authenticated) refreshCentralNetworks();
+    }, centralRefreshInterval() * 1000);
+}
+
 async function refreshCentralNetworks() {
     const message = element("zerotierCentralMessage");
     const select = element("zerotierNetworkSelect");
     const members = element("zerotierMembers");
-    if (!state.authenticated || !message || !select) return;
+
+    if (!state.authenticated || !message || !select) return false;
+    if (state.centralRefreshInFlight) return false;
+
+    state.centralRefreshInFlight = true;
+    setCentralRefreshStatus("Central მონაცემები იტვირთება...");
     message.textContent = "Central API ქსელები იტვირთება...";
+
     try {
         const data = await fetchJSON(API + "/zerotier/central/networks");
+
         if (!data.configured) {
             message.textContent = "Central API token არ არის დაყენებული. დაამატე KEYLAND_ZEROTIER_CENTRAL_TOKEN სერვერზე.";
             select.disabled = true;
             select.replaceChildren(new Option("Central API არ არის კონფიგურირებული", ""));
             if (members) members.textContent = "ქსელებისა და მოწყობილობების სიის სანახავად საჭიროა Central API token.";
-            return;
+            setCentralRefreshStatus("Central API Token არ არის კონფიგურირებული");
+            return false;
         }
+
         if (!data.available) throw new Error(data.error || "Central API მიუწვდომელია");
+
         window.__keylandCentralNetworks = data.networks || [];
         const previous = select.value;
         const options = [new Option("აირჩიე ZeroTier ქსელი", "")];
-        window.__keylandCentralNetworks.forEach(network => options.push(new Option(
-            (network.name || "Unnamed network") + " · " + network.id +
-            " · " + (network.total_member_count ?? 0) + " მოწყობილობა", network.id
-        )));
+
+        window.__keylandCentralNetworks.forEach(network => {
+            options.push(new Option(
+                (network.name || "Unnamed network") + " · " + network.id +
+                " · " + (network.total_member_count ?? 0) + " მოწყობილობა",
+                network.id
+            ));
+        });
+
         select.replaceChildren(...options);
-        select.disabled = data.networks.length === 0;
-        const selected = data.networks.find(n => n.id === previous) ||
-            data.networks.find(n => n.id === (element("zerotierLocalNetworkId")?.value || ""));
+        select.disabled = window.__keylandCentralNetworks.length === 0;
+
+        const selected = window.__keylandCentralNetworks.find(n => n.id === previous) ||
+            window.__keylandCentralNetworks.find(
+                n => n.id === (element("zerotierLocalNetworkId")?.value || "")
+            );
+
         if (selected) select.value = selected.id;
-        message.textContent = "Central API დაკავშირებულია · ქსელები: " + data.networks.length;
-        if (select.value) await refreshCentralMembers();
-        else if (members) members.textContent = "აირჩიე ქსელი წევრების სანახავად.";
-    } catch (error) { message.textContent = "Central API შეცდომა: " + error.message; select.disabled = true; }
+
+        message.textContent =
+            "Central API დაკავშირებულია · ქსელები: " +
+            window.__keylandCentralNetworks.length;
+
+        let membersOk = true;
+        if (select.value) {
+            membersOk = await refreshCentralMembers();
+        } else if (members) {
+            members.textContent = "აირჩიე ქსელი წევრების სანახავად.";
+        }
+
+        if (!membersOk) {
+            setCentralRefreshStatus("ქსელები განახლდა, მაგრამ წევრების სია ვერ განახლდა");
+            return false;
+        }
+
+        centralRefreshSuccess();
+        return true;
+    } catch (error) {
+        message.textContent = "Central API შეცდომა: " + error.message;
+        setCentralRefreshStatus("განახლების შეცდომა: " + error.message);
+        select.disabled = true;
+        return false;
+    } finally {
+        state.centralRefreshInFlight = false;
+    }
 }
 
 async function refreshCentralMembers() {
     const select = element("zerotierNetworkSelect");
     const target = element("zerotierMembers");
-    if (!state.authenticated || !select || !target || !select.value) return;
+
+    if (!state.authenticated || !select || !target || !select.value) return false;
+    if (state.centralMembersInFlight) return false;
+
+    state.centralMembersInFlight = true;
     target.textContent = "მოწყობილობების სია იტვირთება...";
+
     try {
         const networkId = select.value;
-        const data = await fetchJSON(API + "/zerotier/central/networks/" + encodeURIComponent(networkId) + "/members");
+        const data = await fetchJSON(
+            API + "/zerotier/central/networks/" +
+            encodeURIComponent(networkId) + "/members"
+        );
+
         if (!data.available) throw new Error(data.error || "წევრების სია მიუწვდომელია");
+
         const fragment = document.createDocumentFragment();
+
         (data.members || []).forEach(member => {
-            const card = document.createElement("article"); card.className = "client-device";
-            const head = document.createElement("div"); head.className = "client-device-head";
-            const title = document.createElement("strong"); title.textContent = member.name || "სახელის გარეშე მოწყობილობა";
-            const auth = document.createElement("span"); auth.className = "client-signal";
-            auth.textContent = member.authorized === true ? "AUTHORIZED" : member.authorized === false ? "NOT AUTHORIZED" : "UNKNOWN";
+            const card = document.createElement("article");
+            card.className = "client-device";
+
+            const head = document.createElement("div");
+            head.className = "client-device-head";
+
+            const title = document.createElement("strong");
+            title.textContent = member.name || "სახელის გარეშე მოწყობილობა";
+
+            const auth = document.createElement("span");
+            auth.className = "client-signal";
+            auth.textContent = member.authorized === true
+                ? "AUTHORIZED"
+                : member.authorized === false ? "NOT AUTHORIZED" : "UNKNOWN";
+
             head.append(title, auth);
-            const details = document.createElement("div"); details.className = "client-traffic";
+
+            const details = document.createElement("div");
+            details.className = "client-traffic";
+
             [
-                ["Node ID", member.id || "—"], ["Managed IP", (member.ip_assignments || []).join(", ") || "—"],
+                ["Node ID", member.id || "—"],
+                ["Managed IP", (member.ip_assignments || []).join(", ") || "—"],
                 ["Physical address", member.physical_address || "—"],
                 ["Last seen", member.last_seen ? new Date(Number(member.last_seen)).toLocaleString() : "—"],
                 ["Client", member.client_version || "—"]
             ].forEach(([label, value]) => {
-                const item = document.createElement("div"), small = document.createElement("small"), strong = document.createElement("b");
-                small.textContent = label; strong.textContent = String(value); item.append(small, strong); details.append(item);
+                const item = document.createElement("div");
+                const small = document.createElement("small");
+                const strong = document.createElement("b");
+                small.textContent = label;
+                strong.textContent = String(value);
+                item.append(small, strong);
+                details.append(item);
             });
+
             card.append(head, details);
-            if (member.description) { const d = document.createElement("p"); d.className = "muted"; d.textContent = member.description; card.append(d); }
-            const actions = document.createElement("div"); actions.className = "button-row";
-            const action = document.createElement("button"); action.type = "button";
+
+            if (member.description) {
+                const d = document.createElement("p");
+                d.className = "muted";
+                d.textContent = member.description;
+                card.append(d);
+            }
+
+            const actions = document.createElement("div");
+            actions.className = "button-row";
+
+            const action = document.createElement("button");
+            action.type = "button";
             action.className = member.authorized === true ? "danger" : "secondary";
-            action.textContent = member.authorized === true ? "ავტორიზაციის გაუქმება" : "ავტორიზაცია";
+            action.textContent = member.authorized === true
+                ? "ავტორიზაციის გაუქმება" : "ავტორიზაცია";
+
             action.addEventListener("click", async () => {
                 const verb = member.authorized === true ? "DEAUTHORIZE" : "AUTHORIZE";
                 await submitZeroTierAction(
-                    "/zerotier/central/networks/" + encodeURIComponent(networkId) + "/members/" +
-                    encodeURIComponent(member.id) + (member.authorized === true ? "/deauthorize" : "/authorize"),
-                    {}, verb + " " + member.id,
+                    "/zerotier/central/networks/" + encodeURIComponent(networkId) +
+                    "/members/" + encodeURIComponent(member.id) +
+                    (member.authorized === true ? "/deauthorize" : "/authorize"),
+                    {},
+                    verb + " " + member.id,
                     "ეს შეცვლის მოწყობილობის წვდომას ZeroTier ქსელზე. გავაგრძელოთ?",
                     "zerotierNetworkActionMessage"
                 );
                 await refreshCentralMembers();
             });
-            actions.append(action); card.append(actions); fragment.append(card);
+
+            actions.append(action);
+            card.append(actions);
+            fragment.append(card);
         });
+
         if (!data.members || !data.members.length) {
-            const empty = document.createElement("p"); empty.className = "client-empty";
-            empty.textContent = "ამ ქსელში წევრები ჯერ არ მოიძებნა."; fragment.append(empty);
+            const empty = document.createElement("p");
+            empty.className = "client-empty";
+            empty.textContent = "ამ ქსელში წევრები ჯერ არ მოიძებნა.";
+            fragment.append(empty);
         }
+
         target.replaceChildren(fragment);
         renderSelectedCentralNetwork();
-    } catch (error) { target.textContent = "წევრების ჩატვირთვის შეცდომა: " + error.message; }
+        return true;
+    } catch (error) {
+        target.textContent = "წევრების ჩატვირთვის შეცდომა: " + error.message;
+        setCentralRefreshStatus("წევრების განახლების შეცდომა: " + error.message);
+        return false;
+    } finally {
+        state.centralMembersInFlight = false;
+    }
 }
 
 function renderSelectedCentralNetwork() {
@@ -618,7 +764,31 @@ element("zerotierRefreshButton")?.addEventListener("click", refreshZeroTier);
 element("zerotierMembersRefreshButton")?.addEventListener("click", refreshCentralMembers);
 element("zerotierNetworkRefreshButton")?.addEventListener("click", refreshCentralNetworks);
 element("zerotierNetworkSelect")?.addEventListener("change", refreshCentralMembers);
+
+element("zerotierCentralAutoRefresh")?.addEventListener("change", event => {
+    try {
+        localStorage.setItem(CENTRAL_REFRESH_ENABLED_KEY, String(event.target.checked));
+    } catch (_) {}
+    startCentralAutoRefresh();
+    if (event.target.checked && state.authenticated) refreshCentralNetworks();
+});
+
+element("zerotierCentralRefreshInterval")?.addEventListener("change", event => {
+    const value = Number(event.target.value);
+    if (![30, 60, 120, 300].includes(value)) return;
+    try {
+        localStorage.setItem(CENTRAL_REFRESH_INTERVAL_KEY, String(value));
+    } catch (_) {}
+    startCentralAutoRefresh();
+});
+
 element("zerotierDiagnosticsButton")?.addEventListener("click", refreshZeroTierDiagnostics);
+
+const centralAutoControl = element("zerotierCentralAutoRefresh");
+const centralIntervalControl = element("zerotierCentralRefreshInterval");
+if (centralAutoControl) centralAutoControl.checked = centralAutoRefreshEnabled();
+if (centralIntervalControl) centralIntervalControl.value = String(centralRefreshInterval());
+
 element("zerotierJoinButton")?.addEventListener("click", () => {
     const id = element("zerotierLocalNetworkId").value.trim();
     submitZeroTierAction("/zerotier/local/join", {network_id:id}, "JOIN NETWORK " + id,
@@ -1323,8 +1493,7 @@ async function loadData() {
             );
         }
         if (dataByName.resources) trackResourceNotifications(dataByName.resources);
-        if (dataByName.zerotierStatus) refreshCentralNetworks();
-        refreshCentralNetworks();
+
 
         const extraResults = await Promise.allSettled([
             loadInterfaces(),
@@ -2755,10 +2924,8 @@ function startPolling() {
     loadHotspotCapabilities();
     refreshSms(true);
     refreshZeroTier();
-
-    state.zerotierPollingTimer = setInterval(() => {
-        if (state.authenticated) refreshZeroTier();
-    }, 30000);
+    refreshCentralNetworks();
+    startCentralAutoRefresh();
 
     state.pollingTimer = setInterval(() => {
         if (state.authenticated) loadData();
