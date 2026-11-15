@@ -2740,36 +2740,8 @@ element("interfaceFilter").addEventListener(
     loadInterfaces
 );
 
-/* Sidebar section tracking — keeps navigation context in sync while scrolling */
-(() => {
-    const links = Array.from(document.querySelectorAll(".primary-nav a[href^='#']"));
-    const sections = links
-        .map(link => document.querySelector(link.getAttribute("href")))
-        .filter(Boolean);
-    const activate = id => {
-        links.forEach(link => {
-            const active = link.getAttribute("href") === "#" + id;
-            link.classList.toggle("active", active);
-            if (active) link.setAttribute("aria-current", "location");
-            else link.removeAttribute("aria-current");
-        });
-    };
-    links.forEach(link => link.addEventListener("click", () => {
-        const id = link.getAttribute("href").slice(1);
-        activate(id);
-    }));
-    if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver(entries => {
-            const visible = entries.filter(entry => entry.isIntersecting)
-                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-            if (visible) activate(visible.target.id);
-        }, {rootMargin:"-18% 0px -68% 0px",threshold:[0,.15,.35,.6]});
-        sections.forEach(section => observer.observe(section));
-    } else {
-        const initial = location.hash.slice(1) || "overview-section";
-        activate(initial);
-    }
-})();
+/* Navigation is handled by the focused page-view controller below.
+   Do not run the old scroll-based section observer alongside page switching. */
 
 /* POLLING */
 
@@ -3086,18 +3058,30 @@ element("terminalClearButton")?.addEventListener("click", () => {
   function setView(view){
     if(!titles[view]) view="overview";
     document.body.dataset.activeView=view;
+
+    /* Apply visibility directly to every page block. This avoids relying on
+       fragile parent/child CSS selectors when dashboard markup is reorganized. */
+    document.querySelectorAll("#dashboard [data-page-view]").forEach(node=>{
+      const visible=node.dataset.pageView===view;
+      node.style.display=visible?(node.classList.contains("section-heading")?"flex":"block"):"none";
+      node.setAttribute("aria-hidden",String(!visible));
+    });
+
     const title=document.getElementById("pageTitle");
     if(title) title.textContent=titles[view];
     document.querySelectorAll(".primary-nav [data-view-target]").forEach(link=>{
-      if(link.dataset.viewTarget===view) link.setAttribute("aria-current","page");
+      const active=link.dataset.viewTarget===view;
+      link.classList.toggle("active",active);
+      if(active) link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     });
-    const active=document.querySelector('.primary-nav [data-view-target="'+view+'"]');
-    if(active) active.scrollIntoView({block:"nearest",inline:"nearest"});
     try{history.replaceState(null,"","#"+view);}catch(_){}
   }
   document.querySelectorAll(".primary-nav [data-view-target]").forEach(link=>{
-    link.addEventListener("click",event=>{event.preventDefault();setView(link.dataset.viewTarget);});
+    link.addEventListener("click",event=>{
+      event.preventDefault();
+      setView(link.dataset.viewTarget);
+    });
   });
   function read(id){return document.getElementById(id)?.textContent?.trim()||"";}
   function syncSummary(){
@@ -3113,7 +3097,7 @@ element("terminalClearButton")?.addEventListener("click", () => {
     set("summaryClients",clients);
     set("summaryBattery",battery);
   }
-  document.body.dataset.activeView="overview";
+  setView("overview");
   syncSummary();
   const observer=new MutationObserver(syncSummary);
   ["internetStatus","hotspotClientCount","batteryLevel"].forEach(id=>{
