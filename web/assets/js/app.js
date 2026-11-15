@@ -11,6 +11,7 @@ const state = {
     pollingTimer: null,
     smsPollingTimer: null,
     zerotierPollingTimer: null,
+    centralPollingTimer: null,
     centralRefreshInFlight: false,
     centralMembersInFlight: false,
 
@@ -534,13 +535,13 @@ function centralRefreshSuccess() {
 }
 
 function startCentralAutoRefresh() {
-    if (state.zerotierPollingTimer !== null) {
-        clearInterval(state.zerotierPollingTimer);
-        state.zerotierPollingTimer = null;
+    if (state.centralPollingTimer !== null) {
+        clearInterval(state.centralPollingTimer);
+        state.centralPollingTimer = null;
     }
     if (!state.authenticated || !centralAutoRefreshEnabled()) return;
 
-    state.zerotierPollingTimer = setInterval(() => {
+    state.centralPollingTimer = setInterval(() => {
         if (state.authenticated) refreshCentralNetworks();
     }, centralRefreshInterval() * 1000);
 }
@@ -2927,6 +2928,10 @@ function startPolling() {
     refreshCentralNetworks();
     startCentralAutoRefresh();
 
+    state.zerotierPollingTimer = setInterval(() => {
+        if (state.authenticated) refreshZeroTier();
+    }, 30000);
+
     state.pollingTimer = setInterval(() => {
         if (state.authenticated) loadData();
     }, 15000);
@@ -2952,6 +2957,10 @@ function stopPolling() {
     if (state.zerotierPollingTimer !== null) {
         clearInterval(state.zerotierPollingTimer);
         state.zerotierPollingTimer = null;
+    }
+    if (state.centralPollingTimer !== null) {
+        clearInterval(state.centralPollingTimer);
+        state.centralPollingTimer = null;
     }
 }
 
