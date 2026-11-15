@@ -1678,3 +1678,14 @@ body[data-active-view="system"] #dashboard .grid>.section-heading[data-page-view
 .inline-help[open]{display:block;margin:0 0 12px}
 .inline-help[open]>summary{margin-bottom:8px;color:var(--blue-light);border-color:var(--blue)}
 .inline-help>p{margin:0;padding:10px 12px;border-left:2px solid var(--blue);border-radius:0 8px 8px 0;background:rgba(8,17,30,.38);color:var(--muted);font-size:12px;line-height:1.6}
+
+
+/* Dashboard recovery: keep the overview visible after authentication.
+   The active-page filter remains in place for the other navigation views. */
+body:not(.login-active):not([data-active-view]) #dashboard > .grid > [data-page-view="overview"],
+body:not(.login-active)[data-active-view="overview"] #dashboard > .grid > [data-page-view="overview"] {
+  display: block !important;
+}
+body:not(.login-active)[data-active-view="overview"] #dashboard > .grid > .section-heading[data-page-view="overview"] {
+  display: flex !important;
+}
