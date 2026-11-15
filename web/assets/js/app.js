@@ -1215,8 +1215,7 @@ async function loadData() {
         ["traffic", API + "/network/traffic"],
         ["internet", API + "/network/internet"],
         ["cellularStatus", API + "/cellular/status"],
-        ["cellularUsage", API + "/cellular/usage"],
-        ["zerotierStatus", API + "/zerotier/status"]
+        ["cellularUsage", API + "/cellular/usage"]
     ];
 
     try {
